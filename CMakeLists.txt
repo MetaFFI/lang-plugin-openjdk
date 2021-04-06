@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17.3)
-project(openffi.lang.starterpack VERSION 0.0.1)
+project(openffi.lang.openjdk VERSION 0.0.1)
 
 include(CTest)
 enable_testing()

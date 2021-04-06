@@ -1,10 +1,12 @@
 #include <iostream>
 #include <string>
+#include <string.h>
+#include <iostream>
+#include <fstream>
+#include <runtime/xllr_api.h>
 #include <utils/scope_guard.hpp>
-#include <utils/xllr_api_wrapper.h>
 #include <boost/filesystem.hpp>
 #include <boost/dll.hpp>
-#include <memory>
 #include <sstream>
 
 using namespace openffi::utils;
@@ -39,35 +41,35 @@ using namespace openffi::utils;
 	check_and_reset_err_fail(desc);
 
 //--------------------------------------------------------------------
-std::unique_ptr<xllr_api_wrapper> xllr;
-std::string plugin_name("xllr.go");
-std::string module_name("go_test_mod");
-std::string func_name("go_test_func");
+
+std::string plugin_name("xllr.openjdk");
+std::string module_name("openjdk_test_mod");
+std::string func_name("openjdk_test_func");
+std::string class_path(".:");
 std::string module_code(
-R"(
-package main
+		R"(
 
-import "C"
-import "fmt"
+import openffi.*;
+import java.nio.charset.StandardCharsets;
 
-//export go_test_func
-func go_test_func(in_params *C.char, in_params_len C.ulonglong, out_params **C.char, out_params_len *C.ulonglong, out_ret **C.char, out_ret_len *C.ulonglong, is_error *C.char){
+public class openjdk_test_mod
+{
+	public openjdk_test_mod(){}
 
-	*is_error = 0
+	public static CallResult openjdk_test_func(byte[] arr) throws OpenFFIException
+	{
+		String s = new String(arr, StandardCharsets.US_ASCII);
+		if(!s.equals("input"))
+		{
+			throw new OpenFFIException("Expected \"input\" in parameters");
+		}
 
-	inParams := C.GoStringN(in_params, C.int(in_params_len))
-	if inParams != "input"{
-		*is_error = 1
-		errMsg := fmt.Sprintf("Given in_params are not 'input'. in_params: '%v'", inParams)
-		*out_ret = C.CString(errMsg)
-		*out_ret_len = C.ulonglong(len(errMsg))
+		CallResult res = new CallResult();
+		res.out_ret = new byte[]{ 114, 101, 115, 117, 108, 116 };
+
+		return res;
 	}
-
-	output := "result"
-    *out_ret = C.CString(output)
-    *out_ret_len = C.ulonglong(len(output))
 }
-func main(){}
 )"
 );
 
@@ -77,16 +79,16 @@ uint32_t out_err_len = 0;
 //--------------------------------------------------------------------
 void delete_module()
 {
-	boost::filesystem::remove(module_name+boost::dll::shared_library::suffix().generic_string());
-	boost::filesystem::remove(module_name+".h");
+	boost::filesystem::remove("openjdk_test_mod.class");
+	boost::filesystem::remove("openjdk_test_mod.java");
 }
 //--------------------------------------------------------------------
 void build_module()
 {
 	// write module code to current dir
-	std::ofstream outfile(module_name+".go");
+	std::ofstream outfile(module_name+".java");
 	if(!outfile.is_open()) {
-		std::cout << "Couldn't open/create 'go_test_mod.go" << std::endl;
+		std::cout << "Couldn't open/create 'openjdk_test_mod.go" << std::endl;
 		exit(1);
 	}
 	
@@ -94,14 +96,14 @@ void build_module()
 	outfile.close();
 	
 	std::stringstream ss;
-	ss << "go build -buildmode=c-shared -gcflags=-shared -o " << module_name << boost::dll::shared_library::suffix().generic_string() << " " << module_name << ".go";
+	ss << "javac -cp 'xllr_java_bridge.jar' " << module_name << ".java";
 	printf("%s\n", ss.str().c_str());
 	// build module
 	system(ss.str().c_str());
 	
-	if(!boost::filesystem::exists("go_test_mod.so"))
+	if(!boost::filesystem::exists("openjdk_test_mod.class"))
 	{
-		std::cout << "Failed build go test module" << std::endl;
+		std::cout << "Failed build java test module" << std::endl;
 		exit(1);
 	}
 }
@@ -109,40 +111,39 @@ void build_module()
 void test_module_success()
 {
 	run_test_step_expect_success("Error in load_runtime_plugin()",
-		 xllr->load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
+	                             load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
 	);
-
 	build_module();
 	
 	// delete module from current dir
 	scope_guard sg([&]()
-	{
-		delete_module();
-	});
-
+	               {
+		               delete_module();
+	               });
+	
 	run_test_step_expect_success("Error in load_module()",
-         xllr->load_module(plugin_name.c_str(), plugin_name.length(), module_name.c_str(), module_name.length(), &out_err, &out_err_len)
+	                             load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
 	);
 }
 //--------------------------------------------------------------------
 void test_module_free_module_via_free_runtime_success()
 {
 	run_test_step_expect_success("Error in load_runtime_plugin()",
-         xllr->load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
+	                             load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
 	);
 	
 	build_module();
 	
 	// delete module from current dir
 	scope_guard sg([&]()
-	{
-		delete_module();
-	});
-
+	               {
+		               delete_module();
+	               });
+	
 	run_test_step_expect_success("Error in load_module()",
-         xllr->load_module(plugin_name.c_str(), plugin_name.length(), module_name.c_str(), module_name.length(), &out_err, &out_err_len)
+	                             load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
 	);
-
+	
 }
 //--------------------------------------------------------------------
 void test_module_lazy_runtime_success()
@@ -151,13 +152,13 @@ void test_module_lazy_runtime_success()
 	
 	// delete module from current dir
 	scope_guard sg([&]()
-	{
-		delete_module();
-	});
-
+	               {
+		               delete_module();
+	               });
+	
 	// Test 4 - load module + free runtime - lazy loading of runtime
 	run_test_step_expect_success("Error in load_module()",
-         xllr->load_module(plugin_name.c_str(), plugin_name.length(), module_name.c_str(), module_name.length(), &out_err, &out_err_len)
+	                             load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
 	);
 	
 }
@@ -166,7 +167,7 @@ void test_module_not_exist_fail()
 {
 	
 	run_test_step_expect_fail("Error in load_runtime_plugin()",
-          xllr->load_module(plugin_name.c_str(), plugin_name.length(), "not_exist", 9, &out_err, &out_err_len)
+	                          load_module(plugin_name.c_str(), plugin_name.length(), "not_exist", 9, &out_err, &out_err_len)
 	);
 }
 //--------------------------------------------------------------------
@@ -176,25 +177,25 @@ void test_call_success()
 	
 	// delete module from current dir
 	scope_guard sg([&]()
-	{
-		delete_module();
-	});
-
+	               {
+		               delete_module();
+	               });
+	
 	std::string params("input");
 	unsigned char* out_params = nullptr;
 	uint64_t out_params_len = 0;
 	unsigned char* out_ret = nullptr;
 	uint64_t out_ret_len = 0;
 	uint8_t is_error = 0;
-
+	
 	// Test 6 - load module that doesn't exist
-	xllr->call(plugin_name.c_str(), plugin_name.length(),
-		module_name.c_str(), module_name.length(),
-		func_name.c_str(), func_name.length(),
-		(unsigned char*)params.c_str(), params.length(),
-		&out_params, &out_params_len,
-		&out_ret, &out_ret_len,
-		&is_error
+	call(plugin_name.c_str(), plugin_name.length(),
+	     (class_path+module_name).c_str(), (class_path+module_name).length(),
+	     func_name.c_str(), func_name.length(),
+	     (unsigned char*)params.c_str(), params.length(),
+	     &out_params, &out_params_len,
+	     &out_ret, &out_ret_len,
+	     &is_error
 	);
 	
 	std::string res(reinterpret_cast<const char*>(out_ret), out_ret_len);
@@ -214,23 +215,23 @@ void test_call_fail()
 	unsigned char* out_ret = nullptr;
 	uint64_t out_ret_len = 0;
 	uint8_t is_error = 0;
-
+	
 	// Test 6 - load module that doesn't exist
-	xllr->call(plugin_name.c_str(), plugin_name.length(),
-		module_name.c_str(), module_name.length(),
-		"dummy", 5,
-		(unsigned char*)params.c_str(), params.length(),
-		&out_params, &out_params_len,
-		&out_ret, &out_ret_len,
-		&is_error
+	call(plugin_name.c_str(), plugin_name.length(),
+	     (class_path+module_name).c_str(), (class_path+module_name).length(),
+	     "dummy", 5,
+	     (unsigned char*)params.c_str(), params.length(),
+	     &out_params, &out_params_len,
+	     &out_ret, &out_ret_len,
+	     &is_error
 	);
-
+	
 	if(!is_error)
 	{
 		std::cout << "\"call()\" did not fail, although it was expected to as module doesn't exist" << std::endl;
 		exit(1);
 	}
-
+	
 }
 //--------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -240,51 +241,49 @@ int main(int argc, char* argv[])
 		std::cout << "Expect test case number. Quitting..." << std::endl;
 		return 1;
 	}
-
+	
 	int testcase = 0;
-
+	
 	if(sscanf(argv[1], "%d", &testcase) != 1)
 	{
 		std::cout << "Given argument is not a test case number. Quitting..." << std::endl;
 		return 1;
 	}
 	
-	xllr = std::make_unique<xllr_api_wrapper>();
-
 	switch (testcase)
 	{
 		case 1:
 		{
 			test_module_success();
 		}
-		break;
-
+			break;
+		
 		case 2:
 		{
 			test_module_free_module_via_free_runtime_success();
 		}
-		break;
-
+			break;
+		
 		case 3:
 		{
 			test_module_lazy_runtime_success();
 		}break;
-
+		
 		case 4:
 		{
 			test_module_not_exist_fail();
 		}break;
-
+		
 		case 5:
 		{
 			test_call_success();
 		}break;
-
+		
 		case 6:
 		{
 			test_call_fail();
 		}break;
-
+		
 		default:
 			std::cout << "Given test case number does not exist: " << testcase << std::endl;
 			return 1;
