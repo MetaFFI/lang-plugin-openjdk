@@ -6,5 +6,6 @@ enable_testing()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../plugin-sdk/CMakeLists.txt)
 
+include(xllr-openjdk-bridge/CMakeLists.txt)
 include(compiler/CMakeLists.txt)
 include(runtime/CMakeLists.txt)

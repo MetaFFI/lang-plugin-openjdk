@@ -1,12 +1,10 @@
 #include <iostream>
 #include <string>
-#include <string.h>
 #include <iostream>
 #include <fstream>
-#include <runtime/xllr_api.h>
+#include <utils/xllr_api_wrapper.h>
 #include <utils/scope_guard.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/dll.hpp>
 #include <sstream>
 
 using namespace openffi::utils;
@@ -41,7 +39,7 @@ using namespace openffi::utils;
 	check_and_reset_err_fail(desc);
 
 //--------------------------------------------------------------------
-
+std::unique_ptr<xllr_api_wrapper> xllr;
 std::string plugin_name("xllr.openjdk");
 std::string module_name("openjdk_test_mod");
 std::string func_name("openjdk_test_func");
@@ -111,7 +109,7 @@ void build_module()
 void test_module_success()
 {
 	run_test_step_expect_success("Error in load_runtime_plugin()",
-	                             load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
+	                             xllr->load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
 	);
 	build_module();
 	
@@ -122,14 +120,14 @@ void test_module_success()
 	               });
 	
 	run_test_step_expect_success("Error in load_module()",
-	                             load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
+	                             xllr->load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
 	);
 }
 //--------------------------------------------------------------------
 void test_module_free_module_via_free_runtime_success()
 {
 	run_test_step_expect_success("Error in load_runtime_plugin()",
-	                             load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
+	                             xllr->load_runtime_plugin(plugin_name.c_str(), plugin_name.length(), &out_err, &out_err_len)
 	);
 	
 	build_module();
@@ -141,7 +139,7 @@ void test_module_free_module_via_free_runtime_success()
 	               });
 	
 	run_test_step_expect_success("Error in load_module()",
-	                             load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
+	                             xllr->load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
 	);
 	
 }
@@ -158,7 +156,7 @@ void test_module_lazy_runtime_success()
 	
 	// Test 4 - load module + free runtime - lazy loading of runtime
 	run_test_step_expect_success("Error in load_module()",
-	                             load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
+	                             xllr->load_module(plugin_name.c_str(), plugin_name.length(), (class_path+module_name).c_str(), (class_path+module_name).length(), &out_err, &out_err_len)
 	);
 	
 }
@@ -167,7 +165,7 @@ void test_module_not_exist_fail()
 {
 	
 	run_test_step_expect_fail("Error in load_runtime_plugin()",
-	                          load_module(plugin_name.c_str(), plugin_name.length(), "not_exist", 9, &out_err, &out_err_len)
+	                          xllr->load_module(plugin_name.c_str(), plugin_name.length(), "not_exist", 9, &out_err, &out_err_len)
 	);
 }
 //--------------------------------------------------------------------
@@ -189,7 +187,7 @@ void test_call_success()
 	uint8_t is_error = 0;
 	
 	// Test 6 - load module that doesn't exist
-	call(plugin_name.c_str(), plugin_name.length(),
+	xllr->call(plugin_name.c_str(), plugin_name.length(),
 	     (class_path+module_name).c_str(), (class_path+module_name).length(),
 	     func_name.c_str(), func_name.length(),
 	     (unsigned char*)params.c_str(), params.length(),
@@ -217,7 +215,7 @@ void test_call_fail()
 	uint8_t is_error = 0;
 	
 	// Test 6 - load module that doesn't exist
-	call(plugin_name.c_str(), plugin_name.length(),
+	xllr->call(plugin_name.c_str(), plugin_name.length(),
 	     (class_path+module_name).c_str(), (class_path+module_name).length(),
 	     "dummy", 5,
 	     (unsigned char*)params.c_str(), params.length(),
