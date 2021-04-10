@@ -130,6 +130,30 @@ func (this *GuestCompiler) parseForeignFunctions() (string, error){
 		"Title": func(elem string)string{
 			return strings.Title(elem)
 		},
+
+		"ToJavaType": func (elem string) string{
+			pyType, found := OpenFFITypeToJavaType[elem]
+			if !found{
+				panic("Type "+elem+" is not an OpenFFI type")
+			}
+
+			return pyType
+		},
+
+		"ToParamCall": func (paramObj string, fieldObj interface{}) string{
+			field := fieldObj.(*compiler.FieldDefinition)
+
+			jType, found := OpenFFITypeToJavaType[field.Type]
+			if !found{
+				panic("Type "+field.Type+" is not an OpenFFI type")
+			}
+
+			if field.IsArray{
+				return fmt.Sprintf("%v.get%vList().toArray(new %v[0])", paramObj, strings.Title(field.Name), jType)
+			} else {
+				return fmt.Sprintf("%v.get%v()", paramObj, strings.Title(field.Name))
+			}
+		},
 	}
 
 	tmpEntryPoint, err := template.New("guest").Funcs(funcMap).Parse(GuestFunctionXLLRTemplate)
@@ -154,7 +178,7 @@ func (this *GuestCompiler) generateCode() (string, error){
 	functionStubs, err := this.parseForeignFunctions()
 	if err != nil{ return "", err }
 
-	res := header + imports + functionStubs
+	res := header + GuestPackage + imports + functionStubs
 
 	// append serialization code in the same file
 	for filename, serializationCode := range this.serializationCode{
@@ -176,15 +200,20 @@ func (this *GuestCompiler) generateCode() (string, error){
 //--------------------------------------------------------------------
 func (this *GuestCompiler) getClassPath() string{
 
+	classPathSet := make(map[string]bool, 0)
+	classPathSet["."] = true
+	classPathSet[fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator))] = true
+	classPathSet[fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator))] = true
+
 	classPath := make([]string, 0)
-	classPath = append(classPath, ".")
-	classPath = append(classPath, fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator)))
-	classPath = append(classPath, fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator)))
+	for k, _ := range classPathSet{
+		classPath = append(classPath, k)
+	}
 
 	for _, m := range this.def.Modules{
 		for _, f := range m.Functions{
 			if cp, found := f.PathToForeignFunction["classpath"]; found{
-				classPath = append(classPath, cp)
+				classPath = append(classPath, os.ExpandEnv(cp))
 			}
 		}
 	}
@@ -202,6 +231,7 @@ func (this *GuestCompiler) buildDynamicLibrary(code string)([]byte, error){
 
 	dir = dir+string(os.PathSeparator)
 
+	// write generated code to temp folder
 	javaFiles := make([]string, 0)
 	for _, m := range this.def.Modules{
 		javaFilename := dir+m.Name+".java"
@@ -214,7 +244,7 @@ func (this *GuestCompiler) buildDynamicLibrary(code string)([]byte, error){
 
 	fmt.Println("Building OpenJDK host code")
 
-	// compile java code
+	// compile generated java code
 	args := make([]string, 0)
 	args = append(args, "-d")
 	args = append(args, dir)

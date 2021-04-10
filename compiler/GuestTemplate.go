@@ -17,19 +17,20 @@ import {{$i}}.*;{{end}}
 `
 
 const GuestFunctionXLLRTemplate = `
+{{$idlFilename := .IDLFilename}}
 {{range $mindex, $m := .Modules}}
 // Code to call foreign functions in module {{$m.Name}}
 public final class {{$m.Name}}
 {
 	{{range $findex, $f := $m.Functions}}
-	// Call to foreign {{.PathToForeignFunction.function}}{{$ReturnValuesLength := len $f.ReturnValues}}
-	public static CallResult EntryPoint_{{$f.PathToForeignFunction.function}}(byte[] params) throws InvalidProtocolBufferException, OpenFFIException
+	// Call to foreign {{.PathToForeignFunction.function}}{{$ReturnValuesLength := len $f.ReturnValues}}{{$ParametersLength := len $f.Parameters}}
+	public static CallResult EntryPoint_{{$f.PathToForeignFunction.function}}(byte[] params) throws InvalidProtocolBufferException, OpenFFIException, Exception
 	{
-		// deserialize from protobuf
-		{{$f.ParametersType}} req = {{$f.ParametersType}}.parseFrom(params);
+		{{if gt $ParametersLength 0}}// deserialize from protobuf
+		{{$idlFilename}}Proto.{{$f.ParametersType}} req = {{$idlFilename}}Proto.{{$f.ParametersType}}.parseFrom(params);{{end}}
 
 		// call function
-		{{if eq $ReturnValuesLength 0}}{{else if gt $ReturnValuesLength 1}}{{$f.ReturnValuesType}}{{else}}{{$elem := index $f.ReturnValues 0}}{{$elem.Type}}{{end}} res = {{$m.Name}}.{{$f.PathToForeignFunction.function}}({{range $index, $elem := $f.Parameters}}{{if $index}},{{end}} req.{{$elem.Name}}{{end}});
+		{{if eq $ReturnValuesLength 0}}{{else if gt $ReturnValuesLength 1}}{{$f.ReturnValuesType}} res = {{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type}} {{$elem.Name}} = {{end}}{{$f.PathToForeignFunction.class}}.{{$f.PathToForeignFunction.function}}({{range $index, $elem := $f.Parameters}}{{if $index}}, {{end}}{{ToParamCall "req" $elem}}{{end}});
 
 		CallResult cr = new CallResult();
 
@@ -40,8 +41,8 @@ public final class {{$m.Name}}
 		return cr;
 		{{else}}{{$elem := index $f.ReturnValues 0}}
 		// serialize {{$f.ReturnValuesType}} to protobuf
-        {{$f.ReturnValuesType}} proto{{$f.ReturnValuesType}} =
-                {{$f.ReturnValuesType}}.newBuilder()
+        {{$idlFilename}}Proto.{{$f.ReturnValuesType}} proto{{$f.ReturnValuesType}} =
+                {{$idlFilename}}Proto.{{$f.ReturnValuesType}}.newBuilder()
                 {{if $elem.IsArray}}.addAll{{Title $elem.Name}}(Arrays.asList({{$elem.Name}})){{else}}.set{{Title $elem.Name}}({{$elem.Name}}){{end}}
                 .build();
         cr.out_ret = proto{{$f.ReturnValuesType}}.toByteArray();
