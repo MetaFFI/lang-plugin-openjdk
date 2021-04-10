@@ -258,17 +258,25 @@ func (this *GuestCompiler) buildDynamicLibrary(code string)([]byte, error){
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
 
-	classFiles, err := filepath.Glob(dir+"*.class")
+	classFiles, err := filepath.Glob(dir+"openffi"+string(os.PathSeparator)+"*.class")
 	if err != nil{
 		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "openffi", err)
 	}
 
+	for i, file := range classFiles{
+		classFiles[i], err = filepath.Rel(dir, file)
+		if err != nil{
+			return nil, err
+		}
+	}
+
 	// jar all class files
 	args = make([]string, 0)
-	args = append(args, "uf")
+	args = append(args, "cf")
 	args = append(args, this.def.IDLFilename+".jar")
 	args = append(args, classFiles...)
 	buildCmd = exec.Command("jar", args...)
+	buildCmd.Dir = dir
 	fmt.Printf("%v\n", strings.Join(buildCmd.Args, " "))
 	output, err = buildCmd.CombinedOutput()
 	if err != nil{
@@ -276,9 +284,9 @@ func (this *GuestCompiler) buildDynamicLibrary(code string)([]byte, error){
 	}
 
 	// read jar file and return
-	result, err := ioutil.ReadFile(this.def.IDLFilename+".jar")
+	result, err := ioutil.ReadFile(dir+this.def.IDLFilename+".jar")
 	if err != nil{
-		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLFilename+"_OpenFFIHost.jar", err)
+		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker %v. Error: %v", this.def.IDLFilename, err)
 	}
 
 	return result, nil
