@@ -8,12 +8,12 @@ enable_testing()
 set(target_name "xllr.openjdk")
 
 # build xllr.go
-file(GLOB SRC_FILES ${CMAKE_CURRENT_LIST_DIR}/*.cpp ${CMAKE_CURRENT_LIST_DIR}/*.h ${CMAKE_CURRENT_LIST_DIR}/*.hpp)
+file(GLOB SRC_FILES ${CMAKE_CURRENT_LIST_DIR}/*.cpp ${CMAKE_CURRENT_LIST_DIR}/*.h ${CMAKE_CURRENT_LIST_DIR}/*.hpp ${OPENFFI_SDK}/utils/*.cpp)
 add_library(${target_name}
 			SHARED
 			${SRC_FILES}
 )
-target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS} ${OPENFFI_SDK}/utils/*.cpp)
+target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
 
 set_property(TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
