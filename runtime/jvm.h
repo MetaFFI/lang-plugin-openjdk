@@ -6,8 +6,8 @@
 #define check_and_throw_jvm_exception(jvm_instance, env) \
 if(env->ExceptionCheck() == JNI_TRUE)\
 {\
-std::string err = jvm_instance->get_exception_description(env->ExceptionOccurred());\
-throw std::runtime_error(err);\
+std::string err_msg = jvm_instance->get_exception_description(env->ExceptionOccurred());\
+throw std::runtime_error(err_msg);\
 }
 
 class jvm

@@ -1,4 +1,3 @@
-#include "api.h"
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
@@ -7,8 +6,12 @@
 #include <utils/scope_guard.hpp>
 #include <utils/function_loader.hpp>
 #include <boost/filesystem.hpp>
+#include <runtime/runtime_plugin_api.h>
+#include <utils/function_path_parser.h>
 #include <sstream>
+#include <utils/foreign_function.h>
 #include "classes_repository.h"
+#include <map>
 
 using namespace openffi::utils;
 
@@ -38,6 +41,8 @@ catch(...)\
 	*err_len = len;\
 }
 
+std::map<int64_t, std::pair<jclass, jmethodID>> foreign_functions;
+
 //--------------------------------------------------------------------
 void load_runtime(char** err, uint32_t* err_len)
 {
@@ -62,30 +67,37 @@ void free_runtime(char** err, uint32_t* err_len)
 	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
-void load_module(const char* mod, uint32_t module_len, char** err, uint32_t* err_len)
+int64_t load_function(const char* function_path, uint32_t function_path_len, char** err, uint32_t* err_len)
 {
-	try
-	{
-		// if fails throws an exception which is handled by xllr_api.cpp.
-		classes_repository::get_instance().add(std::string(mod, module_len));
-	}
-	catch_and_fill(err, err_len);
+	openffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
 	
+	// get module
+	jclass pclass = classes_repository::get_instance().get(fp[function_path_entry_openffi_guest_lib], fp[function_path_class_entrypoint_function], true);
+	
+	auto* env = (JNIEnv*)(*pjvm);
+	
+	jmethodID methID = env->GetStaticMethodID(pclass, fp[function_path_entry_entrypoint_function].c_str(), ("([B)Lopenffi/CallResult;"));
+	check_and_throw_jvm_exception(pjvm, env);
+	
+	int64_t function_id = foreign_functions.empty() ? 0 : -1;
+	for(auto& entry : foreign_functions)
+	{
+		if(entry.first > function_id){
+			function_id = entry.first + 1;
+		}
+	}
+	
+	foreign_functions[function_id] = std::pair(pclass, methID);
+	
+	return function_id;
 }
 //--------------------------------------------------------------------
-void free_module(const char* mod, uint32_t module_len, char** err, uint32_t* err_len)
+void free_function(int64_t module_len, char** err, uint32_t* err_len)
 {
-	try
-	{
-		// if fails throws an exception which is handled by xllr_api.cpp.
-		classes_repository::get_instance().remove(std::string(mod, module_len));
-	}
-	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
 void call(
-		const char* mod, uint32_t module_name_len,
-		const char* func_name, uint32_t func_name_len,
+		int64_t function_id,
 		unsigned char* in_params, uint64_t in_params_len,
 		unsigned char** out_params, uint64_t* out_params_len,
 		unsigned char** out_ret, uint64_t* out_ret_len,
@@ -94,20 +106,20 @@ void call(
 {
 	try
 	{
+		auto it = foreign_functions.find(function_id);
+		if(it == foreign_functions.end())
+		{
+			throw std::runtime_error("given function id is not found");
+		}
 		
-		// get module
-		jclass pclass = classes_repository::get_instance().get(std::string(mod, module_name_len));
-		
+		jmethodID methID = it->second.second;
+		jclass pclass = it->second.first;
 		auto* env = (JNIEnv*)(*pjvm);
-		
-		jmethodID methID = env->GetStaticMethodID(pclass, std::string(func_name, func_name_len).c_str(), ("([B)Lopenffi/CallResult;"));
-		check_and_throw_jvm_exception(pjvm, env);
 		
 		jbyteArray in_params_arr = env->NewByteArray(in_params_len);
 		check_and_throw_jvm_exception(pjvm, env);
 		
 		scope_guard sg([&]() { env->DeleteLocalRef(in_params_arr); });
-		
 		
 		env->SetByteArrayRegion(in_params_arr, 0, in_params_len, (const jbyte *) in_params);
 		check_and_throw_jvm_exception(pjvm, env);

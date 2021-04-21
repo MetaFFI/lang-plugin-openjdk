@@ -19,7 +19,7 @@ jvm::jvm()
 	}
 	
 	std::stringstream ss;
-	ss << "-Djava.class.path=" << std::getenv("OPENFFI_HOME") << "/xllr_java_bridge.jar"; // TODO: do not load this in options to support already running JVM
+	ss << "-Djava.class.path=" << std::getenv("OPENFFI_HOME") << "/xllr.openjdk.bridge.jar";
 	std::string options_string = ss.str();
 	JavaVMOption options[1] = {0};
 	options[0].optionString = (char*)options_string.c_str();

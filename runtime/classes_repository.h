@@ -25,8 +25,8 @@ public: // methods
 	
 	void init(std::shared_ptr<jvm> pjvm);
 	
-	jclass get(const std::string& module_name);
-	jclass add(const std::string& module_name);
-	void remove(const std::string& module_name);
+	jclass get(const std::string& module_name, const std::string& class_name, bool load_if_missing);
+	jclass add(const std::string& module_name, const std::string& class_name);
+	void remove(const std::string& module_name, const std::string& class_name);
 };
 //--------------------------------------------------------------------

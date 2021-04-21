@@ -13,7 +13,7 @@ extern "C" {
  * Signature: ()Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_openffi_XLLR_init
-		(JNIEnv *, jobject);
+  (JNIEnv *, jobject);
 
 /*
  * Class:     openffi_XLLR
@@ -21,7 +21,7 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_init
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_openffi_XLLR_load_1runtime_1plugin
-		(JNIEnv *, jobject, jstring);
+  (JNIEnv *, jobject, jstring);
 
 /*
  * Class:     openffi_XLLR
@@ -29,31 +29,31 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_load_1runtime_1plugin
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1runtime_1plugin
-		(JNIEnv *, jobject, jstring);
+  (JNIEnv *, jobject, jstring);
 
 /*
  * Class:     openffi_XLLR
- * Method:    load_module
- * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ * Method:    load_function
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;
  */
-JNIEXPORT jstring JNICALL Java_openffi_XLLR_load_1module
-		(JNIEnv *, jobject, jstring, jstring);
+JNIEXPORT jobject JNICALL Java_openffi_XLLR_load_1function
+  (JNIEnv *, jobject, jstring, jstring);
 
 /*
  * Class:     openffi_XLLR
- * Method:    free_module
- * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ * Method:    free_function
+ * Signature: (Ljava/lang/String;J)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1module
-		(JNIEnv *, jobject, jstring, jstring);
+JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1function
+  (JNIEnv *, jobject, jstring, jlong);
 
 /*
  * Class:     openffi_XLLR
  * Method:    call
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BLopenffi/CallResult;)Ljava/lang/String;
+ * Signature: (Ljava/lang/String;J[BLopenffi/CallResult;)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_openffi_XLLR_call
-		(JNIEnv *, jobject, jstring, jstring, jstring, jbyteArray, jobject);
+  (JNIEnv *, jobject, jstring, jlong, jbyteArray, jobject);
 
 #ifdef __cplusplus
 }

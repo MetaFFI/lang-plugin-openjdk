@@ -7,11 +7,10 @@ public class XLLR
 	private native String init();
 	private native String load_runtime_plugin(String runtime_plugin);
 	private native String free_runtime_plugin(String runtime_plugin);
-	private native String load_module(String runtime_plugin, String module);
-	private native String free_module(String runtime_plugin, String module);
+	private native Object load_function(String runtime_plugin, String function_path);
+	private native String free_function(String runtime_plugin, long function_id);
 	private native String call(String runtime_plugin,
-							String module_name,
-							String func_name,
+							long function_id,
 							byte in_params[],
 							CallResult out_res);
 
@@ -48,28 +47,29 @@ public class XLLR
 			throw new OpenFFIException(err);
     }
     //--------------------------------------------------------------------
-    public void loadModule(String runtimePlugin, String module) throws OpenFFIException
+    public long loadFunction(String runtimePlugin, String functionPath) throws OpenFFIException
     {
-		String err = this.load_module(runtimePlugin, module);
-		if(!err.isEmpty())
-			throw new OpenFFIException(err);
+		Object functionID = this.load_function(runtimePlugin, functionPath);
+		if(functionID instanceof String)
+			throw new OpenFFIException((String)functionID);
+
+		return (long)functionID;
     }
     //--------------------------------------------------------------------
-    public void freeModule(String runtimePlugin, String module) throws OpenFFIException
+    public void freeModule(String runtimePlugin, long functionID) throws OpenFFIException
     {
-		String err = this.free_module(runtimePlugin, module);
+		String err = this.free_function(runtimePlugin, functionID);
 		if(!err.isEmpty())
 			throw new OpenFFIException(err);
     }
     //--------------------------------------------------------------------
     public CallResult call(String runtimePlugin,
-	                    String moduleName,
-	                    String funcName,
+	                    long functionID,
 	                    byte inParams[]) throws OpenFFIException
     {
 		CallResult cr = new CallResult();
 
-		String err = this.call(runtimePlugin, moduleName, funcName, inParams, cr);
+		String err = this.call(runtimePlugin, functionID, inParams, cr);
 		if(!err.isEmpty())
 			throw new OpenFFIException(err);
 
