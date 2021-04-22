@@ -2,11 +2,12 @@
 #include <stdexcept>
 #include <sstream>
 #include <utils/scope_guard.hpp>
+#include <utils/expand_env.h>
 
 using namespace openffi::utils;
 
 //--------------------------------------------------------------------
-jvm::jvm()
+jvm::jvm(const std::string& classpath)
 {
 	// if there's a JVM already loaded, get it.
 	jsize nVMs;
@@ -18,8 +19,10 @@ jvm::jvm()
 		return;
 	}
 	
+	std::string cp = expand_env(classpath);
+	
 	std::stringstream ss;
-	ss << "-Djava.class.path=" << std::getenv("OPENFFI_HOME") << "/xllr.openjdk.bridge.jar";
+	ss << "-Djava.class.path=" << std::getenv("OPENFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("OPENFFI_HOME") << "/protobuf-java-3.15.2.jar" << ":" << cp;
 	std::string options_string = ss.str();
 	JavaVMOption options[1] = {0};
 	options[0].optionString = (char*)options_string.c_str();

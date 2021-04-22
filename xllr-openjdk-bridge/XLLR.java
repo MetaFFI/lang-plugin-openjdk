@@ -23,9 +23,9 @@ public class XLLR
 		{
 			if(!isLoaded)
 			{
-                //String xllrExtension = System.mapLibraryName("xllr_java_bridge_jni").replace("xllr_java_bridge_jni", "");
-
-                System.load("/home/tcs/src/github.com/GreenFuze/OpenFFI/examples/openjdk/xllr_java_bridge_jni.so");
+                String xllrExtension = System.mapLibraryName("xllr.openjdk.jni.bridge").replace("xllr.openjdk.jni.bridge", "");
+				String openffiHome = System.getenv("OPENFFI_HOME");
+                System.load(openffiHome+"/xllr.openjdk.jni.bridge"+xllrExtension);
                 this.init();
 
                 isLoaded = true;

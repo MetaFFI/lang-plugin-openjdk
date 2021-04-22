@@ -19,7 +19,7 @@ private:
 	jmethodID loadObject_method;
 
 public:
-	jvm();
+	jvm(const std::string& classpath);
 	~jvm() = default;
 	
 	void fini();

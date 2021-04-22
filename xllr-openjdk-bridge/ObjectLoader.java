@@ -12,9 +12,16 @@ public class ObjectLoader
 																			ClassNotFoundException,
 																			MalformedURLException
 	{
+		System.out.println("Trying to load \""+className+"\" from dir/jar: "+dirOrJar);
+
 		File file = new File(dirOrJar);
 		if(!file.exists())
-			throw new FileNotFoundException(dirOrJar + " is not found");
+		{
+			file = new File(dirOrJar+".jar");
+
+			if(!file.exists())
+				throw new FileNotFoundException(dirOrJar + " is not found");
+		}
 
 		URL url = file.toURI().toURL();
 
