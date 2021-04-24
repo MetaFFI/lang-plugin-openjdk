@@ -69,6 +69,7 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1runtime_1plugin(JNIEnv* env, j
 //--------------------------------------------------------------------
 JNIEXPORT jobject JNICALL Java_openffi_XLLR_load_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jstring function_path)
 {
+	
 	const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
 	jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
 	
@@ -77,7 +78,7 @@ JNIEXPORT jobject JNICALL Java_openffi_XLLR_load_1function(JNIEnv* env, jobject 
 	
 	char* out_err_buf = nullptr;
 	uint32_t out_err_len = 0;
-	int64_t function_id = xllr->load_function(str_runtime_plugin, str_runtime_plugin_len, str_function_path, str_function_path_len, &out_err_buf, &out_err_len);
+	int64_t function_id = xllr->load_function(str_runtime_plugin, str_runtime_plugin_len, str_function_path, str_function_path_len, -1, &out_err_buf, &out_err_len);
 	
 	// release runtime_plugin
 	env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);
@@ -91,14 +92,14 @@ JNIEXPORT jobject JNICALL Java_openffi_XLLR_load_1function(JNIEnv* env, jobject 
 		return err_ret;
 	}
 	
-	jclass jclassLong = env->FindClass("J");
+	jclass jclassLong = env->FindClass("java/lang/Long");
 	if(!jclassLong)
 	{
 		jstring err_ret = env->NewStringUTF("Failed to find Long class");
 		return err_ret;
 	}
 	
-	jmethodID cstr = env->GetMethodID(jclassLong, "<init>", "(J)J");
+	jmethodID cstr = env->GetMethodID(jclassLong, "<init>","(J)V");
 	if(!cstr)
 	{
 		jstring err_ret = env->NewStringUTF("Failed to get Long class constructor");
@@ -148,6 +149,7 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_call(JNIEnv* env, jobject obj,
 	jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
 	
 	jbyte* arr_in_params = env->GetByteArrayElements(in_params, nullptr);
+	
 	jsize arr_in_params_len = env->GetArrayLength(in_params);
 	
 	unsigned char* out_params = nullptr;
@@ -173,26 +175,44 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_call(JNIEnv* env, jobject obj,
 		return err_ret;
 	}
 	
-	if(out_params || out_ret)
-	{
+	if(out_params_len > 0 || out_ret_len > 0)
+	{		
 		jclass CallResult_class = env->GetObjectClass(out_result);
 		
-		if(out_params)
-		{
-			jfieldID id = env->GetFieldID(CallResult_class, "out_params", "Lopenffi/CallResult/[B;");
-			jobject call_result_out_params = env->GetObjectField(out_result, id);
-			env->SetByteArrayRegion((jbyteArray)call_result_out_params, 0, out_params_len, (const jbyte*)out_params);
+		if(out_params_len > 0)
+		{			
+			jbyteArray jout_param = env->NewByteArray((jsize)out_params_len);
+			env->SetByteArrayRegion((jbyteArray)jout_param, 0, (jsize)out_params_len, (const jbyte*)out_params);
 			
-			// TODO: release call_result_out_params?
+			jfieldID id = env->GetFieldID(CallResult_class, "out_params", "[B");
+			if(!id)
+			{
+				return env->NewStringUTF("Failed to get out_params field ID");
+			}
+			
+			env->SetObjectField(out_result, id, jout_param);
+			if(env->ExceptionCheck())
+			{
+				return env->NewStringUTF("Failed to set out_params field");
+			}
 		}
 		
-		if(out_ret)
-		{
-			jfieldID id = env->GetFieldID(CallResult_class, "out_ret", "Lopenffi/CallResult/[B;");
-			jobject call_result_out_ret = env->GetObjectField(out_result, id);
-			env->SetByteArrayRegion((jbyteArray)call_result_out_ret, 0, out_ret_len, (const jbyte*)out_ret);
+		if(out_ret_len > 0)
+		{	
+			jbyteArray jout_ret = env->NewByteArray((jsize)out_ret_len);
+			env->SetByteArrayRegion((jbyteArray)jout_ret, 0, (jsize)out_ret_len, (const jbyte*)out_ret);
 			
-			// TODO: release call_result_out_ret?
+			jfieldID id = env->GetFieldID(CallResult_class, "out_ret", "[B");
+			if(!id)
+			{
+				return env->NewStringUTF("Failed to get out_ret field ID");
+			}
+			
+			env->SetObjectField(out_result, id, jout_ret);
+			if(env->ExceptionCheck())
+			{
+				return env->NewStringUTF("Failed to set out_ret field");
+			}
 		}
 	}
 	

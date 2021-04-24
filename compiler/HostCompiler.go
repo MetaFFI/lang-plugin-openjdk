@@ -100,6 +100,15 @@ func (this *HostCompiler) parseForeignStubs() (string, error){
     	"Title": func(elem string)string{
     		return strings.Title(elem)
 	    },
+
+	    "ToJavaType": func (elem string) string{
+		    pyType, found := OpenFFITypeToJavaType[elem]
+		    if !found{
+			    panic("Type "+elem+" is not an OpenFFI type")
+		    }
+
+		    return pyType
+	    },
     }
 
 	tmp, err := template.New("host").Funcs(funcMap).Parse(HostFunctionStubsTemplate)
@@ -158,7 +167,7 @@ func (this *HostCompiler) generateCode() (string, error){
 	functionStubs, err := this.parseForeignStubs()
 	if err != nil{ return "", err }
 
-	res := header + HostPackage + HostPackage + functionStubs
+	res := header + HostPackage + HostImports + functionStubs
 
 	// append serialization code in the same file
 	for filename, serializationCode := range this.serializationCode{
@@ -169,8 +178,9 @@ func (this *HostCompiler) generateCode() (string, error){
         }
 
 		this.serializationCode[filename] = strings.Replace(serializationCode, "public final class", "final class", -1)
+		this.serializationCode[filename] = strings.Replace(this.serializationCode[filename], "public static final class", "static final class", -1)
 
-		res += serializationCode
+		res += this.serializationCode[filename]
 	}
 
 	return res, nil
@@ -180,8 +190,8 @@ func (this *HostCompiler) getClassPath() string{
 
 	classPath := make([]string, 0)
 	classPath = append(classPath, ".")
-	classPath = append(classPath, fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.PathSeparator, os.Getenv("OPENFFI_HOME")))
-	classPath = append(classPath, fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.PathSeparator, os.Getenv("OPENFFI_HOME")))
+	classPath = append(classPath, fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator)))
+	classPath = append(classPath, fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator)))
 
 	return strings.Join(classPath, string(os.PathListSeparator))
 }
@@ -222,17 +232,25 @@ func (this *HostCompiler) buildDynamicLibrary(code string)([]byte, error){
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
 
-	classFiles, err := filepath.Glob(dir+"*.class")
+	classFiles, err := filepath.Glob(dir+"openffi"+string(os.PathSeparator)+"*.class")
 	if err != nil{
 		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "openffi", err)
 	}
 
+	for i, file := range classFiles{
+		classFiles[i], err = filepath.Rel(dir, file)
+		if err != nil{
+			return nil, err
+		}
+	}
+
 	// jar all class files
 	args = make([]string, 0)
-	args = append(args, "uf")
+	args = append(args, "cf")
 	args = append(args, this.def.IDLFilename+".jar")
 	args = append(args, classFiles...)
 	buildCmd = exec.Command("jar", args...)
+	buildCmd.Dir = dir
 	fmt.Printf("%v\n", strings.Join(buildCmd.Args, " "))
 	output, err = buildCmd.CombinedOutput()
 	if err != nil{
@@ -240,7 +258,7 @@ func (this *HostCompiler) buildDynamicLibrary(code string)([]byte, error){
 	}
 
 	// read jar file and return
-	result, err := ioutil.ReadFile(this.def.IDLFilename+".jar")
+	result, err := ioutil.ReadFile(dir+this.def.IDLFilename+".jar")
 	if err != nil{
 		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLFilename+"_OpenFFIHost.jar", err)
 	}

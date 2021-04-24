@@ -25,22 +25,33 @@ public final class {{$m.Name}}
 	public {{$m.Name}}() throws OpenFFIException, IOException
 	{
 		this.xllr = new XLLR();
-		this.xllr.loadRuntimePlugin("xllr.{{$targetLang}}");
+		this.xllr.loadRuntimePlugin("xllr.{{$m.TargetLanguage}}");
 	}
 	{{range $findex, $f := $m.Functions}}{{$ReturnValuesLength := len $f.ReturnValues}}
-	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$f.ReturnValuesType}}{{else}}{{$elem := index $f.ReturnValues 0}}{{$elem.Type}}{{end}} {{$f.PathToForeignFunction.function}}({{range $index, $elem := $f.Parameters}} {{if $index}},{{end}}{{$elem.Type}} {{$elem.Name}}{{end}} ) throws InvalidProtocolBufferException, OpenFFIException
+	private static long {{$f.PathToForeignFunction.function}}ID = -1;
+	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$f.ReturnValuesType}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type}}{{end}} {{$f.PathToForeignFunction.function}}({{range $index, $elem := $f.Parameters}} {{if $index}},{{end}}{{ToJavaType $elem.Type}}{{if $elem.IsArray}}[]{{end}} {{$elem.Name}}{{end}} ) throws InvalidProtocolBufferException, OpenFFIException
 	{
+		if({{$f.PathToForeignFunction.function}}ID == -1)
+		{
+			{{$f.PathToForeignFunction.function}}ID = this.xllr.loadFunction("xllr.{{$m.TargetLanguage}}", "{{$f.PathToForeignFunctionAsString}}");
+		}
+
+		{{$ParametersLength := len $f.Parameters}} {{if gt $ParametersLength 0}}
 		// serialize {{$f.ParametersType}} to protobuf
-		{{$f.ParametersType}} proto{{$f.ParametersType}} =
-				{{$f.ParametersType}}.newBuilder()
+		{{$m.Name}}Proto.{{$f.ParametersType}} proto{{$f.ParametersType}} =
+				{{$m.Name}}Proto.{{$f.ParametersType}}.newBuilder()
 				{{range $index, $elem := $f.Parameters}}{{if $elem.IsArray}}.addAll{{Title $elem.Name}}(Arrays.asList({{$elem.Name}})){{else}}.set{{Title $elem.Name}}({{$elem.Name}}){{end}}{{end}}
-				.build();
+				.build();{{end}}
 
-		CallResult cr = this.xllr.call("xllr.{{$m.TargetLanguage}}", "{{$m.Name}}", "{{$f.PathToForeignFunction.function}}", proto{{$f.ParametersType}}.toByteArray());
+		CallResult cr = this.xllr.call("xllr.{{$m.TargetLanguage}}", {{$f.PathToForeignFunction.function}}ID, {{if gt $ParametersLength 0}}proto{{$f.ParametersType}}.toByteArray(){{else}}null{{end}});
 
+		// TODO: check for errors
+
+		{{if gt $ReturnValuesLength 0}}
 		// deserialize the return
-        {{$f.ReturnValuesType}} ret = {{$f.ReturnValuesType}}.parseFrom(cr.out_ret);
-		{{if eq $ReturnValuesLength 0}}{{else if gt $ReturnValuesLength 1}}return ret;{{else}}return ret.get{{$elem := index $f.ReturnValues 0}}{{Title $elem.Name}}();{{end}}
+        {{$m.Name}}Proto.{{$f.ReturnValuesType}} ret = {{$m.Name}}Proto.{{$f.ReturnValuesType}}.parseFrom(cr.out_ret);
+		{{if gt $ReturnValuesLength 1}}return ret;{{else}}return ret.get{{$elem := index $f.ReturnValues 0}}{{Title $elem.Name}}();{{end}}
+		{{end}}
 	}
 	{{end}}
 }

@@ -23,7 +23,8 @@ public class XLLR
 		{
 			if(!isLoaded)
 			{
-                String xllrExtension = System.mapLibraryName("xllr.openjdk.jni.bridge").replace("xllr.openjdk.jni.bridge", "");
+                String xllrExtension = System.mapLibraryName("xllr.openjdk.jni.bridge");
+                xllrExtension = xllrExtension.substring(xllrExtension.lastIndexOf("."));
 				String openffiHome = System.getenv("OPENFFI_HOME");
                 System.load(openffiHome+"/xllr.openjdk.jni.bridge"+xllrExtension);
                 this.init();
@@ -50,6 +51,7 @@ public class XLLR
     public long loadFunction(String runtimePlugin, String functionPath) throws OpenFFIException
     {
 		Object functionID = this.load_function(runtimePlugin, functionPath);
+
 		if(functionID instanceof String)
 			throw new OpenFFIException((String)functionID);
 
@@ -68,6 +70,9 @@ public class XLLR
 	                    byte inParams[]) throws OpenFFIException
     {
 		CallResult cr = new CallResult();
+
+		if(inParams == null)
+			inParams = new byte[]{};
 
 		String err = this.call(runtimePlugin, functionID, inParams, cr);
 		if(!err.isEmpty())
