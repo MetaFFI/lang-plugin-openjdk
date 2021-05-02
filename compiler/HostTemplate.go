@@ -48,6 +48,8 @@ public final class {{$m.Name}}
 		// TODO: check for errors
 
 		{{if gt $ReturnValuesLength 0}}
+		if(cr.out_ret == null) 
+			throw new OpenFFIException("No return values unexpectedly");
 		// deserialize the return
         {{$m.Name}}Proto.{{$f.ReturnValuesType}} ret = {{$m.Name}}Proto.{{$f.ReturnValuesType}}.parseFrom(cr.out_ret);
 		{{if gt $ReturnValuesLength 1}}return ret;{{else}}return ret.get{{$elem := index $f.ReturnValues 0}}{{Title $elem.Name}}();{{end}}
