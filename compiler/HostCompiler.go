@@ -98,7 +98,9 @@ func (this *HostCompiler) parseForeignStubs() (string, error){
     // Function signature: func(string)string or func(interface{})string
     funcMap := map[string]interface{}{
     	"Title": func(elem string)string{
-    		return strings.Title(elem)
+    		elem = strings.ReplaceAll(elem, "_", " ")
+    		elem = strings.Title(elem)
+    		return strings.ReplaceAll(elem, " ", "")
 	    },
 
 	    "ToJavaType": func (elem string) string{
