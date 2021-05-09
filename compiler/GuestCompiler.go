@@ -81,7 +81,7 @@ func (this *GuestCompiler) parseImports() (string, error){
 		for _, f := range m.Functions{
 			if pack, found := f.PathToForeignFunction["package"]; found{
 
-				if pack != `openffi`{
+				if pack != `openffi_guest`{
 					set[pack] = true
 				}
 			}
@@ -258,9 +258,9 @@ func (this *GuestCompiler) buildDynamicLibrary(code string)([]byte, error){
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
 
-	classFiles, err := filepath.Glob(dir+"openffi"+string(os.PathSeparator)+"*.class")
+	classFiles, err := filepath.Glob(dir+"openffi_guest"+string(os.PathSeparator)+"*.class")
 	if err != nil{
-		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "openffi", err)
+		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "openffi_guest", err)
 	}
 
 	for i, file := range classFiles{

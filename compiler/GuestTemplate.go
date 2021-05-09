@@ -5,13 +5,14 @@ const GuestHeaderTemplate = `
 // Guest code for {{.IDLFilenameWithExtension}}
 `
 
-const GuestPackage = `package openffi;
+const GuestPackage = `package openffi_guest;
 `
 
 const GuestImportsTemplate = `
 import java.io.*;
 import com.google.protobuf.*;
 import java.util.*;
+import openffi.*;
 {{range $mindex, $i := .Imports}}
 import {{$i}}.*;{{end}}
 `

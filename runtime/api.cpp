@@ -7,10 +7,10 @@
 #include <utils/function_loader.hpp>
 #include <boost/filesystem.hpp>
 #include <runtime/runtime_plugin_api.h>
-#include <utils/function_path_parser.h>
 #include <sstream>
+#include <mutex>
 #include <utils/foreign_function.h>
-#include "classes_repository.h"
+#include <utils/function_path_parser.h>
 #include <map>
 
 using namespace openffi::utils;
@@ -19,6 +19,7 @@ using namespace openffi::utils;
 #define FALSE 0
 
 std::shared_ptr<jvm> pjvm;
+std::once_flag once_flag;
 
 
 #define catch_and_fill(err, err_len, ...)\
@@ -41,7 +42,7 @@ catch(...)\
 	*err_len = len;\
 }
 
-std::map<int64_t, std::pair<jclass, jmethodID>> foreign_functions;
+std::map<int64_t, std::string> foreign_functions;
 
 //--------------------------------------------------------------------
 void load_runtime(char** /*err*/, uint32_t* /*err_len*/)
@@ -61,24 +62,14 @@ void free_runtime(char** err, uint32_t* err_len)
 	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
-std::once_flag once_flag;
 int64_t load_function(const char* function_path, uint32_t function_path_len, char** err, uint32_t* err_len)
 {
-	openffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
+	std::call_once(once_flag, [&]()->void
+	{
+		openffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
+		pjvm = std::make_shared<jvm>(fp["classpath"]);
+	});
 	
-	std::call_once(once_flag, [](const std::string& classpath){
-		pjvm = std::make_shared<jvm>(classpath);
-		classes_repository::get_instance().init(pjvm);
-	}, fp["classpath"]);
-	
-	// get guest module
-	jclass pclass = classes_repository::get_instance().get(fp[function_path_entry_openffi_guest_lib],
-								std::string("openffi.")+fp[function_path_class_entrypoint_function], // prepend entry point package name
-								true);
-		
-	auto* env = (JNIEnv*)(*pjvm);
-	jmethodID methID = env->GetStaticMethodID(pclass, fp[function_path_entry_entrypoint_function].c_str(), ("([B)Lopenffi/CallResult;"));
-	check_and_throw_jvm_exception(pjvm, env);
 	
 	int64_t function_id = foreign_functions.empty() ? 0 : -1;
 	for(auto& entry : foreign_functions)
@@ -88,7 +79,7 @@ int64_t load_function(const char* function_path, uint32_t function_path_len, cha
 		}
 	}
 	
-	foreign_functions[function_id] = std::pair(pclass, methID);
+	foreign_functions[function_id] = std::string(function_path, function_path_len);
 	
 	return function_id;
 }
@@ -107,47 +98,54 @@ void call(
 {
 	try
 	{
+		// load function on each call, as if the call comes from different threads, the jclass and jmethodid
+		// might be invalid and crash JVM
+		// TODO: find a way to cache jclass and jmethodid (or make sure it is not possible)
 		auto it = foreign_functions.find(function_id);
 		if(it == foreign_functions.end())
 		{
 			throw std::runtime_error("given function id is not found");
 		}
 		
-		jmethodID methID = it->second.second;
-		jclass pclass = it->second.first;
-		auto* env = (JNIEnv*)(*pjvm);
+		const std::string& function_path = it->second;
+		jclass pclass = nullptr;
+		jmethodID methID = nullptr;
+		pjvm->load_function_path(function_path, &pclass, &methID);
 		
-		jbyteArray in_params_arr = env->NewByteArray(in_params_len);
-		check_and_throw_jvm_exception(pjvm, env);
+		JNIEnv* penv;
+		auto release_env = pjvm->get_environment(&penv);
+		scope_guard sg_env([&](){ release_env(); });
 		
-		scope_guard sg([&]() { env->DeleteLocalRef(in_params_arr); });
+		jbyteArray in_params_arr = penv->NewByteArray(in_params_len);
+		check_and_throw_jvm_exception(pjvm, penv, in_params_arr);
 		
-		env->SetByteArrayRegion(in_params_arr, 0, in_params_len, (const jbyte *) in_params);
-		check_and_throw_jvm_exception(pjvm, env);
+		scope_guard sg([&]() { penv->DeleteLocalRef(in_params_arr); });
+		
+		penv->SetByteArrayRegion(in_params_arr, 0, in_params_len, (const jbyte *) in_params);
+		check_and_throw_jvm_exception(pjvm, penv, true);
 		
 		// get CallResult
-		jobject result = env->CallStaticObjectMethod(pclass, methID, in_params_arr);
-		check_and_throw_jvm_exception(pjvm, env);
-		scope_guard sg_del_res([&]() { env->DeleteLocalRef(result); });
+		jobject result = penv->CallStaticObjectMethod(pclass, methID, in_params_arr);
+		check_and_throw_jvm_exception(pjvm, penv, result);
+		scope_guard sg_del_res([&]() { penv->DeleteLocalRef(result); });
 		
-		jclass call_result = env->FindClass("openffi/CallResult");
-		check_and_throw_jvm_exception(pjvm, env);
+		jclass call_result = penv->FindClass("openffi/CallResult");
+		check_and_throw_jvm_exception(pjvm, penv, call_result);
 		
 		// get from CallResult the return value or error
-		jfieldID out_ret_id = env->GetFieldID(call_result, "out_ret", "[B");
-		check_and_throw_jvm_exception(pjvm, env);
+		jfieldID out_ret_id = penv->GetFieldID(call_result, "out_ret", "[B");
+		check_and_throw_jvm_exception(pjvm, penv, out_ret_id);
 		
-		jobject out_ret_obj = env->GetObjectField(result, out_ret_id); // null if function is void and no error
-		check_and_throw_jvm_exception(pjvm, env);
+		jobject out_ret_obj = penv->GetObjectField(result, out_ret_id); // null if function is void and no error
 		
 		if(out_ret_obj)
 		{
-			scope_guard sg_out_params_obj([&]() { env->DeleteLocalRef(in_params_arr); });
-			jbyte *out_ret_ptr = env->GetByteArrayElements((jbyteArray) out_ret_obj, nullptr);
-			check_and_throw_jvm_exception(pjvm, env);
+			scope_guard sg_out_params_obj([&]() { penv->DeleteLocalRef(in_params_arr); });
+			jbyte *out_ret_ptr = penv->GetByteArrayElements((jbyteArray) out_ret_obj, nullptr);
+			check_and_throw_jvm_exception(pjvm, penv, *out_ret_ptr);
 		
-			*out_ret_len = env->GetArrayLength((jbyteArray) out_ret_obj);
-			check_and_throw_jvm_exception(pjvm, env);
+			*out_ret_len = penv->GetArrayLength((jbyteArray) out_ret_obj);
+			check_and_throw_jvm_exception(pjvm, penv, *out_ret_len);
 		
 			*out_ret = (unsigned char *) calloc(*out_ret_len, sizeof(char));
 		

@@ -12,6 +12,7 @@ public class ObjectLoader
 																			ClassNotFoundException,
 																			MalformedURLException
 	{
+		// TODO: if calling from OpenJDK, the guest runtime jar should be specified in the class path
 		File file = new File(dirOrJar);
 		if(!file.exists())
 		{

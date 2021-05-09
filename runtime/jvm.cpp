@@ -3,6 +3,8 @@
 #include <sstream>
 #include <utils/scope_guard.hpp>
 #include <utils/expand_env.h>
+#include <utils/function_path_parser.h>
+#include <utils/foreign_function.h>
 
 using namespace openffi::utils;
 
@@ -13,12 +15,21 @@ jvm::jvm(const std::string& classpath)
 	jsize nVMs;
 	check_throw_error(JNI_GetCreatedJavaVMs(nullptr, 0, &nVMs));
 	
-	if(nVMs > 0)
+	JNIEnv* penv = nullptr;
+	
+	if(nVMs > 0) // JVM already exists
 	{
 		check_throw_error(JNI_GetCreatedJavaVMs(&this->pjvm, 1, &nVMs));
+		
+		auto release_env = this->get_environment(&penv);
+		scope_guard sg([&](){ release_env(); });
+		
+		// TODO: find a way to add "classpath" to the VM's classpath
+		
 		return;
 	}
 	
+	// create new JVM
 	std::string cp = expand_env(classpath);
 	
 	std::stringstream ss;
@@ -37,22 +48,53 @@ jvm::jvm(const std::string& classpath)
 	
 	// load jvm
 	check_throw_error(JNI_CreateJavaVM(&this->pjvm, (void**)&penv, &vm_args));
+	is_destroy = true;
 	
+}
+//--------------------------------------------------------------------
+void jvm::load_object_loader(JNIEnv* penv, jclass* object_loader_class, jmethodID* load_object)
+{
 	// load ObjectLoader
-	this->ObjectLoader_class = penv->FindClass("openffi/ObjectLoader");
-	check_and_throw_jvm_exception(this, penv);
+	*object_loader_class = penv->FindClass("openffi/ObjectLoader");
+	check_and_throw_jvm_exception(this, penv, *object_loader_class);
 	
-	this->loadObject_method = penv->GetStaticMethodID(ObjectLoader_class, "loadObject", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
-	check_and_throw_jvm_exception(this, penv)
+	*load_object = penv->GetStaticMethodID(*object_loader_class, "loadObject", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+	check_and_throw_jvm_exception(this, penv, *load_object);
 }
 //--------------------------------------------------------------------
 void jvm::fini()
 {
-	if(this->pjvm)
+	if(this->pjvm && is_destroy)
 	{
 		this->pjvm->DestroyJavaVM();
 		this->pjvm = nullptr;
 	}
+}
+//--------------------------------------------------------------------
+std::function<void()> jvm::get_environment(JNIEnv** env)
+{
+	bool did_attach_thread = false;
+	// Check if the current thread is attached to the VM
+	auto get_env_result = pjvm->GetEnv((void**)env, JNI_VERSION_10);
+	if (get_env_result == JNI_EDETACHED)
+	{
+		if(pjvm->AttachCurrentThread((void**)*env, nullptr) == JNI_OK)
+		{
+			did_attach_thread = true;
+		}
+		else
+		{
+			// Failed to attach thread. Throw an exception if you want to.
+			throw std::runtime_error("Failed to attach environment to current thread");
+		}
+	}
+	else if (get_env_result == JNI_EVERSION)
+	{
+		// Unsupported JNI version. Throw an exception if you want to.
+		throw std::runtime_error("Failed to get JVM environment - unsupported JNI version");
+	}
+	
+	return did_attach_thread ? std::function<void()>([this](){ pjvm->DetachCurrentThread(); }) : [](){};
 }
 //--------------------------------------------------------------------
 void jvm::check_throw_error(jint err)
@@ -88,10 +130,33 @@ void jvm::check_throw_error(jint err)
 //--------------------------------------------------------------------
 jclass jvm::load_class(const std::string& dir_or_jar, const std::string& class_name)
 {
+	JNIEnv* penv;
+	auto release_env = this->get_environment(&penv);
+	scope_guard sg([&](){ release_env(); });
+	
 	jstring path_string = penv->NewStringUTF(dir_or_jar.c_str());
+	if(!path_string)
+	{
+		throw std::runtime_error("Failed to create new UTF string");
+	}
+	
 	jstring class_name_string = penv->NewStringUTF(class_name.c_str());
-	auto class_obj = reinterpret_cast<jclass>(penv->CallStaticObjectMethod(ObjectLoader_class, loadObject_method, path_string, class_name_string));
-	check_and_throw_jvm_exception(this, penv);
+	if(!class_name_string)
+	{
+		throw std::runtime_error("Failed to create new UTF string");
+	}
+	
+	jclass object_loader_class;
+	jmethodID load_object;
+	this->load_object_loader(penv, &object_loader_class, &load_object);
+	
+	auto class_obj = reinterpret_cast<jclass>(penv->CallStaticObjectMethod(object_loader_class, load_object, path_string, class_name_string));
+	if(!class_obj)
+	{
+		throw std::runtime_error("Failed to call object loader");
+	}
+	
+	check_and_throw_jvm_exception(this, penv, class_obj);
 	penv->DeleteLocalRef(path_string);
 	penv->DeleteLocalRef(class_name_string);
 	
@@ -100,27 +165,49 @@ jclass jvm::load_class(const std::string& dir_or_jar, const std::string& class_n
 //--------------------------------------------------------------------
 void jvm::free_class(jclass obj)
 {
+	JNIEnv* penv;
+	auto release_env = this->get_environment(&penv);
+	scope_guard sg([&](){ release_env(); });
+	
 	penv->DeleteLocalRef(obj);
+}
+//--------------------------------------------------------------------
+void jvm::load_function_path(const std::string& function_path, jclass* cls, jmethodID* meth)
+{
+	JNIEnv* penv;
+	auto release_env = get_environment(&penv);
+	scope_guard sg([&](){ release_env(); });
+	
+	openffi::utils::function_path_parser fp(function_path);
+	
+	// get guest module
+	*cls = this->load_class(fp[function_path_entry_openffi_guest_lib],
+                                   std::string(guest_package)+fp[function_path_class_entrypoint_function]); // prepend entry point package name;
+	check_and_throw_jvm_exception(this, penv, *cls);
+	
+	*meth = penv->GetStaticMethodID(*cls, fp[function_path_entry_entrypoint_function].c_str(), ("([B)Lopenffi/CallResult;"));
+	check_and_throw_jvm_exception(this, penv, *meth);
+	
 }
 //--------------------------------------------------------------------
 std::string jvm::get_exception_description(jthrowable throwable)
 {
+	JNIEnv* penv;
+	auto release_env = this->get_environment(&penv);
+	scope_guard sg_env([&](){ release_env(); });
+	
 	penv->ExceptionClear();
 	
 	jclass throwable_class = penv->FindClass("java/lang/Throwable");
-	check_and_throw_jvm_exception(this, penv);
-	//jmethodID mid_throwable_getCause =	penv->GetMethodID(throwable_class,"getCause","()Ljava/lang/Throwable;");
-	//jmethodID mid_throwable_getStackTrace =	penv->GetMethodID(throwable_class,"getStackTrace","()[Ljava/lang/StackTraceElement;");
-	jmethodID throwable_toString = penv->GetMethodID(throwable_class,"toString","()Ljava/lang/String;");
-	check_and_throw_jvm_exception(this, penv);
+	check_and_throw_jvm_exception(this, penv, throwable_class);
 	
-	//jclass frame_class = penv->FindClass("java/lang/StackTraceElement");
-	//jmethodID mid_frame_toString = penv->GetMethodID(frame_class,"toString","()Ljava/lang/String;");
+	jmethodID throwable_toString = penv->GetMethodID(throwable_class,"toString","()Ljava/lang/String;");
+	check_and_throw_jvm_exception(this, penv, throwable_toString);
 	
 	jobject str = penv->CallObjectMethod(throwable, throwable_toString);
-	scope_guard sg([&](){ penv->DeleteLocalRef(str);	});
+	check_and_throw_jvm_exception(this, penv, str);
 	
-	check_and_throw_jvm_exception(this, penv);
+	scope_guard sg([&](){ penv->DeleteLocalRef(str); });
 	std::string res(penv->GetStringUTFChars((jstring)str, nullptr));
 	
 	return res;
