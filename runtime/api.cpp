@@ -6,6 +6,7 @@
 #include <utils/scope_guard.hpp>
 #include <utils/function_loader.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include <runtime/runtime_plugin_api.h>
 #include <sstream>
 #include <mutex>
@@ -67,7 +68,23 @@ int64_t load_function(const char* function_path, uint32_t function_path_len, cha
 	std::call_once(once_flag, [&]()->void
 	{
 		openffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
-		pjvm = std::make_shared<jvm>(fp["classpath"]);
+		std::string cp = fp["classpath"];
+		
+		// make sure the correct separator is used based on OS
+#ifndef _WIN32
+		const char* separator = ":";
+		const char* other_os_separator = ";";
+#else
+		const char* separator = ";";
+		const char* other_os_separator = ":";
+#endif
+		
+		if(boost::contains(cp, other_os_separator))
+		{
+			boost::replace_all(cp, other_os_separator, separator);
+		}
+		
+		pjvm = std::make_shared<jvm>(cp);
 	});
 	
 	

@@ -30,10 +30,9 @@ jvm::jvm(const std::string& classpath)
 	}
 	
 	// create new JVM
-	std::string cp = expand_env(classpath);
 	
 	std::stringstream ss;
-	ss << "-Djava.class.path=" << std::getenv("OPENFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("OPENFFI_HOME") << "/protobuf-java-3.15.2.jar" << ":" << cp;
+	ss << "-Djava.class.path=" << std::getenv("OPENFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("OPENFFI_HOME") << "/protobuf-java-3.15.2.jar" << ":" << classpath;
 	printf("JVM classpath: %s\n", ss.str().c_str());
 	std::string options_string = ss.str();
 	JavaVMOption options[1] = {0};
