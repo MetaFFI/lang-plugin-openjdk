@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	compiler "github.com/OpenFFI/plugin-sdk/compiler/go"
+	compiler "github.com/MetaFFI/plugin-sdk/compiler/go"
 	"html/template"
 	"io/ioutil"
 	"os"
@@ -44,7 +44,7 @@ func (this *GuestCompiler) Compile() (outputFileName string, err error){
 	}
 
 	// write to output
-	outputFullFileName := fmt.Sprintf("%v%v%v_OpenFFIGuest.jar", this.outputDir, string(os.PathSeparator), this.outputFilename)
+	outputFullFileName := fmt.Sprintf("%v%v%v_MetaFFIGuest.jar", this.outputDir, string(os.PathSeparator), this.outputFilename)
 	err = ioutil.WriteFile(outputFullFileName, file, 0700)
 	if err != nil{
 		return "", fmt.Errorf("Failed to write dynamic library to %v. Error: %v", this.outputDir+this.outputFilename, err)
@@ -81,7 +81,7 @@ func (this *GuestCompiler) parseImports() (string, error){
 		for _, f := range m.Functions{
 			if pack, found := f.PathToForeignFunction["package"]; found{
 
-				if pack != `openffi_guest`{
+				if pack != `metaffi_guest`{
 					set[pack] = true
 				}
 			}
@@ -132,9 +132,9 @@ func (this *GuestCompiler) parseForeignFunctions() (string, error){
 		},
 
 		"ToJavaType": func (elem string) string{
-			pyType, found := OpenFFITypeToJavaType[elem]
+			pyType, found := MetaFFITypeToJavaType[elem]
 			if !found{
-				panic("Type "+elem+" is not an OpenFFI type")
+				panic("Type "+elem+" is not an MetaFFI type")
 			}
 
 			return pyType
@@ -143,9 +143,9 @@ func (this *GuestCompiler) parseForeignFunctions() (string, error){
 		"ToParamCall": func (paramObj string, fieldObj interface{}) string{
 			field := fieldObj.(*compiler.FieldDefinition)
 
-			jType, found := OpenFFITypeToJavaType[field.Type]
+			jType, found := MetaFFITypeToJavaType[field.Type]
 			if !found{
-				panic("Type "+field.Type+" is not an OpenFFI type")
+				panic("Type "+field.Type+" is not an MetaFFI type")
 			}
 
 			if field.IsArray{
@@ -202,8 +202,8 @@ func (this *GuestCompiler) getClassPath() string{
 
 	classPathSet := make(map[string]bool, 0)
 	classPathSet["."] = true
-	classPathSet[fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator))] = true
-	classPathSet[fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator))] = true
+	classPathSet[fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator))] = true
+	classPathSet[fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator))] = true
 
 	classPath := make([]string, 0)
 	for k, _ := range classPathSet{
@@ -223,7 +223,7 @@ func (this *GuestCompiler) getClassPath() string{
 //--------------------------------------------------------------------
 func (this *GuestCompiler) buildDynamicLibrary(code string)([]byte, error){
 
-	dir, err := os.MkdirTemp("", "openffi_openjdk_compiler*")
+	dir, err := os.MkdirTemp("", "metaffi_openjdk_compiler*")
 	if err != nil{
 		return nil, fmt.Errorf("Failed to create temp dir to build code: %v", err)
 	}
@@ -258,9 +258,9 @@ func (this *GuestCompiler) buildDynamicLibrary(code string)([]byte, error){
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
 
-	classFiles, err := filepath.Glob(dir+"openffi_guest"+string(os.PathSeparator)+"*.class")
+	classFiles, err := filepath.Glob(dir+"metaffi_guest"+string(os.PathSeparator)+"*.class")
 	if err != nil{
-		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "openffi_guest", err)
+		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "metaffi_guest", err)
 	}
 
 	for i, file := range classFiles{

@@ -1,6 +1,6 @@
 package main
 import (
-	"github.com/OpenFFI/plugin-sdk/compiler/go"
+	"github.com/MetaFFI/plugin-sdk/compiler/go"
 )
 
 import "C"

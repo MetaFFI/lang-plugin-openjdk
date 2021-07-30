@@ -6,7 +6,7 @@
 #include <utils/function_path_parser.h>
 #include <utils/foreign_function.h>
 
-using namespace openffi::utils;
+using namespace metaffi::utils;
 
 //--------------------------------------------------------------------
 jvm::jvm(const std::string& classpath)
@@ -32,7 +32,7 @@ jvm::jvm(const std::string& classpath)
 	// create new JVM
 	
 	std::stringstream ss;
-	ss << "-Djava.class.path=" << std::getenv("OPENFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("OPENFFI_HOME") << "/protobuf-java-3.15.2.jar" << ":" << classpath;
+	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/protobuf-java-3.15.2.jar" << ":" << classpath;
 	printf("JVM classpath: %s\n", ss.str().c_str());
 	std::string options_string = ss.str();
 	JavaVMOption options[1] = {0};
@@ -54,7 +54,7 @@ jvm::jvm(const std::string& classpath)
 void jvm::load_object_loader(JNIEnv* penv, jclass* object_loader_class, jmethodID* load_object)
 {
 	// load ObjectLoader
-	*object_loader_class = penv->FindClass("openffi/ObjectLoader");
+	*object_loader_class = penv->FindClass("metaffi/ObjectLoader");
 	check_and_throw_jvm_exception(this, penv, *object_loader_class);
 	
 	*load_object = penv->GetStaticMethodID(*object_loader_class, "loadObject", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
@@ -177,14 +177,14 @@ void jvm::load_function_path(const std::string& function_path, jclass* cls, jmet
 	auto release_env = get_environment(&penv);
 	scope_guard sg([&](){ release_env(); });
 	
-	openffi::utils::function_path_parser fp(function_path);
+	metaffi::utils::function_path_parser fp(function_path);
 	
 	// get guest module
-	*cls = this->load_class(fp[function_path_entry_openffi_guest_lib],
+	*cls = this->load_class(fp[function_path_entry_metaffi_guest_lib],
                                    std::string(guest_package)+fp[function_path_class_entrypoint_function]); // prepend entry point package name;
 	check_and_throw_jvm_exception(this, penv, *cls);
 	
-	*meth = penv->GetStaticMethodID(*cls, fp[function_path_entry_entrypoint_function].c_str(), ("([B)Lopenffi/CallResult;"));
+	*meth = penv->GetStaticMethodID(*cls, fp[function_path_entry_entrypoint_function].c_str(), ("([B)Lmetaffi/CallResult;"));
 	check_and_throw_jvm_exception(this, penv, *meth);
 	
 }

@@ -1,8 +1,8 @@
 package main
 
-import "github.com/OpenFFI/plugin-sdk/compiler/go"
+import "github.com/MetaFFI/plugin-sdk/compiler/go"
 
-var OpenFFITypeToJavaType = map[string]string{
+var MetaFFITypeToJavaType = map[string]string{
 
 	compiler.FLOAT64: "double",
 	compiler.FLOAT32: "float",

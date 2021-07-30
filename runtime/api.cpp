@@ -14,7 +14,7 @@
 #include <utils/function_path_parser.h>
 #include <map>
 
-using namespace openffi::utils;
+using namespace metaffi::utils;
 
 #define TRUE 1
 #define FALSE 0
@@ -67,7 +67,7 @@ int64_t load_function(const char* function_path, uint32_t function_path_len, cha
 {
 	std::call_once(once_flag, [&]()->void
 	{
-		openffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
+		metaffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
 		std::string cp = fp["classpath"];
 		
 		// make sure the correct separator is used based on OS
@@ -146,7 +146,7 @@ void call(
 		check_and_throw_jvm_exception(pjvm, penv, result);
 		scope_guard sg_del_res([&]() { penv->DeleteLocalRef(result); });
 		
-		jclass call_result = penv->FindClass("openffi/CallResult");
+		jclass call_result = penv->FindClass("metaffi/CallResult");
 		check_and_throw_jvm_exception(pjvm, penv, call_result);
 		
 		// get from CallResult the return value or error

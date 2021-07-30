@@ -1,4 +1,4 @@
-set(target_name "openffi.compiler.lang.openjdk")
+set(target_name "metaffi.compiler.lang.openjdk")
 
 find_program(GOEXEC go)
 if(NOT GOEXEC)
@@ -21,9 +21,9 @@ add_test(NAME compiler_go_gotest
 		COMMAND ${GOEXEC} test
 		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
-# Copy to openffi directory
+# Copy to metaffi directory
 add_custom_command(TARGET ${target_name} POST_BUILD
 		COMMAND "${CMAKE_COMMAND}" -E copy
 		"${CMAKE_CURRENT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}"
-		"$ENV{OPENFFI_HOME}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}"
-		COMMENT "Copy ${CMAKE_CURRENT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX} -> $ENV{OPENFFI_HOME}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+		"$ENV{METAFFI_HOME}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}"
+		COMMENT "Copy ${CMAKE_CURRENT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX} -> $ENV{METAFFI_HOME}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	compiler "github.com/OpenFFI/plugin-sdk/compiler/go"
+	compiler "github.com/MetaFFI/plugin-sdk/compiler/go"
 	"html/template"
 	"io/ioutil"
 	"os"
@@ -48,7 +48,7 @@ func (this *HostCompiler) Compile() (outputFileName string, err error){
 	}
 
 	// write to output
-	outputFileName = this.outputDir+string(os.PathSeparator)+this.outputFilename+"_OpenFFIHost.jar"
+	outputFileName = this.outputDir+string(os.PathSeparator)+this.outputFilename+"_MetaFFIHost.jar"
 	err = ioutil.WriteFile( outputFileName, file, 0600)
 	if err != nil{
 		return "", fmt.Errorf("Failed to write host code to %v. Error: %v", this.outputDir+this.outputFilename, err)
@@ -104,9 +104,9 @@ func (this *HostCompiler) parseForeignStubs() (string, error){
 	    },
 
 	    "ToJavaType": func (elem string) string{
-		    pyType, found := OpenFFITypeToJavaType[elem]
+		    pyType, found := MetaFFITypeToJavaType[elem]
 		    if !found{
-			    panic("Type "+elem+" is not an OpenFFI type")
+			    panic("Type "+elem+" is not an MetaFFI type")
 		    }
 
 		    return pyType
@@ -192,15 +192,15 @@ func (this *HostCompiler) getClassPath() string{
 
 	classPath := make([]string, 0)
 	classPath = append(classPath, ".")
-	classPath = append(classPath, fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator)))
-	classPath = append(classPath, fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("OPENFFI_HOME"), string(os.PathSeparator)))
+	classPath = append(classPath, fmt.Sprintf("%v%vprotobuf-java-3.15.2.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator)))
+	classPath = append(classPath, fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator)))
 
 	return strings.Join(classPath, string(os.PathListSeparator))
 }
 //--------------------------------------------------------------------
 func (this *HostCompiler) buildDynamicLibrary(code string)([]byte, error){
 
-	dir, err := os.MkdirTemp("", "openffi_openjdk_compiler*")
+	dir, err := os.MkdirTemp("", "metaffi_openjdk_compiler*")
 	if err != nil{
 		return nil, fmt.Errorf("Failed to create temp dir to build code: %v", err)
 	}
@@ -234,9 +234,9 @@ func (this *HostCompiler) buildDynamicLibrary(code string)([]byte, error){
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
 
-	classFiles, err := filepath.Glob(dir+"openffi"+string(os.PathSeparator)+"*.class")
+	classFiles, err := filepath.Glob(dir+"metaffi"+string(os.PathSeparator)+"*.class")
 	if err != nil{
-		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "openffi", err)
+		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "metaffi", err)
 	}
 
 	for i, file := range classFiles{
@@ -262,7 +262,7 @@ func (this *HostCompiler) buildDynamicLibrary(code string)([]byte, error){
 	// read jar file and return
 	result, err := ioutil.ReadFile(dir+this.def.IDLFilename+".jar")
 	if err != nil{
-		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLFilename+"_OpenFFIHost.jar", err)
+		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLFilename+"_MetaFFIHost.jar", err)
 	}
 
 	return result, nil

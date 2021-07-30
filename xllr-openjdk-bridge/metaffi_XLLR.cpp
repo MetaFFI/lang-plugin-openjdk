@@ -1,14 +1,14 @@
-#include "openffi_XLLR.h"
+#include "metaffi_XLLR.h"
 #include <utils/xllr_api_wrapper.h>
 
 // JNI to call XLLR from java
 
-using namespace openffi::utils;
+using namespace metaffi::utils;
 
 std::unique_ptr<xllr_api_wrapper> xllr;
 
 //--------------------------------------------------------------------
-JNIEXPORT jstring JNICALL Java_openffi_XLLR_init(JNIEnv* env, jobject obj)
+JNIEXPORT jstring JNICALL Java_metaffi_XLLR_init(JNIEnv* env, jobject obj)
 {
 	try
 	{
@@ -21,7 +21,7 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_init(JNIEnv* env, jobject obj)
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jstring JNICALL Java_openffi_XLLR_load_1runtime_1plugin(JNIEnv* env, jobject obj, jstring runtime_plugin)
+JNIEXPORT jstring JNICALL Java_metaffi_XLLR_load_1runtime_1plugin(JNIEnv* env, jobject obj, jstring runtime_plugin)
 {
 	const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
 	jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
@@ -44,7 +44,7 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_load_1runtime_1plugin(JNIEnv* env, j
 	return env->NewStringUTF("");
 }
 //--------------------------------------------------------------------
-JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1runtime_1plugin(JNIEnv* env, jobject obj, jstring runtime_plugin)
+JNIEXPORT jstring JNICALL Java_metaffi_XLLR_free_1runtime_1plugin(JNIEnv* env, jobject obj, jstring runtime_plugin)
 {
 	const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
 	jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
@@ -67,7 +67,7 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1runtime_1plugin(JNIEnv* env, j
 	return env->NewStringUTF("");
 }
 //--------------------------------------------------------------------
-JNIEXPORT jobject JNICALL Java_openffi_XLLR_load_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jstring function_path)
+JNIEXPORT jobject JNICALL Java_metaffi_XLLR_load_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jstring function_path)
 {
 	
 	const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
@@ -116,7 +116,7 @@ JNIEXPORT jobject JNICALL Java_openffi_XLLR_load_1function(JNIEnv* env, jobject 
 	return res;
 }
 //--------------------------------------------------------------------
-JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jlong function_id)
+JNIEXPORT jstring JNICALL Java_metaffi_XLLR_free_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jlong function_id)
 {
 	const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
 	jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
@@ -139,7 +139,7 @@ JNIEXPORT jstring JNICALL Java_openffi_XLLR_free_1function(JNIEnv* env, jobject 
 	return env->NewStringUTF("");
 }
 //--------------------------------------------------------------------
-JNIEXPORT jstring JNICALL Java_openffi_XLLR_call(JNIEnv* env, jobject obj,
+JNIEXPORT jstring JNICALL Java_metaffi_XLLR_call(JNIEnv* env, jobject obj,
                                                  jstring runtime_plugin,
                                                  jlong function_id,
                                                  jbyteArray in_params,
