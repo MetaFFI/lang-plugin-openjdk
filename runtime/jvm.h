@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <runtime/cdt_structs.h>
 
 #define check_and_throw_jvm_exception(jvm_instance, env, var) \
 if(env->ExceptionCheck() == JNI_TRUE)\
@@ -22,7 +23,7 @@ private:
 	bool is_destroy = false;
 
 public:
-	explicit jvm(const std::string& classpath);
+	jvm();
 	~jvm() = default;
 	
 	void fini();
@@ -33,10 +34,12 @@ public:
 	void free_class(jclass obj);
 	
 	// returns release environment function
-	// TODO: replace with scoped wrapper
+	// TODO: add scoped wrapper
 	std::function<void()> get_environment(JNIEnv** env);
 	
 	std::string get_exception_description(jthrowable throwable);
+	
+	jobject call_function(jmethodID meth, jclass cls = nullptr, jobject obj = nullptr, jobjectArray params = nullptr);
 
 private:
 	static void check_throw_error(jint err);

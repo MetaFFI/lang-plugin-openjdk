@@ -1,20 +1,19 @@
 #include <cstdlib>
 #include <cstring>
-#include <cstdio>
 #include <memory>
+#include <set>
 #include "jvm.h"
-#include <utils/scope_guard.hpp>
-#include <utils/function_loader.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <runtime/runtime_plugin_api.h>
 #include <sstream>
 #include <mutex>
 #include <utils/foreign_function.h>
-#include <utils/function_path_parser.h>
+#include <runtime/cdt_capi_loader.h>
 #include <map>
+#include "cdts_java.h"
+#include "../../metaffi-core/XLLR/xcall_jit.h"
+#include "utils/scope_guard.hpp"
 
-using namespace metaffi::utils;
 
 #define TRUE 1
 #define FALSE 0
@@ -48,6 +47,8 @@ std::map<int64_t, std::string> foreign_functions;
 //--------------------------------------------------------------------
 void load_runtime(char** /*err*/, uint32_t* /*err_len*/)
 {
+	// TODO: find another way to change classpath
+	pjvm = std::make_shared<jvm>();
 }
 //--------------------------------------------------------------------
 void free_runtime(char** err, uint32_t* err_len)
@@ -63,112 +64,104 @@ void free_runtime(char** err, uint32_t* err_len)
 	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
-int64_t load_function(const char* function_path, uint32_t function_path_len, char** err, uint32_t* err_len)
+void* load_function(const char* function_path, uint32_t function_path_len, int8_t params_count, int8_t retval_count, char** err, uint32_t* err_len)
 {
-	std::call_once(once_flag, [&]()->void
-	{
-		metaffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
-		std::string cp = fp["classpath"];
-		
-		// make sure the correct separator is used based on OS
-#ifndef _WIN32
-		const char* separator = ":";
-		const char* other_os_separator = ";";
-#else
-		const char* separator = ";";
-		const char* other_os_separator = ":";
-#endif
-		
-		if(boost::contains(cp, other_os_separator))
-		{
-			boost::replace_all(cp, other_os_separator, separator);
-		}
-		
-		pjvm = std::make_shared<jvm>(cp);
-	});
+	// TODO: Fix load_function to work correctly
 	
+	void* res = nullptr;
 	
-	int64_t function_id = foreign_functions.empty() ? 0 : -1;
-	for(auto& entry : foreign_functions)
-	{
-		if(entry.first > function_id){
-			function_id = entry.first + 1;
-		}
-	}
-	
-	foreign_functions[function_id] = std::string(function_path, function_path_len);
-	
-	return function_id;
-}
-//--------------------------------------------------------------------
-void free_function(int64_t module_len, char** err, uint32_t* err_len)
-{
-}
-//--------------------------------------------------------------------
-void call(
-		int64_t function_id,
-		unsigned char* in_params, uint64_t in_params_len,
-		unsigned char** out_params, uint64_t* out_params_len,
-		unsigned char** out_ret, uint64_t* out_ret_len,
-		uint8_t* is_error
-)
-{
 	try
 	{
-		// load function on each call, as if the call comes from different threads, the jclass and jmethodid
-		// might be invalid and crash JVM
-		// TODO: find a way to cache jclass and jmethodid (or make sure it is not possible)
-		auto it = foreign_functions.find(function_id);
-		if(it == foreign_functions.end())
+		jclass cls;
+		jmethodID meth;
+		pjvm->load_function_path(std::string(function_path, function_path_len), &cls, &meth);
+		printf("+++ ---> load function %d,%d\n", params_count, retval_count);
+		if(params_count > 0 && retval_count > 0)
 		{
-			throw std::runtime_error("given function id is not found");
+			res = (void*)(pforeign_function_entrypoint_signature_params_ret_t)create_xcall_params_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
+	                   (void*) (void (*)(cdts[2], char**, uint64_t*, jclass, jmethodID)) ([](cdts pcdts[2], char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
+	                   {
+						   try
+						   {printf("+++++ CALLED FUNC\n");
+							   JNIEnv* env;
+							   auto releaser = pjvm->get_environment(&env);
+							   metaffi::utils::scope_guard env_guard([&](){ releaser(); env = nullptr; });
+							   
+							   // convert CDTS to Java
+							   jobjectArray params = cdts_java(pcdts[0].pcdt, pcdts[0].len, env).parse();
+
+							   // call method
+							   jobject result = pjvm->call_function(meth, cls, params);
+							
+							   cdts_java cj(pcdts[1].pcdt, pcdts[1].len, env);
+							   std::vector<metaffi_type_t> metaffi_types = cj.get_types((jobjectArray)result);
+							   
+							   // convert Java to CDTS
+							   cj.build((jobjectArray)result, metaffi_types.data(), pcdts[0].len, 0);
+						   }
+						   catch_and_fill(out_err, out_err_len);
+	                   }));
+		}
+		else if(params_count > 0)
+		{
+//			res = (void*)(pforeign_function_entrypoint_signature_params_no_ret_t)create_xcall_params_no_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
+//                       (void*) (void (*)(cdts[2], char**, uint64_t*, jclass, jmethodID)) ([](cdts pcdts[1], char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
+//                       {
+//						   try
+//						   {
+//							   // convert CDTS to Java
+//							   jobjectArray params = cdts_java(pcdts[0].pcdt, pcdts[0].len, pjvm).parse();
+//
+//							   // call method
+//							   pjvm->call_function(meth, cls, params);
+//
+//							   // TODO: check if there's a JVM exception
+//						   }
+//	                       catch_and_fill(out_err, out_err_len);
+//
+//                       }));
+		}
+		else if(retval_count > 0)
+		{
+//			res = (void*)(pforeign_function_entrypoint_signature_no_params_ret_t)create_xcall_no_params_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
+//                     (void*) (void (*)(cdts[2], char**, uint64_t*, jclass, jmethodID)) ([](cdts pcdts[1], char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
+//                     {
+//                         try
+//                         {
+//                             // call method
+//                             jobjectArray result = (jobjectArray)pjvm->call_function(meth, cls);
+//
+//	                         // convert Java to CDTS
+//	                         cdts_java(pcdts[1].pcdt, pcdts[1].len, pjvm).build(result, 0);
+//                         }
+//                         catch_and_fill(out_err, out_err_len);
+//
+//                     }));
+		}
+		else
+		{
+//			res = (void*)(pforeign_function_entrypoint_signature_no_params_no_ret_t)create_xcall_no_params_no_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
+//                     (void*) (void (*)(char**, uint64_t*, jclass, jmethodID)) ([](char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
+//                     {
+//                         try
+//                         {
+//                             // call method
+//                             jobjectArray result = (jobjectArray)pjvm->call_function(meth, cls);
+//
+//
+//                         }
+//                         catch_and_fill(out_err, out_err_len);
+//
+//                     }));
 		}
 		
-		const std::string& function_path = it->second;
-		jclass pclass = nullptr;
-		jmethodID methID = nullptr;
-		pjvm->load_function_path(function_path, &pclass, &methID);
-		
-		JNIEnv* penv;
-		auto release_env = pjvm->get_environment(&penv);
-		scope_guard sg_env([&](){ release_env(); });
-		
-		jbyteArray in_params_arr = penv->NewByteArray(in_params_len);
-		check_and_throw_jvm_exception(pjvm, penv, in_params_arr);
-		
-		scope_guard sg([&]() { penv->DeleteLocalRef(in_params_arr); });
-		
-		penv->SetByteArrayRegion(in_params_arr, 0, in_params_len, (const jbyte *) in_params);
-		check_and_throw_jvm_exception(pjvm, penv, true);
-		
-		// get CallResult
-		jobject result = penv->CallStaticObjectMethod(pclass, methID, in_params_arr);
-		check_and_throw_jvm_exception(pjvm, penv, result);
-		scope_guard sg_del_res([&]() { penv->DeleteLocalRef(result); });
-		
-		jclass call_result = penv->FindClass("metaffi/CallResult");
-		check_and_throw_jvm_exception(pjvm, penv, call_result);
-		
-		// get from CallResult the return value or error
-		jfieldID out_ret_id = penv->GetFieldID(call_result, "out_ret", "[B");
-		check_and_throw_jvm_exception(pjvm, penv, out_ret_id);
-		
-		jobject out_ret_obj = penv->GetObjectField(result, out_ret_id); // null if function is void and no error
-		
-		if(out_ret_obj)
-		{
-			scope_guard sg_out_params_obj([&]() { penv->DeleteLocalRef(in_params_arr); });
-			jbyte *out_ret_ptr = penv->GetByteArrayElements((jbyteArray) out_ret_obj, nullptr);
-			check_and_throw_jvm_exception(pjvm, penv, *out_ret_ptr);
-		
-			*out_ret_len = penv->GetArrayLength((jbyteArray) out_ret_obj);
-			check_and_throw_jvm_exception(pjvm, penv, *out_ret_len);
-		
-			*out_ret = (unsigned char *) calloc(*out_ret_len, sizeof(char));
-		
-			memcpy(*out_ret, out_ret_ptr, *out_ret_len);
-		}
 	}
-	catch_and_fill((char**)out_ret, out_ret_len, *is_error=TRUE);
+	catch_and_fill(err, err_len);
+	printf("+++ <--- load function\n");
+	return res;
+}
+//--------------------------------------------------------------------
+void free_function(void* pff, char** err, uint32_t* err_len)
+{
 }
 //--------------------------------------------------------------------

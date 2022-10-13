@@ -9,7 +9,7 @@
 using namespace metaffi::utils;
 
 //--------------------------------------------------------------------
-jvm::jvm(const std::string& classpath)
+jvm::jvm()
 {
 	// if there's a JVM already loaded, get it.
 	jsize nVMs;
@@ -24,7 +24,9 @@ jvm::jvm(const std::string& classpath)
 		auto release_env = this->get_environment(&penv);
 		scope_guard sg([&](){ release_env(); });
 		
-		// TODO: find a way to add "classpath" to the VM's classpath
+		// TODO: Load METAFFI module
+		// TODO: currently calling from Java main host to Java code via MetaFFI won't work (nor it is recommended).
+		
 		
 		return;
 	}
@@ -32,12 +34,12 @@ jvm::jvm(const std::string& classpath)
 	// create new JVM
 	
 	std::stringstream ss;
-	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/protobuf-java-3.15.2.jar" << ":" << classpath;
+	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
 	printf("JVM classpath: %s\n", ss.str().c_str());
 	std::string options_string = ss.str();
 	JavaVMOption options[1] = {0};
 	options[0].optionString = (char*)options_string.c_str();
-	
+
 	// set initialization args
 	JavaVMInitArgs vm_args = {0};
 	vm_args.version = JNI_VERSION_10;
@@ -70,6 +72,7 @@ void jvm::fini()
 	}
 }
 //--------------------------------------------------------------------
+// returns releaser
 std::function<void()> jvm::get_environment(JNIEnv** env)
 {
 	bool did_attach_thread = false;
@@ -150,12 +153,12 @@ jclass jvm::load_class(const std::string& dir_or_jar, const std::string& class_n
 	this->load_object_loader(penv, &object_loader_class, &load_object);
 	
 	auto class_obj = reinterpret_cast<jclass>(penv->CallStaticObjectMethod(object_loader_class, load_object, path_string, class_name_string));
+	check_and_throw_jvm_exception(this, penv, class_obj);
 	if(!class_obj)
 	{
 		throw std::runtime_error("Failed to call object loader");
 	}
 	
-	check_and_throw_jvm_exception(this, penv, class_obj);
 	penv->DeleteLocalRef(path_string);
 	penv->DeleteLocalRef(class_name_string);
 	
@@ -180,12 +183,17 @@ void jvm::load_function_path(const std::string& function_path, jclass* cls, jmet
 	metaffi::utils::function_path_parser fp(function_path);
 	
 	// get guest module
-	*cls = this->load_class(fp[function_path_entry_metaffi_guest_lib],
-                                   std::string(guest_package)+fp[function_path_class_entrypoint_function]); // prepend entry point package name;
+	//*cls = this->load_class(fp[function_path_entry_metaffi_guest_lib],
+    //                               std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]); // prepend entry point package name;
+	*cls = penv->FindClass((std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]).c_str());
 	check_and_throw_jvm_exception(this, penv, *cls);
 	
-	*meth = penv->GetStaticMethodID(*cls, fp[function_path_entry_entrypoint_function].c_str(), ("([B)Lmetaffi/CallResult;"));
+	printf("+++ Loaded %s successfully\n", (std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]).c_str());
+	
+	*meth = penv->GetStaticMethodID(*cls, (fp[function_path_entry_entrypoint_function]).c_str(), ("(J)V"));
 	check_and_throw_jvm_exception(this, penv, *meth);
+	
+	printf("+++ Loaded method successfully\n");
 	
 }
 //--------------------------------------------------------------------
@@ -210,5 +218,25 @@ std::string jvm::get_exception_description(jthrowable throwable)
 	std::string res(penv->GetStringUTFChars((jstring)str, nullptr));
 	
 	return res;
+}
+//--------------------------------------------------------------------
+jobject jvm::call_function(jmethodID meth, jclass cls, jobject obj, jobjectArray params)
+{
+	JNIEnv* env;
+	auto releaser = get_environment(&env);
+	scope_guard sg([&releaser](){ releaser(); });
+	
+	// TODO: check if there's a JVM exception
+	
+	if(obj)
+	{
+		env->CallObjectMethod(obj, meth, params ? params : nullptr);
+	}
+	else
+	{
+		env->CallStaticObjectMethod(cls, meth, params ? params : nullptr);
+	}
+	
+	return nullptr;
 }
 //--------------------------------------------------------------------

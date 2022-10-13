@@ -16,10 +16,10 @@ add_custom_command(TARGET ${target_name}
 		COMMENT "Building ${target_name} compiler plugin")
 
 
-# Unitest
-add_test(NAME compiler_go_gotest
-		COMMAND ${GOEXEC} test
-		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+# Unitest TODO: RESUME TEST
+#add_test(NAME compiler_openjdk_gotest
+#		COMMAND ${GOEXEC} test
+#		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
 # Copy to metaffi directory
 add_custom_command(TARGET ${target_name} POST_BUILD

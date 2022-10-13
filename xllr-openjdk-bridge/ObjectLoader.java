@@ -1,4 +1,4 @@
-package openffi;
+package metaffi;
 
 import java.net.*;
 import java.io.*;
@@ -12,6 +12,9 @@ public class ObjectLoader
 																			ClassNotFoundException,
 																			MalformedURLException
 	{
+		// TODO: switch to modules, to be able to MetaFFI dynamically, and make sure there are
+		// no duplicated objects loaded into the process
+
 		// TODO: if calling from OpenJDK, the guest runtime jar should be specified in the class path
 		File file = new File(dirOrJar);
 		if(!file.exists())
