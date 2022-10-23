@@ -3,28 +3,39 @@ package main
 import (
 	"fmt"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
-	"html/template"
+	"text/template"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
+	"runtime"
 	"strings"
 )
 
 //--------------------------------------------------------------------
 type GuestCompiler struct {
-	def               *IDL.IDLDefinition
-	outputDir         string
-	serializationCode map[string]string
-	outputFilename    string
-	blockName         string
-	blockCode         string
+	def            *IDL.IDLDefinition
+	outputDir      string
+	outputFilename string
+	blockName      string
+	blockCode      string
 }
 
 //--------------------------------------------------------------------
 func NewGuestCompiler() *GuestCompiler {
 	return &GuestCompiler{}
+}
+
+//--------------------------------------------------------------------
+func getDynamicLibSuffix() string {
+	switch runtime.GOOS {
+	case "windows":
+		return ".dll"
+	case "darwin":
+		return ".dylib"
+	default: // We might need to make this more specific in the future
+		return ".so"
+	}
 }
 
 //--------------------------------------------------------------------
@@ -46,25 +57,54 @@ func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir stri
 	this.outputFilename = outputFilename
 	
 	// generate code
-	code, err := this.generateCode()
+	jarcode, err := this.generateJarCode()
+	if err != nil {
+		return fmt.Errorf("Failed to generate guest jar code: %v", err)
+	}
+	
+	entrypointCPPcode, err := this.generateEntrypointCPPCode()
+	if err != nil {
+		return fmt.Errorf("Failed to generate guest C++ code: %v", err)
+	}
+	
+	jarfile, err := this.buildJar(jarcode)
 	if err != nil {
 		return fmt.Errorf("Failed to generate guest code: %v", err)
 	}
 	
-	file, err := this.buildDynamicLibrary(code)
+	dynamicLibraryFile, err := this.buildDynamicLibrary(entrypointCPPcode)
 	if err != nil {
 		return fmt.Errorf("Failed to generate guest code: %v", err)
 	}
 	
 	// write to output
 	outputFullFileName := fmt.Sprintf("%v%v%v_MetaFFIGuest.jar", this.outputDir, string(os.PathSeparator), this.outputFilename)
-	err = ioutil.WriteFile(outputFullFileName, file, 0700)
+	err = ioutil.WriteFile(outputFullFileName, jarfile, 0700)
+	if err != nil {
+		return fmt.Errorf("Failed to write dynamic library to %v. Error: %v", this.outputDir+this.outputFilename, err)
+	}
+	
+	outputFullFileName = fmt.Sprintf("%v%v%v_MetaFFIGuest%v", this.outputDir, string(os.PathSeparator), this.outputFilename, getDynamicLibSuffix())
+	err = ioutil.WriteFile(outputFullFileName, dynamicLibraryFile, 0700)
 	if err != nil {
 		return fmt.Errorf("Failed to write dynamic library to %v. Error: %v", this.outputDir+this.outputFilename, err)
 	}
 	
 	return nil
 	
+}
+
+//--------------------------------------------------------------------
+func (this *GuestCompiler) generateEntrypointCPPCode() (string, error) {
+	tmpEntryPoint, err := template.New("guest_cpp").Funcs(templatesFuncMap).Parse(GuestCPPEntrypoint)
+	if err != nil {
+		return "", fmt.Errorf("Failed to parse GuestCPPEntrypoint: %v", err)
+	}
+	
+	bufEntryPoint := strings.Builder{}
+	err = tmpEntryPoint.Execute(&bufEntryPoint, this.def)
+	
+	return bufEntryPoint.String(), err
 }
 
 //--------------------------------------------------------------------
@@ -82,7 +122,7 @@ func (this *GuestCompiler) parseHeader() (string, error) {
 
 //--------------------------------------------------------------------
 func (this *GuestCompiler) parseImports() (string, error) {
-
+	
 	// imports.Imports contains all the imports.
 	
 	tmp, err := template.New("guest").Funcs(templatesFuncMap).Parse(GuestImportsTemplate)
@@ -93,22 +133,6 @@ func (this *GuestCompiler) parseImports() (string, error) {
 	buf := strings.Builder{}
 	err = tmp.Execute(&buf, this.def)
 	importsCode := buf.String()
-	
-	/*
-		// get all imports/includes from the serialization code
-		for filename, code := range this.serializationCode{
-			// the serialization code files
-			if strings.ToLower(filepath.Ext(filename)) != ".java"{
-				continue
-			}
-	
-			reImports := regexp.MustCompile(`import[ ]+([^;]+;)`)
-			serializationImports := reImports.FindAllString(code, -1)
-			for _, imp := range serializationImports{
-				importsCode += "import "+imp+"\n"
-			}
-		}
-	*/
 	
 	return importsCode, err
 }
@@ -128,7 +152,7 @@ func (this *GuestCompiler) parseForeignFunctions() (string, error) {
 }
 
 //--------------------------------------------------------------------
-func (this *GuestCompiler) generateCode() (string, error) {
+func (this *GuestCompiler) generateJarCode() (string, error) {
 	
 	header, err := this.parseHeader()
 	if err != nil {
@@ -146,21 +170,6 @@ func (this *GuestCompiler) generateCode() (string, error) {
 	}
 	
 	res := header + GuestPackage + imports + functionStubs
-	
-	// append serialization code in the same file
-	for filename, serializationCode := range this.serializationCode {
-		
-		// the serialization code files
-		if strings.ToLower(filepath.Ext(filename)) != ".java" {
-			continue
-		}
-		
-		rePackage := regexp.MustCompile(`package[ ]+[^;]+;`)
-		serializationCode = rePackage.ReplaceAllString(serializationCode, "")
-		serializationCode = strings.Replace(serializationCode, "public final class", "final class", -1)
-		
-		res += serializationCode
-	}
 	
 	return res, nil
 }
@@ -203,6 +212,73 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	dir = dir + string(os.PathSeparator)
 	
 	// write generated code to temp folder
+	cppFiles := make([]string, 0)
+	for _, m := range this.def.Modules {
+		cppFilename := dir + m.Name + ".cpp"
+		cppFiles = append(cppFiles, cppFilename)
+		err = ioutil.WriteFile(cppFilename, []byte(code), 0700)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to write host java code: %v", err)
+		}
+	}
+	
+	fmt.Println("Building Binary Entrypoint guest code")
+
+	javaHome := os.Getenv("JAVA_HOME")
+	if javaHome == ""{
+		return nil, fmt.Errorf("JAVA_HOME is not set")
+	}
+
+	mffiHome := os.Getenv("METAFFI_HOME")
+    if mffiHome == ""{
+        return nil, fmt.Errorf("METAFFI_HOME is not set")
+    }
+
+	// compile generated java code
+	args := make([]string, 0)
+	args = append(args, "-o")
+	args = append(args, dir+this.def.IDLFilename+getDynamicLibSuffix())
+	args = append(args, "-I")
+    args = append(args, mffiHome+"/include")
+	args = append(args, "-I")
+	args = append(args, javaHome+"/include")
+	args = append(args, "-I")
+    args = append(args, javaHome+"/include/"+runtime.GOOS)
+    args = append(args, "-fPIC")
+	args = append(args, "-shared")
+	args = append(args, cppFiles...)
+	buildCmd := exec.Command("gcc", args...)
+	fmt.Printf("%v\n", strings.Join(buildCmd.Args, " "))
+	output, err := buildCmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("Failed compiling dynamic library entrypoints for OpenJDK guest. Exit with error: %v.\nOutput:\n%v", err, string(output))
+	}
+	
+	// read jar file and return
+	result, err := ioutil.ReadFile(dir + this.def.IDLFilename + getDynamicLibSuffix())
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read dynamic library entrypoints for OpenJDK guest %v. Error: %v", this.def.IDLFilename, err)
+	}
+	
+	return result, nil
+}
+
+//--------------------------------------------------------------------
+func (this *GuestCompiler) buildJar(code string) ([]byte, error) {
+	
+	dir, err := os.MkdirTemp("", "metaffi_openjdk_compiler*")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create temp dir to build code: %v", err)
+	}
+	defer func() {
+		if err == nil {
+			_ = os.RemoveAll(dir)
+		}
+	}()
+	
+	dir = dir + string(os.PathSeparator)
+	
+	// write generated code to temp folder
 	javaFiles := make([]string, 0)
 	for _, m := range this.def.Modules {
 		javaFilename := dir + m.Name + ".java"
@@ -213,7 +289,7 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 		}
 	}
 	
-	fmt.Println("Building OpenJDK host code")
+	fmt.Println("Building OpenJDK guest code")
 	
 	// compile generated java code
 	args := make([]string, 0)

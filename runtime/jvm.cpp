@@ -185,10 +185,10 @@ void jvm::load_function_path(const std::string& function_path, jclass* cls, jmet
 	// get guest module
 	//*cls = this->load_class(fp[function_path_entry_metaffi_guest_lib],
     //                               std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]); // prepend entry point package name;
-	*cls = penv->FindClass((std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]).c_str());
+	*cls = penv->FindClass((std::string("metaffi_guest/")+fp[function_path_entrypoint_class]).c_str());
 	check_and_throw_jvm_exception(this, penv, *cls);
 	
-	printf("+++ Loaded %s successfully\n", (std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]).c_str());
+	printf("+++ Loaded %s successfully\n", (std::string("metaffi_guest/")+fp[function_path_entrypoint_class]).c_str());
 	
 	*meth = penv->GetStaticMethodID(*cls, (fp[function_path_entry_entrypoint_function]).c_str(), ("(J)V"));
 	check_and_throw_jvm_exception(this, penv, *meth);
@@ -238,5 +238,10 @@ jobject jvm::call_function(jmethodID meth, jclass cls, jobject obj, jobjectArray
 	}
 	
 	return nullptr;
+}
+//--------------------------------------------------------------------
+jvm::operator JavaVM*()
+{
+	return this->pjvm;
 }
 //--------------------------------------------------------------------

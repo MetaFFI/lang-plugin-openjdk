@@ -11,8 +11,9 @@
 #include <runtime/cdt_capi_loader.h>
 #include <map>
 #include "cdts_java.h"
-#include "../../metaffi-core/XLLR/xcall_jit.h"
 #include "utils/scope_guard.hpp"
+#include "utils/function_path_parser.h"
+#include "utils/library_loader.h"
 
 
 #define TRUE 1
@@ -64,100 +65,45 @@ void free_runtime(char** err, uint32_t* err_len)
 	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
+std::shared_ptr<boost::dll::shared_library> lib; // TODO: support multiple libs!
+std::vector<std::shared_ptr<boost::dll::detail::import_type<void(cdts[2],char**,int64_t*)>::type>> params_no_params_or_no_ret_funcs;
+std::vector<std::shared_ptr<boost::dll::detail::import_type<void(char**,int64_t*)>::type>> params_no_params_no_ret_funcs;
+
+bool is_first = true;
 void* load_function(const char* function_path, uint32_t function_path_len, int8_t params_count, int8_t retval_count, char** err, uint32_t* err_len)
 {
-	// TODO: Fix load_function to work correctly
-	
 	void* res = nullptr;
 	
 	try
 	{
-		jclass cls;
-		jmethodID meth;
-		pjvm->load_function_path(std::string(function_path, function_path_len), &cls, &meth);
-		printf("+++ ---> load function %d,%d\n", params_count, retval_count);
-		if(params_count > 0 && retval_count > 0)
+		metaffi::utils::function_path_parser fp(function_path);
+		
+		if(is_first)// TODO: Replace with something better!!!!
 		{
-			res = (void*)(pforeign_function_entrypoint_signature_params_ret_t)create_xcall_params_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
-	                   (void*) (void (*)(cdts[2], char**, uint64_t*, jclass, jmethodID)) ([](cdts pcdts[2], char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
-	                   {
-						   try
-						   {printf("+++++ CALLED FUNC\n");
-							   JNIEnv* env;
-							   auto releaser = pjvm->get_environment(&env);
-							   metaffi::utils::scope_guard env_guard([&](){ releaser(); env = nullptr; });
-							   
-							   // convert CDTS to Java
-							   jobjectArray params = cdts_java(pcdts[0].pcdt, pcdts[0].len, env).parse();
-
-							   // call method
-							   jobject result = pjvm->call_function(meth, cls, params);
-							
-							   cdts_java cj(pcdts[1].pcdt, pcdts[1].len, env);
-							   std::vector<metaffi_type_t> metaffi_types = cj.get_types((jobjectArray)result);
-							   
-							   // convert Java to CDTS
-							   cj.build((jobjectArray)result, metaffi_types.data(), pcdts[0].len, 0);
-						   }
-						   catch_and_fill(out_err, out_err_len);
-	                   }));
+			is_first = false;
+			
+			std::string dylib_to_load = fp[function_path_entry_metaffi_guest_lib];
+			lib = metaffi::utils::load_library(dylib_to_load);
+			
+			auto load_entrypoints = lib->get<void(JavaVM*,JNIEnv*)>("load_entrypoints");
+			
+			JNIEnv* env;
+			auto releaser = pjvm->get_environment(&env);
+			
+			load_entrypoints((JavaVM*)(*pjvm), env);
+			releaser();
 		}
-		else if(params_count > 0)
-		{
-//			res = (void*)(pforeign_function_entrypoint_signature_params_no_ret_t)create_xcall_params_no_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
-//                       (void*) (void (*)(cdts[2], char**, uint64_t*, jclass, jmethodID)) ([](cdts pcdts[1], char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
-//                       {
-//						   try
-//						   {
-//							   // convert CDTS to Java
-//							   jobjectArray params = cdts_java(pcdts[0].pcdt, pcdts[0].len, pjvm).parse();
-//
-//							   // call method
-//							   pjvm->call_function(meth, cls, params);
-//
-//							   // TODO: check if there's a JVM exception
-//						   }
-//	                       catch_and_fill(out_err, out_err_len);
-//
-//                       }));
+		
+		auto pentrypoint = lib->get<void(cdts[2],char**,int64_t*)>(fp[function_path_entry_entrypoint_function]);
+		if(!pentrypoint){
+			throw std::runtime_error(std::string("Failed to load: ")+fp[function_path_entry_entrypoint_function]);
 		}
-		else if(retval_count > 0)
-		{
-//			res = (void*)(pforeign_function_entrypoint_signature_no_params_ret_t)create_xcall_no_params_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
-//                     (void*) (void (*)(cdts[2], char**, uint64_t*, jclass, jmethodID)) ([](cdts pcdts[1], char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
-//                     {
-//                         try
-//                         {
-//                             // call method
-//                             jobjectArray result = (jobjectArray)pjvm->call_function(meth, cls);
-//
-//	                         // convert Java to CDTS
-//	                         cdts_java(pcdts[1].pcdt, pcdts[1].len, pjvm).build(result, 0);
-//                         }
-//                         catch_and_fill(out_err, out_err_len);
-//
-//                     }));
-		}
-		else
-		{
-//			res = (void*)(pforeign_function_entrypoint_signature_no_params_no_ret_t)create_xcall_no_params_no_ret({sizeof(cls), sizeof(meth)}, {(int64_t) cls, (int64_t) meth}, function_path,
-//                     (void*) (void (*)(char**, uint64_t*, jclass, jmethodID)) ([](char** out_err, uint64_t* out_err_len, jclass cls, jmethodID meth)
-//                     {
-//                         try
-//                         {
-//                             // call method
-//                             jobjectArray result = (jobjectArray)pjvm->call_function(meth, cls);
-//
-//
-//                         }
-//                         catch_and_fill(out_err, out_err_len);
-//
-//                     }));
-		}
+		
+		res = (void*)pentrypoint;
 		
 	}
 	catch_and_fill(err, err_len);
-	printf("+++ <--- load function\n");
+	
 	return res;
 }
 //--------------------------------------------------------------------

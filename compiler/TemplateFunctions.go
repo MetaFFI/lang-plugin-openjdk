@@ -12,22 +12,24 @@ import (
 
 //--------------------------------------------------------------------
 var templatesFuncMap = map[string]any{
-	"GenerateCodeAllocateCDTS": generateCodeAllocateCDTS,
-	"SetParamsToCDTS":          setParamsToCDTS,
-	"GetParamsFromCDTS":        getParamsFromCDTS,
-	"XCallMetaFFI":             xCallMetaFFI,
-	"SetReturnToCDTSAndReturn": setReturnToCDTSAndReturn,
-	"ReturnValuesClass":        returnValuesClass,
-	"ToJavaType":               toJavaType,
-	"Title":                    title,
-	"ReturnValuesClassName":    returnValuesClassName,
-	"GetMetaFFITypes":          getMetaFFITypes,
-	"CallGuestMethod":          callGuestMethod,
-	"ReturnGuest":              returnGuest,
-	"GetObject":                getObject,
-	"Panic":                    Panic,
-	"GetCDTSPointers":          getCDTSPointers,
-	"GetImports":               getImports,
+	"GenerateCodeAllocateCDTS":     generateCodeAllocateCDTS,
+	"SetParamsToCDTS":              setParamsToCDTS,
+	"GetParamsFromCDTS":            getParamsFromCDTS,
+	"XCallMetaFFI":                 xCallMetaFFI,
+	"SetReturnToCDTSAndReturn":     setReturnToCDTSAndReturn,
+	"ReturnValuesClass":            returnValuesClass,
+	"ToJavaType":                   toJavaType,
+	"Title":                        title,
+	"ReturnValuesClassName":        returnValuesClassName,
+	"GetMetaFFITypes":              getMetaFFITypes,
+	"CallGuestMethod":              callGuestMethod,
+	"ReturnGuest":                  returnGuest,
+	"GetObject":                    getObject,
+	"Panic":                        Panic,
+	"GetCDTSPointers":              getCDTSPointers,
+	"GetImports":                   getImports,
+	"CEntrypointParameters":        centrypointParameters,
+	"CEntrypointCallJVMEntrypoint": centrypointCallJVMEntrypoint,
 }
 
 //--------------------------------------------------------------------
@@ -86,7 +88,7 @@ func title(elem string) string {
 
 //--------------------------------------------------------------------
 func getFullClassName(cls *IDL.ClassDefinition) string {
-	if pck, found := cls.FunctionPath["package"]; found{
+	if pck, found := cls.FunctionPath["package"]; found {
 		return fmt.Sprintf("%v.%v", pck, cls.Name)
 	} else {
 		return cls.Name
@@ -341,6 +343,38 @@ func generateCodeAllocateCDTS(params []*IDL.ArgDefinition, retval []*IDL.ArgDefi
 	} else {
 		return ""
 	}
+}
+
+//--------------------------------------------------------------------
+func centrypointParameters(meth *IDL.FunctionDefinition) string {
+	
+	if len(meth.Parameters) == 0 && len(meth.ReturnValues) == 0 {
+		return `char** out_err, uint64_t* out_err_len`
+	} else if len(meth.Parameters) > 0 && len(meth.ReturnValues) > 0 {
+		return `cdts xcall_params[2], char** out_err, uint64_t* out_err_len`
+	} else {
+		return `cdts xcall_params[1], char** out_err, uint64_t* out_err_len`
+	}
+	
+}
+
+//--------------------------------------------------------------------
+func centrypointCallJVMEntrypoint(jclass string, jmethod string, meth *IDL.FunctionDefinition) string {
+
+	code := "JNIEnv* env;\n"
+	code += "auto releaser = get_environment(&env);\n"
+
+	code += fmt.Sprintf(`env->CallStaticObjectMethod(%v, %v`, jclass, jmethod)
+	
+	if len(meth.Parameters) == 0 && len(meth.ReturnValues) == 0 {
+		code += ");\n"
+	} else {
+		code += ", (jlong)xcall_params);\n"
+	}
+
+	code += "releaser();\n"
+	
+	return code
 }
 
 //--------------------------------------------------------------------
