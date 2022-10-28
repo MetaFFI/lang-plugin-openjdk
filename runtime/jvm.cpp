@@ -34,7 +34,7 @@ jvm::jvm()
 	// create new JVM
 	
 	std::stringstream ss;
-	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
+	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
 	printf("JVM classpath: %s\n", ss.str().c_str());
 	std::string options_string = ss.str();
 	JavaVMOption options[1] = {0};
@@ -188,12 +188,8 @@ void jvm::load_function_path(const std::string& function_path, jclass* cls, jmet
 	*cls = penv->FindClass((std::string("metaffi_guest/")+fp[function_path_entrypoint_class]).c_str());
 	check_and_throw_jvm_exception(this, penv, *cls);
 	
-	printf("+++ Loaded %s successfully\n", (std::string("metaffi_guest/")+fp[function_path_entrypoint_class]).c_str());
-	
 	*meth = penv->GetStaticMethodID(*cls, (fp[function_path_entry_entrypoint_function]).c_str(), ("(J)V"));
 	check_and_throw_jvm_exception(this, penv, *meth);
-	
-	printf("+++ Loaded method successfully\n");
 	
 }
 //--------------------------------------------------------------------

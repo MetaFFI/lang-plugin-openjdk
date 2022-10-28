@@ -312,11 +312,16 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 				for(int i=0 ; i<parray_dimensions_lengths[0] ; i++)
 				{
 					jobject curObject = env->GetObjectArrayElement((jobjectArray)jobj, i);
-					if(!objects_table::instance().contains(jobj)){
-						objects_table::instance().set(jobj);
+					if(!objects_table::instance().contains(curObject))
+					{
+						jobject g_jobj = env->NewGlobalRef(curObject);
+						objects_table::instance().set(g_jobj);
+						res[i] = g_jobj;
 					}
-					
-					res[i] = jobj;
+					else
+					{
+						res[i] = curObject;
+					}
 				}
 			}
 			
@@ -344,10 +349,15 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 				}
 				
 				// a java object
-				objects_table::instance().set(jobj);
+				jobject g_jobj = env->NewGlobalRef(jobj);
+				objects_table::instance().set(g_jobj);
+				return g_jobj;
+			}
+			else
+			{
+				return (metaffi_handle)jobj;
 			}
 			
-			return (metaffi_handle)jobj;
 		};
 		
 		set_numeric_to_cdts<metaffi_handle>((jobjectArray)values_to_set, index+starting_index, val_to_set, set_object);
@@ -365,9 +375,15 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	void set_metaffi_string8(void* values_to_set, int index, metaffi_string8& val_to_set, metaffi_size& val_length, int starting_index) override
 	{
 		set_string_to_cdts<metaffi_string8, char>((jobject)values_to_set, index+starting_index, val_to_set, val_length,
-		                                          [this](jstring jstr)->metaffi_string8{ jboolean is_copy = JNI_TRUE; return (metaffi_string8)env->GetStringUTFChars(jstr, &is_copy); },
-		                                          [this](jstring jstr)->metaffi_size{ return env->GetStringUTFLength(jstr); });
-		
+		                                          [this](jstring jstr)->metaffi_string8{
+														if(!jstr){ return nullptr; }
+														jboolean is_copy = JNI_TRUE;
+														return (metaffi_string8)env->GetStringUTFChars(jstr, &is_copy);
+													},
+		                                          [this](jstring jstr)->metaffi_size{
+			                                            if(!jstr){ return 0; }
+														return env->GetStringUTFLength(jstr);
+													});
 	}
 	
 	void set_metaffi_string16_array(void* values_to_set, int index, metaffi_string16*& parray_to_set, metaffi_size*& pelements_lengths_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
@@ -701,18 +717,18 @@ struct java_cdts_parse_callbacks : public cdts_parse_callbacks_interface
 		
 	}
 	
-	void on_metaffi_handle(void* values_to_set, int index, const metaffi_handle& val_to_set) override
+	void on_metaffi_handle(void* values_to_set, int index, const metaffi_handle& handle) override
 	{
 		jobject res = nullptr;
-		if(val_to_set != nullptr)
+		if(handle != nullptr)
 		{
-			if(!objects_table::instance().contains(jobject(val_to_set))) // no java object, return MetaFFIHandle object
+			if(!objects_table::instance().contains(jobject(handle))) // not java object, return MetaFFIHandle object
 			{
-				res = env->NewObject(cdts_java::metaffi_handle_class, cdts_java::metaffi_handle_constructor, (jlong)val_to_set);
+				res = env->NewObject(cdts_java::metaffi_handle_class, cdts_java::metaffi_handle_constructor, (jlong)handle);
 			}
 			else
 			{
-				res = (jobject)val_to_set;
+				res = (jobject)handle;
 			}
 		}
 		
@@ -929,7 +945,7 @@ void cdts_java::build(jobjectArray parameters, metaffi_types_ptr parameters_type
 	//auto f = [&]()
 	//{
 		java_cdts_build_callbacks bc(env);
-		this->cdts.build(parameters_types, env->GetArrayLength(parameters), parameters, starting_index, bc);
+		this->cdts.build(parameters_types, params_count, parameters, starting_index, bc);
 	//};
 	
 	//f();

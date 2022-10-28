@@ -30,6 +30,34 @@ var templatesFuncMap = map[string]any{
 	"GetImports":                   getImports,
 	"CEntrypointParameters":        centrypointParameters,
 	"CEntrypointCallJVMEntrypoint": centrypointCallJVMEntrypoint,
+	"CallConstructor":              callConstructor,
+}
+
+//--------------------------------------------------------------------
+func callConstructor(class *IDL.ClassDefinition, constructor *IDL.ConstructorDefinition) string {
+	
+	paramsCode := ""
+	if constructor.Parameters != nil {
+		for i := 0; i < len(constructor.Parameters); i = i + 1 {
+			paramsCode += fmt.Sprintf("(%v)parameters[%v]", toJavaType(constructor.Parameters[i].Type, constructor.Parameters[i].Dimensions), i)
+			if i+1 < len(constructor.Parameters) {
+				paramsCode += ", "
+			}
+		}
+	}
+	
+	clsName := ""
+	if pck, found := constructor.FunctionPath["package"]; found {
+		clsName = pck + "." + class.Name
+	} else {
+		clsName = class.Name
+	}
+	
+	code := fmt.Sprintf("var instance = new %v(%v);", clsName, paramsCode)
+	
+	// set object
+	
+	return code
 }
 
 //--------------------------------------------------------------------
@@ -101,8 +129,10 @@ func getObject(cls *IDL.ClassDefinition, args []*IDL.ArgDefinition) string {
 	if len(args) == 0 {
 		panic("Object handle is expected in parameters[0]")
 	}
-	
-	return fmt.Sprintf("var instance = (%v)metaffiBridge.get_object((Long)parameters[0]);", getFullClassName(cls))
+
+	code := fmt.Sprintf("var instance = (%v)parameters[0];\n", getFullClassName(cls)) // TODO: needs to be fixed after we can see exception data
+
+	return code
 }
 
 //--------------------------------------------------------------------
@@ -360,10 +390,10 @@ func centrypointParameters(meth *IDL.FunctionDefinition) string {
 
 //--------------------------------------------------------------------
 func centrypointCallJVMEntrypoint(jclass string, jmethod string, meth *IDL.FunctionDefinition) string {
-
+	
 	code := "JNIEnv* env;\n"
 	code += "auto releaser = get_environment(&env);\n"
-
+	
 	code += fmt.Sprintf(`env->CallStaticObjectMethod(%v, %v`, jclass, jmethod)
 	
 	if len(meth.Parameters) == 0 && len(meth.ReturnValues) == 0 {
@@ -371,8 +401,6 @@ func centrypointCallJVMEntrypoint(jclass string, jmethod string, meth *IDL.Funct
 	} else {
 		code += ", (jlong)xcall_params);\n"
 	}
-
-	code += "releaser();\n"
 	
 	return code
 }

@@ -283,10 +283,10 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 	try
 	{
 		jsize len = env->GetArrayLength(parameters);
+		
 		cdts_java wrap(((cdt*) pcdts), len, env);
 		jboolean is_copy = JNI_FALSE;
 		
-		// TODO: get types from java source code using the compiler, and don't evaluate them during runtime
 		jlong* pmtypes_array = env->GetLongArrayElements(pmetaffi_types, &is_copy);
 		wrap.build(parameters, reinterpret_cast<metaffi_types_ptr>(pmtypes_array), len, 0);
 		
@@ -352,8 +352,9 @@ JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jo
 	return (jobject)phandle;
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object (JNIEnv *, jobject, jlong phandle)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object (JNIEnv* env, jobject, jlong phandle)
 {
+	env->DeleteGlobalRef((jobject)phandle);
 	objects_table::instance().remove((jobject)phandle);
 }
 //--------------------------------------------------------------------

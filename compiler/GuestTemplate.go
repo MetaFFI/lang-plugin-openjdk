@@ -49,6 +49,8 @@ public final class {{$m.Name}}
 		// get object instance
 		{{GetObject $c $f.Parameters}}
 
+		System.out.printf("Getter returning instance.{{$f.Name}}. Type: {{GetMetaFFITypes $f.ReturnValues}}\n");
+
 		{{if $f.ReturnValues}}
 		metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ instance.{{$f.Name}} }, {{GetMetaFFITypes $f.ReturnValues}} );
 		{{end}}
@@ -79,7 +81,7 @@ public final class {{$m.Name}}
 		{{GetParamsFromCDTS $f.Parameters 2}}
 
 		// get object instance
-		{{GetObject $c $f.Parameters}}
+		{{CallConstructor $c $f}}
 
 		{{if $f.ReturnValues}}
         metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ instance }, {{GetMetaFFITypes $f.ReturnValues}} );
@@ -133,27 +135,46 @@ const GuestCPPEntrypoint = `
 JavaVM* jvm = nullptr;
 
 
-#define check_and_throw_jvm_exception(env, var) \
+#define check_and_throw_jvm_exception(env, var, before_throw_code) \
 if(env->ExceptionCheck() == JNI_TRUE)\
 {\
 std::string err_msg = get_exception_description(env, env->ExceptionOccurred());\
+before_throw_code \
 throw std::runtime_error(err_msg);\
 }\
 else if(!var)\
 {\
+before_throw_code; \
 throw std::runtime_error("Failed to get " #var);\
+}
+
+#define if_exception_throw_jvm_exception(env, before_throw_code) \
+if(env->ExceptionCheck() == JNI_TRUE)\
+{\
+std::string err_msg = get_exception_description(env, env->ExceptionOccurred());\
+before_throw_code; \
+throw std::runtime_error(err_msg);\
 }
 
 std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 {
 	jclass throwable_class = penv->FindClass("java/lang/Throwable");
-	check_and_throw_jvm_exception(penv, throwable_class);
+	if(!throwable_class)
+	{
+		throw std::runtime_error("failed to FindClass java/lang/Throwable");
+	}
 
 	jmethodID throwable_toString = penv->GetMethodID(throwable_class,"toString","()Ljava/lang/String;");
-	check_and_throw_jvm_exception(penv, throwable_toString);
+	if(!throwable_class)
+    {
+        throw std::runtime_error("failed to GetMethodID ()Ljava/lang/String;");
+    }
 
 	jobject str = penv->CallObjectMethod(throwable, throwable_toString);
-	check_and_throw_jvm_exception(penv, str);
+	if(!throwable_class)
+    {
+        throw std::runtime_error("failed to CallObjectMethod ()Ljava/lang/String;");
+    }
 
 	std::string res(penv->GetStringUTFChars((jstring)str, nullptr));
 
@@ -231,37 +252,37 @@ extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
             {{range $findex, $f := $c.Fields}}
                 {{if $f.Getter}}{{$f := $f.Getter}}
                 jclass_{{$c.Name}}_get_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
-                check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_get_{{$f.Name}});
+                check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_get_{{$f.Name}},);
                 jmethod_{{$c.Name}}_get_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_get_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
-                check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_get_{{$f.Name}});
+                check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_get_{{$f.Name}},);
                 {{end}}
                 {{if $f.Setter}}{{$f := $f.Setter}}
                 jclass_{{$c.Name}}_set_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
-                check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_set_{{$f.Name}});
+                check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_set_{{$f.Name}},);
                 jmethod_{{$c.Name}}_set_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_set_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
-                check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_set_{{$f.Name}});
+                check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_set_{{$f.Name}},);
                 {{end}}
             {{end}}
 
             {{range $cstrindex, $f := $c.Constructors}}
 	            jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
-	            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}});
+	            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
 	            jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
-	            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}});
+	            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
             {{end}}
 
             {{if $c.Releaser}}{{$f := $c.Releaser}}
             jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
-            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}});
+            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
             jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
-            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}});
+            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
             {{end}}
 
             {{range $cstrindex, $f := $c.Methods}}
             jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
-            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}});
+            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
             jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
-            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}});
+            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
             {{end}}
 
         {{end}}
@@ -281,19 +302,17 @@ The signature of the entrypoint corresponds to the expected C-function returned 
             {{if $f.Getter}}{{$f := $f.Getter}}
 extern "C" void EntryPoint_{{$c.Name}}_get_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
-	printf("+++ EntryPoint_{{$c.Name}}_get_{{$f.Name}}\n");
-	return;
-
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_get_" $f.Name) (print "jmethod_" $c.Name "_get_" $f.Name) $f.FunctionDefinition}}
+    if_exception_throw_jvm_exception(env, releaser());
+    releaser();
 }
             {{end}}
             {{if $f.Setter}}{{$f := $f.Setter}}
 extern "C" void EntryPoint_{{$c.Name}}_set_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
-	printf("+++ EntryPoint_{{$c.Name}}_set_{{$f.Name}}\n");
-	return;
-
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_set_" $f.Name) (print "jmethod_" $c.Name "_set_" $f.Name) $f.FunctionDefinition}}
+    if_exception_throw_jvm_exception(env, releaser());
+    releaser();
 }
             {{end}}
         {{end}}
@@ -301,30 +320,27 @@ extern "C" void EntryPoint_{{$c.Name}}_set_{{$f.Name}}({{CEntrypointParameters $
         {{range $cstrindex, $f := $c.Constructors}}
 extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
-	printf("+++ EntryPoint_{{$c.Name}}_{{$f.Name}}\n");
-	return;
-
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_" $f.Name) (print "jmethod_" $c.Name "_" $f.Name) $f.FunctionDefinition}}
+    if_exception_throw_jvm_exception(env, releaser());
+    releaser();
 }
         {{end}}
 
         {{if $c.Releaser}}{{$f := $c.Releaser}}
 extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
-	printf("+++ EntryPoint_{{$c.Name}}_{{$f.Name}}\n");
-	return;
-
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_" $f.Name) (print "jmethod_" $c.Name "_" $f.Name) $f.FunctionDefinition}}
+    if_exception_throw_jvm_exception(env, releaser());
+    releaser();
 }
         {{end}}
 
         {{range $cstrindex, $f := $c.Methods}}
 extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
-	printf("+++ EntryPoint_{{$c.Name}}_{{$f.Name}}\n");
-	return;
-
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_" $f.Name) (print "jmethod_" $c.Name "_" $f.Name) $f.FunctionDefinition}}
+    if_exception_throw_jvm_exception(env, releaser());
+    releaser();
 }
         {{end}}
 
