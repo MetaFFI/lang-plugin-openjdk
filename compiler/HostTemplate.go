@@ -8,10 +8,11 @@ const HostFunctionStubsTemplate = `
 public final class {{$m.Name}}
 {
 	public static MetaFFIBridge metaffi;
+	private static metaffi.MetaFFIBridge metaffiBridge = new metaffi.MetaFFIBridge();
 
 	{{range $findex, $f := $m.Globals}}
-	{{if $f.Getter}}{{$f = $f.Getter}}public static long {{$f.GetEntityIDName}} = 0;{{end}}
-    {{if $f.Setter}}{{$f = $f.Setter}}public static long {{$f.GetEntityIDName}} = 0;{{end}}
+	{{if $f.Getter}}public static long {{$f.Getter.GetEntityIDName}} = 0;{{end}}
+    {{if $f.Setter}}public static long {{$f.Setter.GetEntityIDName}} = 0;{{end}}
     {{end}}{{/* End globals */}}
 
 	{{range $findex, $f := $m.Functions}}
@@ -21,20 +22,20 @@ public final class {{$m.Name}}
 	{{range $cindex, $c := $m.Classes}}
 
 	{{range $findex, $f := $c.Fields}}
-	{{if $f.Getter}}{{$f = $f.Getter}}public static long {{$f.GetEntityIDName}} = 0;{{end}}
-    {{if $f.Setter}}{{$f = $f.Setter}}public static long {{$f.GetEntityIDName}} = 0;;{{end}}
+	{{if $f.Getter}}public static long {{$c.Name}}_{{$f.Getter.Name}}ID = 0;{{end}}
+    {{if $f.Setter}}public static long {{$c.Name}}_{{$f.Setter.Name}}ID = 0;{{end}}
 	{{end}}
 
-	{{range $findex, $f := $c.Constructor}}
-	public static long {{$f.GetEntityIDName}} = 0;
+	{{range $findex, $f := $c.Constructors}}
+	public static long {{$c.Name}}_{{$f.Name}}ID = 0;
 	{{end}}
 
 	{{if $c.Releaser}}{{$f := $c.Releaser}}
-	public static long {{$f.GetEntityIDName}} = 0;
+	public static long {{$c.Name}}_{{$f.Name}}ID = 0;
 	{{end}}
 
 	{{range $findex, $f := $c.Methods}}
-	public static long {{$f.GetEntityIDName}} = 0;
+	public static long {{$c.Name}}_{{$f.Name}}ID = 0;
 	{{end}}
 
 	{{end}}{{/*End classes*/}}
@@ -45,8 +46,8 @@ public final class {{$m.Name}}
 		metaffi.load_runtime_plugin("xllr.{{$targetLanguage}}");
 
 		{{range $findex, $f := $m.Globals}}
-		{{if $f.Getter}}{{$f = $f.Getter}}{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-	    {{if $f.Setter}}{{$f = $f.Setter}}{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
+		{{if $f.Getter}}{{$f.Getter.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Getter.FunctionPathAsString}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+	    {{if $f.Setter}}{{$f.Setter.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Setter.FunctionPathAsString}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 	    {{end}}{{/* End globals */}}
 
 		{{range $findex, $f := $m.Functions}}
@@ -56,12 +57,12 @@ public final class {{$m.Name}}
 		{{range $cindex, $c := $m.Classes}}
 
 		{{range $findex, $f := $c.Fields}}
-		{{if $f.Getter}}{{$f = $f.Getter}}{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});{{end}}
-	    {{if $f.Setter}}{{$f = $f.Setter}}{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});{{end}}
+		{{if $f.Getter}}{{$c.Name}}_{{$f.Getter.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Getter.FunctionPathAsString}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+	    {{if $f.Setter}}{{$c.Name}}_{{$f.Setter.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Setter.FunctionPathAsString}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 		{{end}}
 
-		{{range $findex, $f := $c.Constructor}}
-		{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+		{{range $findex, $f := $c.Constructors}}
+		{{$c.Name}}_{{$f.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 		{{end}}
 
 		{{if $c.Releaser}}{{$f := $c.Releaser}}
@@ -129,16 +130,20 @@ public final class {{$m.Name}}
 	}
 	{{end}}
 }
+{{end}}
+`
 
-{{/* --- Classes --- */}}
-{{range $findex, $c := $m.Classes}}
+const HostClassesStubsTemplate = `
+{{$c := .C}}
+{{$m := .M}}
 public class {{$c.Name}}
 {
-	private long objectID;
+	private metaffi.MetaFFIHandle objectID;
+	private static metaffi.MetaFFIBridge metaffiBridge = new metaffi.MetaFFIBridge();
 
 	{{/* --- Fields --- */}}
-	{{range $findex, $f := $c.Fields}}
-	{{if $f.Getter}}{{$f := $f.Getter}}
+	{{range $findex, $fi := $c.Fields}}
+	{{if $fi.Getter}}{{$f := $fi.Getter}}
 	{{$ParametersLength := len $f.Parameters}}{{$ReturnValuesLength := len $f.ReturnValues}}
 	{{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
 	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}} {{if $index}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}} ) throws MetaFFIException
@@ -148,14 +153,14 @@ public class {{$c.Name}}
 
 		{{SetParamsToCDTS $f.Parameters 2}}
 
-		{{ $entityIDName := $m.Name "." $f.GetEntityIDName}}
+		{{ $entityIDName := (print $m.Name "." $f.GetEntityIDName)}}
 		{{XCallMetaFFI $f.Parameters $f.ReturnValues $entityIDName 2}}
 
 		{{SetReturnToCDTSAndReturn $f.ReturnValues $returnValuesTypeName 2}}
 		
 	}
 	{{end}}{{/*end getter*/}}
-	{{if $f.Setter}}{{$f := $f.Setter}}
+	{{if $fi.Setter}}{{$f := $fi.Setter}}
 	{{$ParametersLength := len $f.Parameters}}{{$ReturnValuesLength := len $f.ReturnValues}}
 	{{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
 	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}} {{if $index}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}} ) throws MetaFFIException
@@ -165,7 +170,7 @@ public class {{$c.Name}}
 
 		{{SetParamsToCDTS $f.Parameters 2}}
 
-		{{ $entityIDName := $m.Name "." $f.GetEntityIDName}}
+		{{ $entityIDName := (print $m.Name "." $f.GetEntityIDName)}}
 		{{XCallMetaFFI $f.Parameters $f.ReturnValues $entityIDName 2}}
 
 		{{SetReturnToCDTSAndReturn $f.ReturnValues $returnValuesTypeName 2}}
@@ -181,10 +186,10 @@ public class {{$c.Name}}
 
 		{{SetParamsToCDTS $f.Parameters 2}}
 
-		{{ $entityIDName := $m.Name "." $f.GetEntityIDName}}
+		{{ $entityIDName := (print $m.Name "." $c.Name "_" $f.Name "ID")}}
 		{{XCallMetaFFI $f.Parameters $f.ReturnValues $entityIDName 2}}
 
-		this.objectID = metaffi.CDTSToJava(xcall_params, 0)
+		this.objectID = (metaffi.MetaFFIHandle)metaffiBridge.cdts_to_java(xcall_params, 1)[0];
 	}
 	{{end}}{{/*end constructors*/}}
 
@@ -193,13 +198,7 @@ public class {{$c.Name}}
 	@Override
 	public void finalize()
 	{
-	    {{/* creates xcall_params, parametersCDTS and return_valuesCDTS */}}
-		{{GenerateCodeAllocateCDTS $f.Parameters $f.ReturnValues}}
-
-		{{SetParamsToCDTS $f.Parameters 2}}
-
-		{{ $entityIDName := $m.Name "." $f.GetEntityIDName}}
-		{{XCallMetaFFI $f.Parameters $f.ReturnValues $entityIDName 2}}
+		// TODO: Delete reference to the object in the objects table
 	}
 	{{end}}{{/*end releaser*/}}
 
@@ -214,26 +213,24 @@ public class {{$c.Name}}
 
 		{{SetParamsToCDTS $f.Parameters 2}}
 
-		{{ $entityIDName := $m.Name "." $f.GetEntityIDName}}
+		{{ $entityIDName := (print $m.Name "." $f.GetEntityIDName)}}
 		{{XCallMetaFFI $f.Parameters $f.ReturnValues $entityIDName 2}}
 
 		{{SetReturnToCDTSAndReturn $f.ReturnValues $returnValuesTypeName 2}}
 	}
 	{{end}}{{/*end methods*/}}
 }
-{{end}}{{/*end classes*/}}
-
-{{end}}{{/*end modules*/}}
 `
 
 const HostHeaderTemplate = `
 {{DoNotEditText "//"}}
 `
 
-const HostPackage = `package metaffi;
+const HostPackage = `package metaffi_host;
 `
 
 const HostImports = `
 import java.io.*;
 import java.util.*;
+import metaffi.*;
 `

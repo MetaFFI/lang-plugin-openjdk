@@ -33,14 +33,14 @@ func (this *HostCompiler) Compile(definition *IDL.IDLDefinition, outputDir strin
 	this.outputFilename = outputFilename
 	
 	// generate code
-	code, err := this.generateCode()
+	codefiles, err := this.generateCode()
 	if err != nil {
-		return fmt.Errorf("Failed to generate guest code: %v", err)
+		return fmt.Errorf("Failed to generate host code: %v", err)
 	}
 	
-	file, err := this.buildDynamicLibrary(code)
+	file, err := this.buildDynamicLibrary(codefiles)
 	if err != nil {
-		return fmt.Errorf("Failed to generate guest code: %v", err)
+		return fmt.Errorf("Failed to generate host code: %v", err)
 	}
 	
 	// write to output
@@ -63,28 +63,59 @@ func (this *HostCompiler) parseHeader() (string, error) {
 }
 
 //--------------------------------------------------------------------
-func (this *HostCompiler) parseForeignStubs() (string, error) {
+func (this *HostCompiler) parseForeignStubs() (map[string]string, error) {
 	
-	return TemplateFunctions2.RunTemplate("HostFunctionStubsTemplate", HostFunctionStubsTemplate, this.def, templatesFuncMap)
+	res := make(map[string]string)
+	
+	if len(this.def.Modules) > 1 {
+		panic("OpenJDK plugin currently does not support multiple modules. Split modules into separate IDLs")
+	}
+	
+	// place in module file
+	modfile, err := TemplateFunctions2.RunTemplate("OpenJDK HostFunctionStubsTemplate", HostFunctionStubsTemplate, this.def, templatesFuncMap)
+	res[this.def.Modules[0].Name+".java"] = modfile
+	
+	for _, m := range this.def.Modules {
+		for _, c := range m.Classes {
+			
+			tempParam := struct {
+				C *IDL.ClassDefinition
+				M *IDL.ModuleDefinition
+			}{
+				C: c,
+				M: m,
+			}
+			
+			res[c.Name+".java"], err = TemplateFunctions2.RunTemplate("OpenJDK HostClassesStubsTemplate", HostClassesStubsTemplate, tempParam, templatesFuncMap)
+			
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	
+	return res, nil
 	
 }
 
 //--------------------------------------------------------------------
-func (this *HostCompiler) generateCode() (string, error) {
+func (this *HostCompiler) generateCode() (map[string]string, error) {
 	
 	header, err := this.parseHeader()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	
 	functionStubs, err := this.parseForeignStubs()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	
-	res := header + HostPackage + HostImports + functionStubs
+	for filename, code := range functionStubs {
+		functionStubs[filename] = header + HostPackage + HostImports + code
+	}
 	
-	return res, nil
+	return functionStubs, nil
 }
 
 //--------------------------------------------------------------------
@@ -99,7 +130,7 @@ func (this *HostCompiler) getClassPath() string {
 }
 
 //--------------------------------------------------------------------
-func (this *HostCompiler) buildDynamicLibrary(code string) ([]byte, error) {
+func (this *HostCompiler) buildDynamicLibrary(codefiles map[string]string) ([]byte, error) {
 	
 	dir, err := os.MkdirTemp("", "metaffi_openjdk_compiler*")
 	if err != nil {
@@ -114,15 +145,14 @@ func (this *HostCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	dir = dir + string(os.PathSeparator)
 	
 	javaFiles := make([]string, 0)
-	for _, m := range this.def.Modules {
-		javaFilename := dir + m.Name + ".java"
-		javaFiles = append(javaFiles, javaFilename)
-		err = ioutil.WriteFile(javaFilename, []byte(code), 0700)
+	for filename, code := range codefiles { // TODO: handle multiple modules
+		javaFiles = append(javaFiles, filename)
+		err = ioutil.WriteFile(filename, []byte(code), 0700)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to write host java code: %v", err)
 		}
 		
-		println(code)
+		println("writing file " + filename)
 	}
 	
 	fmt.Println("Building OpenJDK host code")
@@ -141,7 +171,7 @@ func (this *HostCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
 	
-	classFiles, err := filepath.Glob(dir + "metaffi" + string(os.PathSeparator) + "*.class")
+	classFiles, err := filepath.Glob(dir + "metaffi_host" + string(os.PathSeparator) + "*.class")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "metaffi", err)
 	}

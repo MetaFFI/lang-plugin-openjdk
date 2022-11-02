@@ -32,31 +32,27 @@ public class MetaFFIBridge
 	//--------------------------------------------------------------------
 	public MetaFFIBridge() {}
 	//--------------------------------------------------------------------
-    public Object[] XCallParamsRet(long pff, long[] parameterTypes, long[] retvalTypes, Object[] params) throws MetaFFIException
-    {
-// 	    long xcall_params = java_to_cdts(params, parameterTypes, retvalTypes.length);
-//         this.xcall_params_ret(pff, xcall_params);
-// 	    return cdts_to_java(xcall_params, retvalTypes);
-		return null;
-    }
-    //--------------------------------------------------------------------
-    public void XCallParamsNoRet(long pff, long[] parameterTypes, Object[] params) throws MetaFFIException
-    {
-	    //long xcall_params = java_to_cdts(params, parameterTypes, 0);
-	    //this.xcall_params_no_ret(pff, xcall_params);
-    }
-    //--------------------------------------------------------------------
-    public Object[] XCallNoParamsRet(long pff, long[] retvalTypes) throws MetaFFIException
-    {
-// 	    long xcall_params = java_to_cdts(null, null, retvalTypes.length);
-// 		this.xcall_no_params_ret(pff, xcall_params);
-// 		return cdts_to_java(xcall_params, retvalTypes);
-		return null;
-    }
-    //--------------------------------------------------------------------
-    public void XCallNoParamsNoRet(long pff) throws MetaFFIException
-    {
-// 	    this.xcall_no_params_no_ret(pff);
-    }
-    //--------------------------------------------------------------------
+	public long getMetaFFIType(Object o)
+	{
+		// TODO: get numbers directly from C++, and not hard-coded
+
+		if(o instanceof Float) return 1;
+		if(o instanceof Float[]) return 1 | 65536;
+		else if(o instanceof Double) return 2;
+		else if(o instanceof Double[]) return 2 | 65536;
+		else if(o instanceof Byte) return 4;
+		else if(o instanceof Byte[]) return 4 | 65536;
+		else if(o instanceof Short) return 8;
+		else if(o instanceof Short[]) return 8 | 65536;
+		else if(o instanceof Integer) return 16;
+        else if(o instanceof Integer[]) return 16 | 65536;
+		else if(o instanceof Long) return 32;
+		else if(o instanceof Long[]) return 32 | 65536;
+		else if(o instanceof Boolean) return 1024;
+		else if(o instanceof Boolean[]) return 1024 | 65536;
+		else if(o instanceof String) return 4096;
+		else if(o instanceof String[]) return 4096 | 65536;
+		else return 32768;
+	}
+	//--------------------------------------------------------------------
 }

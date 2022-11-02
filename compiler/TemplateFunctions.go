@@ -129,9 +129,9 @@ func getObject(cls *IDL.ClassDefinition, args []*IDL.ArgDefinition) string {
 	if len(args) == 0 {
 		panic("Object handle is expected in parameters[0]")
 	}
-
+	
 	code := fmt.Sprintf("var instance = (%v)parameters[0];\n", getFullClassName(cls)) // TODO: needs to be fixed after we can see exception data
-
+	
 	return code
 }
 
@@ -196,7 +196,7 @@ func setReturnToCDTSAndReturn(retval []*IDL.ArgDefinition, returnValuesType stri
 	}
 	
 	if len(retval) == 1 {
-		return fmt.Sprintf("return (%v)metaffiBridge.cdts_to_java(return_valuesCDTS, 0)[0]", toJavaType(retval[0].Type, retval[0].Dimensions))
+		return fmt.Sprintf("return (%v)metaffiBridge.cdts_to_java(return_valuesCDTS, 1)[0];", toJavaType(retval[0].Type, retval[0].Dimensions))
 	}
 	
 	indentStr := strings.Repeat("\t", indent)
@@ -204,7 +204,6 @@ func setReturnToCDTSAndReturn(retval []*IDL.ArgDefinition, returnValuesType stri
 	res := fmt.Sprintf("%v returnValuesResult = new %v();\n", returnValuesType, returnValuesType)
 	res += fmt.Sprintf("%vObject[] rets = metaffiBridge.cdts_to_java(return_valuesCDTS, %v);\n", indentStr, len(retval))
 	for i, rv := range retval {
-		// res += fmt.Sprintf("%vSystem.out.println(rets[%v]);\n", indentStr, i)
 		res += fmt.Sprintf("%vreturnValuesResult.%v = (%v)rets[%v];\n", indentStr, rv.Name, toJavaType(rv.Type, rv.Dimensions), i)
 	}
 	res += fmt.Sprintf("%vreturn returnValuesResult;\n", indentStr)
@@ -215,7 +214,14 @@ func setReturnToCDTSAndReturn(retval []*IDL.ArgDefinition, returnValuesType stri
 //--------------------------------------------------------------------
 func xCallMetaFFI(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition, funcIDName string, indent int) string {
 	// metaffiBridge.{{xcall $f.Parameters $f.ReturnValues}}({{$f.GetEntityIDName}}, xcall_params);
-	return fmt.Sprintf("metaffiBridge.%v(%v, xcall_params);\n", XCallFunctionName(params, retval), funcIDName)
+	res := fmt.Sprintf("metaffiBridge.%v(%v", XCallFunctionName(params, retval), funcIDName)
+	if len(params) == 0 && len(retval) == 0 {
+		res += ");\n"
+	} else {
+		res += ", xcall_params);\n"
+	}
+	
+	return res
 }
 
 //--------------------------------------------------------------------
@@ -315,7 +321,12 @@ func setParamsToCDTS(params []*IDL.ArgDefinition, indent int) string {
 			res += ", "
 		}
 		
-		metaffiTypes += strconv.FormatUint(IDL.ArgMetaFFIType(p), 10)
+		if p.Type != IDL.ANY {
+			metaffiTypes += strconv.FormatUint(IDL.ArgMetaFFIType(p), 10)
+		} else {
+			metaffiTypes += fmt.Sprintf("metaffiBridge.getMetaFFIType(%v)", p.Name)
+		}
+		
 		if i < len(params)-1 {
 			metaffiTypes += ", "
 		}
@@ -342,7 +353,7 @@ func getCDTSPointers(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition, i
 			code += fmt.Sprintf("%vlong return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)1);\n", indentStr)
 		}
 	} else {
-		code += "return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)0);\n"
+		code += "long return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)0);\n"
 	}
 	
 	return code
@@ -365,7 +376,7 @@ func generateCodeAllocateCDTS(params []*IDL.ArgDefinition, retval []*IDL.ArgDefi
 				code += "\t\tlong return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)1);\n"
 			}
 		} else {
-			code += "\t\treturn_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)0);\n"
+			code += "\t\tlong return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)0);\n"
 		}
 		
 		return code
