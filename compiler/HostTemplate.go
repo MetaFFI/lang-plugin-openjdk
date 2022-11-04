@@ -138,7 +138,7 @@ const HostClassesStubsTemplate = `
 {{$m := .M}}
 public class {{$c.Name}}
 {
-	private metaffi.MetaFFIHandle objectID;
+	private metaffi.MetaFFIHandle this_instance;
 	private static metaffi.MetaFFIBridge metaffiBridge = new metaffi.MetaFFIBridge();
 
 	{{/* --- Fields --- */}}
@@ -146,7 +146,7 @@ public class {{$c.Name}}
 	{{if $fi.Getter}}{{$f := $fi.Getter}}
 	{{$ParametersLength := len $f.Parameters}}{{$ReturnValuesLength := len $f.ReturnValues}}
 	{{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
-	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}} {{if $index}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}} ) throws MetaFFIException
+	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}}{{if gt $index 0}} {{if gt $index 1}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}}{{end}} ) throws MetaFFIException
 	{
 		{{/* creates xcall_params, parametersCDTS and return_valuesCDTS */}}
 		{{GenerateCodeAllocateCDTS $f.Parameters $f.ReturnValues}}
@@ -163,7 +163,7 @@ public class {{$c.Name}}
 	{{if $fi.Setter}}{{$f := $fi.Setter}}
 	{{$ParametersLength := len $f.Parameters}}{{$ReturnValuesLength := len $f.ReturnValues}}
 	{{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
-	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}} {{if $index}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}} ) throws MetaFFIException
+	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}}{{if gt $index 0}} {{if gt $index 1}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}}{{end}} ) throws MetaFFIException
 	{
 		{{/* creates xcall_params, parametersCDTS and return_valuesCDTS */}}
 		{{GenerateCodeAllocateCDTS $f.Parameters $f.ReturnValues}}
@@ -189,7 +189,7 @@ public class {{$c.Name}}
 		{{ $entityIDName := (print $m.Name "." $c.Name "_" $f.Name "ID")}}
 		{{XCallMetaFFI $f.Parameters $f.ReturnValues $entityIDName 2}}
 
-		this.objectID = (metaffi.MetaFFIHandle)metaffiBridge.cdts_to_java(xcall_params, 1)[0];
+		this.this_instance = (metaffi.MetaFFIHandle)metaffiBridge.cdts_to_java(return_valuesCDTS, 1)[0];
 	}
 	{{end}}{{/*end constructors*/}}
 
@@ -206,7 +206,7 @@ public class {{$c.Name}}
 	{{range $findex, $f := $c.Methods}}
 	{{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
 	{{$ParametersLength := len $f.Parameters}}{{$ReturnValuesLength := len $f.ReturnValues}}
-	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}} {{if $index}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}} ) throws MetaFFIException
+	public {{if eq $ReturnValuesLength 0}}void{{else if gt $ReturnValuesLength 1}}{{$returnValuesTypeName}}{{else}}{{$elem := index $f.ReturnValues 0}}{{ToJavaType $elem.Type $elem.Dimensions}}{{end}} {{$f.Name}}({{range $index, $elem := $f.Parameters}}{{if gt $index 0}} {{if gt $index 1}},{{end}}{{ToJavaType $elem.Type $elem.Dimensions}} {{$elem.Name}}{{end}}{{end}} ) throws MetaFFIException
 	{
 		{{/* creates xcall_params, parametersCDTS and return_valuesCDTS */}}
 		{{GenerateCodeAllocateCDTS $f.Parameters $f.ReturnValues}}

@@ -312,10 +312,10 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 				for(int i=0 ; i<parray_dimensions_lengths[0] ; i++)
 				{
 					jobject curObject = env->GetObjectArrayElement((jobjectArray)jobj, i);
-					if(!objects_table::instance().contains(curObject))
+					if(!openjdk_objects_table::instance().contains(curObject))
 					{
 						jobject g_jobj = env->NewGlobalRef(curObject);
-						objects_table::instance().set(g_jobj);
+						openjdk_objects_table::instance().set(g_jobj);
 						res[i] = g_jobj;
 					}
 					else
@@ -340,7 +340,7 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 				return nullptr;
 			}
 			
-			if(!objects_table::instance().contains(jobj))
+			if(!openjdk_objects_table::instance().contains(jobj))
 			{
 				// if metaffi handle - pass as it is.
 				if(env->IsInstanceOf(jobj, cdts_java::metaffi_handle_class))
@@ -350,7 +350,7 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 				
 				// a java object
 				jobject g_jobj = env->NewGlobalRef(jobj);
-				objects_table::instance().set(g_jobj);
+				openjdk_objects_table::instance().set(g_jobj);
 				return g_jobj;
 			}
 			else
@@ -722,7 +722,7 @@ struct java_cdts_parse_callbacks : public cdts_parse_callbacks_interface
 		jobject res = nullptr;
 		if(handle != nullptr)
 		{
-			if(!objects_table::instance().contains(jobject(handle))) // not java object, return MetaFFIHandle object
+			if(!openjdk_objects_table::instance().contains(jobject(handle))) // not java object, return MetaFFIHandle object
 			{
 				res = env->NewObject(cdts_java::metaffi_handle_class, cdts_java::metaffi_handle_constructor, (jlong)handle);
 			}
@@ -731,9 +731,8 @@ struct java_cdts_parse_callbacks : public cdts_parse_callbacks_interface
 				res = (jobject)handle;
 			}
 		}
-		
+		jsize len = env->GetArrayLength((jobjectArray)values_to_set);
 		env->SetObjectArrayElement((jobjectArray)values_to_set, index, res);
-		
 	}
 	
 	void on_metaffi_handle_array(void* values_to_set, int index, const metaffi_handle* parray_to_set, const metaffi_size* parray_dimensions_lengths, const metaffi_size& array_dimensions) override
@@ -748,7 +747,7 @@ struct java_cdts_parse_callbacks : public cdts_parse_callbacks_interface
 		metaffi_size arrindex[1] = { 0 };
 		metaffi_handle first_elem = arr_wrap.get_elem_at(arrindex, 1);
 		jobjectArray res = env->NewObjectArray((jsize)size, cdts_java::object_class, nullptr);
-		if(!objects_table::instance().contains((jobject)first_elem)) // no java object, return MetaFFIHandle object
+		if(!openjdk_objects_table::instance().contains((jobject)first_elem)) // no java object, return MetaFFIHandle object
 		{
 			for(int i=0 ; i<size ; i++)
 			{

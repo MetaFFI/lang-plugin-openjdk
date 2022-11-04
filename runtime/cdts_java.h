@@ -10,11 +10,9 @@ class cdts_java
 {
 private:
 	metaffi::runtime::cdts_wrapper cdts;
-	//std::shared_ptr<jvm> pjvm;
 	JNIEnv* env = nullptr;
 	
 public:
-	//explicit cdts_java(cdt* cdts, metaffi_size cdts_length, std::shared_ptr<jvm> pjvm);
 	explicit cdts_java(cdt* cdts, metaffi_size cdts_length, JNIEnv* env);
 	
 	cdt* get_cdts();
@@ -23,11 +21,6 @@ public:
 	 * @brief Parses CDTS and returns Object[]. Method assumes CDTS is filled!
 	 */
 	jobjectArray parse();
-	
-	/**
-	 * @brief Builds CDTS from given Object[]. Function assumes CDTS is empty and in the correct size!
-	 */
-	//void build(jobjectArray parameters, int starting_index);
 	
 	void build(jobjectArray parameters, metaffi_types_ptr parameters_types, int params_count, int starting_index);
 	

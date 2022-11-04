@@ -308,7 +308,8 @@ JNIEXPORT jobjectArray JNICALL Java_metaffi_MetaFFIBridge_cdts_1to_1java(JNIEnv*
 	try
 	{
 		cdts_java wrap(((cdt*) pcdts), len, env);
-		return wrap.parse();
+		auto r = wrap.parse();
+		return r;
 	}
 	catch(std::exception& err)
 	{
@@ -345,7 +346,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt(JNIEnv* env, jobjec
 //--------------------------------------------------------------------
 JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jobject, jlong phandle)
 {
-	if(objects_table::instance().contains((jobject)phandle)){
+	if(openjdk_objects_table::instance().contains((jobject)phandle)){
 		throwMetaFFIException(env, "Object is not found in Objects Table");
 	}
 	
@@ -355,6 +356,6 @@ JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jo
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object (JNIEnv* env, jobject, jlong phandle)
 {
 	env->DeleteGlobalRef((jobject)phandle);
-	objects_table::instance().remove((jobject)phandle);
+	openjdk_objects_table::instance().remove((jobject)phandle);
 }
 //--------------------------------------------------------------------

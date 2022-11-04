@@ -6,17 +6,17 @@
 #include <jni.h>
 
 
-extern "C" void release_object(metaffi_handle h);
+extern "C" void openjdk_release_object(metaffi_handle h);
 
-class objects_table_impl
+class openjdk_objects_table_impl
 {
 private:
 	std::set<jobject> objects;
 	mutable std::shared_mutex m;
 
 public:
-	objects_table_impl() = default;
-	~objects_table_impl() = default;
+	openjdk_objects_table_impl() = default;
+	~openjdk_objects_table_impl() = default;
 	
 	void free();
 	
@@ -27,5 +27,5 @@ public:
 	size_t size() const;
 };
 
-typedef metaffi::utils::singleton<objects_table_impl> objects_table;
-template class metaffi::utils::singleton<objects_table_impl>;
+typedef metaffi::utils::singleton<openjdk_objects_table_impl> openjdk_objects_table;
+template class metaffi::utils::singleton<openjdk_objects_table_impl>;
