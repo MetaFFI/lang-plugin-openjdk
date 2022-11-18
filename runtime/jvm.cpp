@@ -33,18 +33,18 @@ jvm::jvm()
 	
 	// create new JVM
 	
-	std::stringstream ss;
-	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
-	printf("JVM classpath: %s\n", ss.str().c_str());
-	std::string options_string = ss.str();
-	JavaVMOption options[1] = {0};
-	options[0].optionString = (char*)options_string.c_str();
+	//std::stringstream ss;
+	//ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
+	//printf("JVM classpath: %s\n", ss.str().c_str());
+	//std::string options_string = ss.str();
+	//JavaVMOption options[1] = {0};
+	//options[0].optionString = (char*)options_string.c_str();
 
 	// set initialization args
 	JavaVMInitArgs vm_args = {0};
 	vm_args.version = JNI_VERSION_10;
-	vm_args.nOptions = 1;
-	vm_args.options = &options[0];
+	vm_args.nOptions = 0;
+	vm_args.options = nullptr;//&options[0];
 	vm_args.ignoreUnrecognized = JNI_FALSE;
 	
 	// load jvm
@@ -53,21 +53,11 @@ jvm::jvm()
 	
 }
 //--------------------------------------------------------------------
-void jvm::load_object_loader(JNIEnv* penv, jclass* object_loader_class, jmethodID* load_object)
-{
-	// load ObjectLoader
-	*object_loader_class = penv->FindClass("metaffi/ObjectLoader");
-	check_and_throw_jvm_exception(this, penv, *object_loader_class);
-	
-	*load_object = penv->GetStaticMethodID(*object_loader_class, "loadObject", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
-	check_and_throw_jvm_exception(this, penv, *load_object);
-}
-//--------------------------------------------------------------------
 void jvm::fini()
 {
 	if(this->pjvm && is_destroy)
 	{
-		this->pjvm->DestroyJavaVM();
+		// this->pjvm->DestroyJavaVM(); // TODO: Check why it gets stuck !
 		this->pjvm = nullptr;
 	}
 }
@@ -76,7 +66,8 @@ void jvm::fini()
 std::function<void()> jvm::get_environment(JNIEnv** env)
 {
 	bool did_attach_thread = false;
-	// Check if the current thread is attached to the VM
+	// Check if th
+	// e current thread is attached to the VM
 	auto get_env_result = pjvm->GetEnv((void**)env, JNI_VERSION_10);
 	if (get_env_result == JNI_EDETACHED)
 	{
@@ -130,50 +121,6 @@ void jvm::check_throw_error(jint err)
 	}
 }
 //--------------------------------------------------------------------
-jclass jvm::load_class(const std::string& dir_or_jar, const std::string& class_name)
-{
-	JNIEnv* penv;
-	auto release_env = this->get_environment(&penv);
-	scope_guard sg([&](){ release_env(); });
-	
-	jstring path_string = penv->NewStringUTF(dir_or_jar.c_str());
-	if(!path_string)
-	{
-		throw std::runtime_error("Failed to create new UTF string");
-	}
-	
-	jstring class_name_string = penv->NewStringUTF(class_name.c_str());
-	if(!class_name_string)
-	{
-		throw std::runtime_error("Failed to create new UTF string");
-	}
-	
-	jclass object_loader_class;
-	jmethodID load_object;
-	this->load_object_loader(penv, &object_loader_class, &load_object);
-	
-	auto class_obj = reinterpret_cast<jclass>(penv->CallStaticObjectMethod(object_loader_class, load_object, path_string, class_name_string));
-	check_and_throw_jvm_exception(this, penv, class_obj);
-	if(!class_obj)
-	{
-		throw std::runtime_error("Failed to call object loader");
-	}
-	
-	penv->DeleteLocalRef(path_string);
-	penv->DeleteLocalRef(class_name_string);
-	
-	return class_obj;
-}
-//--------------------------------------------------------------------
-void jvm::free_class(jclass obj)
-{
-	JNIEnv* penv;
-	auto release_env = this->get_environment(&penv);
-	scope_guard sg([&](){ release_env(); });
-	
-	penv->DeleteLocalRef(obj);
-}
-//--------------------------------------------------------------------
 void jvm::load_function_path(const std::string& function_path, jclass* cls, jmethodID* meth)
 {
 	JNIEnv* penv;
@@ -214,26 +161,6 @@ std::string jvm::get_exception_description(jthrowable throwable)
 	std::string res(penv->GetStringUTFChars((jstring)str, nullptr));
 	
 	return res;
-}
-//--------------------------------------------------------------------
-jobject jvm::call_function(jmethodID meth, jclass cls, jobject obj, jobjectArray params)
-{
-	JNIEnv* env;
-	auto releaser = get_environment(&env);
-	scope_guard sg([&releaser](){ releaser(); });
-	
-	// TODO: check if there's a JVM exception
-	
-	if(obj)
-	{
-		env->CallObjectMethod(obj, meth, params ? params : nullptr);
-	}
-	else
-	{
-		env->CallStaticObjectMethod(cls, meth, params ? params : nullptr);
-	}
-	
-	return nullptr;
 }
 //--------------------------------------------------------------------
 jvm::operator JavaVM*()

@@ -21,7 +21,7 @@ const GuestFunctionXLLRTemplate = `
 
 
 // Code to call foreign functions in module {{$m.Name}}
-public final class {{$m.Name}}
+public final class {{$m.Name}}_Entrypoints
 {
 	private static MetaFFIBridge metaffiBridge = new MetaFFIBridge();
 
@@ -47,9 +47,7 @@ public final class {{$m.Name}}
 		{{GetParamsFromCDTS $f.Parameters 2}}
 
 		// get object instance
-		{{GetObject $c $f.Parameters}}
-
-		System.out.printf("Getter returning instance.{{$f.Name}}. Type: {{GetMetaFFITypes $f.ReturnValues}}\n");
+		{{GetObject $c $f}}
 
 		{{if $f.ReturnValues}}
 		metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ instance.{{$f.Name}} }, {{GetMetaFFITypes $f.ReturnValues}} );
@@ -66,7 +64,7 @@ public final class {{$m.Name}}
 		{{GetParamsFromCDTS $f.Parameters 2}}
 
 		// get object instance
-		{{GetObject $c $f.Parameters}}
+		{{GetObject $c $f}}
 
 		instance.{{$f.Name}} = parameters[1];
     }
@@ -100,6 +98,7 @@ public final class {{$m.Name}}
 	}
     {{end}} {{/*End Releaser*/}}
 
+	{{/* Methods */}}
 	{{range $findex, $f := $c.Methods}}
 
 	{{$retvalLength := len $f.ReturnValues}}{{$paramsLength := len $f.Parameters}}
@@ -110,7 +109,7 @@ public final class {{$m.Name}}
 		{{GetParamsFromCDTS $f.Parameters 2}}
 
 		// call method
-		{{GetObject $c $f.Parameters}}
+		{{GetObject $c $f}}
 		{{ CallGuestMethod $f 2 }}
 
 		{{if $f.ReturnValues}}
@@ -128,8 +127,12 @@ const GuestCPPEntrypoint = `
 #include <jni.h>
 #include <string>
 #include <stdexcept>
-#include <cdt_structs.h>
 #include <functional>
+#include <regex>
+#include <vector>
+#include <set>
+#include <unordered_map>
+#include <cdt_structs.h>
 {{/* Load entrypoints module function which loads all the entrypoints */}}
 
 JavaVM* jvm = nullptr;
@@ -139,6 +142,7 @@ JavaVM* jvm = nullptr;
 if(env->ExceptionCheck() == JNI_TRUE)\
 {\
 std::string err_msg = get_exception_description(env, env->ExceptionOccurred());\
+env->ExceptionClear();\
 before_throw_code \
 throw std::runtime_error(err_msg);\
 }\
@@ -152,9 +156,22 @@ throw std::runtime_error("Failed to get " #var);\
 if(env->ExceptionCheck() == JNI_TRUE)\
 {\
 std::string err_msg = get_exception_description(env, env->ExceptionOccurred());\
+env->ExceptionClear();\
 before_throw_code; \
 throw std::runtime_error(err_msg);\
 }
+
+struct block_guard
+{
+	block_guard(std::function<void()> f):f(f){}
+	~block_guard()
+	{
+		try{ f(); } catch(...){printf("block_guard function threw an exception\n");}
+	}
+
+private:
+	std::function<void()> f;
+};
 
 std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 {
@@ -164,23 +181,204 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 		throw std::runtime_error("failed to FindClass java/lang/Throwable");
 	}
 
-	jmethodID throwable_toString = penv->GetMethodID(throwable_class,"toString","()Ljava/lang/String;");
-	if(!throwable_class)
+	jclass StringWriter_class = penv->FindClass("java/io/StringWriter");
+    if(!StringWriter_class)
     {
-        throw std::runtime_error("failed to GetMethodID ()Ljava/lang/String;");
+        throw std::runtime_error("failed to FindClass java/io/StringWriter");
     }
 
-	jobject str = penv->CallObjectMethod(throwable, throwable_toString);
-	if(!throwable_class)
+	jclass PrintWriter_class = penv->FindClass("java/io/PrintWriter");
+    if(!PrintWriter_class)
     {
-        throw std::runtime_error("failed to CallObjectMethod ()Ljava/lang/String;");
+        throw std::runtime_error("failed to FindClass java/io/PrintWriter");
+    }
+
+	jmethodID throwable_printStackTrace = penv->GetMethodID(throwable_class,"printStackTrace","(Ljava/io/PrintWriter;)V");
+	if(!throwable_printStackTrace)
+    {
+        throw std::runtime_error("failed to GetMethodID throwable_printStackTrace");
+    }
+
+    jmethodID StringWriter_Constructor = penv->GetMethodID(StringWriter_class,"<init>","()V");
+	if(!StringWriter_Constructor)
+    {
+        throw std::runtime_error("failed to GetMethodID StringWriter_Constructor");
+    }
+
+    jmethodID PrintWriter_Constructor = penv->GetMethodID(PrintWriter_class,"<init>","(Ljava/io/Writer;)V");
+    if(!PrintWriter_Constructor)
+    {
+        throw std::runtime_error("failed to GetMethodID PrintWriter_Constructor");
+    }
+
+    jmethodID StringWriter_toString = penv->GetMethodID(StringWriter_class,"toString","()Ljava/lang/String;");
+    if(!StringWriter_toString)
+    {
+        throw std::runtime_error("failed to GetMethodID StringWriter_toString");
+    }
+
+	// StringWriter sw = new StringWriter();
+	jobject sw = penv->NewObject(StringWriter_class, StringWriter_Constructor);
+	if(!sw)
+    {
+        throw std::runtime_error("Failed to create StringWriter object");
+    }
+
+    // PrintWriter pw = new PrintWriter(sw)
+    jobject pw = penv->NewObject(PrintWriter_class, PrintWriter_Constructor, sw);
+	if(!pw)
+    {
+        throw std::runtime_error("Failed to create PrintWriter object");
+    }
+
+    // throwable.printStackTrace(pw);
+	penv->CallObjectMethod(throwable, throwable_printStackTrace, pw);
+    if(!pw)
+    {
+        throw std::runtime_error("Failed to call printStackTrace");
+    }
+
+	// sw.toString()
+	jobject str = penv->CallObjectMethod(sw, StringWriter_toString);
+    if(!pw)
+    {
+        throw std::runtime_error("Failed to call printStackTrace");
     }
 
 	std::string res(penv->GetStringUTFChars((jstring)str, nullptr));
 
+	penv->DeleteLocalRef(sw);
+	penv->DeleteLocalRef(pw);
 	penv->DeleteLocalRef(str);
 
 	return res;
+}
+
+
+jclass class_loader_class = nullptr;
+jmethodID get_system_class_loader_method = nullptr;
+jclass url_class_loader = nullptr;
+jmethodID url_class_loader_constructor = nullptr;
+jobject classLoaderInstance = nullptr;
+jclass url_class = nullptr;
+jmethodID url_class_constructor = nullptr;
+jclass class_class = nullptr;
+jmethodID for_name_method = nullptr;
+jmethodID add_url = nullptr;
+jobject childURLClassLoader = nullptr;
+std::set<std::string> loaded_paths;
+std::unordered_map<std::string,jclass> loaded_classes;
+jclass load_class(JNIEnv* env, const std::vector<std::string>& path, const char* class_name)
+{
+	// if class already loaded - return jclass
+	if(auto it = loaded_classes.find(class_name); it != loaded_classes.end())
+	{
+		//printf("+++ already loaded %s\n", class_name);
+		return it->second;
+	}
+
+	// get class loader
+	if(!class_loader_class)
+	{
+		class_loader_class = env->FindClass("java/lang/ClassLoader");
+    	check_and_throw_jvm_exception(env, class_loader_class,);
+	}
+
+	if(!get_system_class_loader_method)
+	{
+		get_system_class_loader_method = env->GetStaticMethodID(class_loader_class, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+    	check_and_throw_jvm_exception(env, get_system_class_loader_method,);
+	}
+
+	if(!url_class_loader)
+	{
+		url_class_loader = env->FindClass("java/net/URLClassLoader");
+    	check_and_throw_jvm_exception(env, url_class_loader,);
+	}
+
+	if(!url_class_loader_constructor)
+	{
+		url_class_loader_constructor = env->GetMethodID(url_class_loader, "<init>", "([Ljava/net/URL;Ljava/lang/ClassLoader;)V");
+    	check_and_throw_jvm_exception(env, url_class_loader_constructor,);
+	}
+
+	if(!add_url)
+	{
+		add_url = env->GetMethodID(url_class_loader, "addURL", "(Ljava/net/URL;)V");
+        check_and_throw_jvm_exception(env, add_url,);
+	}
+
+	if(!classLoaderInstance)
+	{
+		// classLoaderInstance = ClassLoader.getSystemClassLoader()
+    	classLoaderInstance = env->CallStaticObjectMethod(class_loader_class, get_system_class_loader_method);
+    	check_and_throw_jvm_exception(env, classLoaderInstance,);
+	}
+
+	if(!url_class)
+	{
+		// new URL[]{ urlInstance }
+    	url_class = env->FindClass("java/net/URL");
+    	check_and_throw_jvm_exception(env, url_class,);
+	}
+
+	if(!url_class_constructor)
+	{
+		url_class_constructor = env->GetMethodID(url_class, "<init>", "(Ljava/lang/String;)V");
+    	check_and_throw_jvm_exception(env, url_class_constructor,);
+	}
+
+	if(!class_class)
+	{
+		// Class targetClass = Class.forName(class_name, true, child);
+        class_class = env->FindClass("java/lang/Class");
+        check_and_throw_jvm_exception(env, class_class,);
+	}
+
+	if(!for_name_method)
+	{
+		for_name_method = env->GetStaticMethodID(class_class, "forName", "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;");
+        check_and_throw_jvm_exception(env, for_name_method,);
+	}
+
+	if(!childURLClassLoader)
+	{
+		// URLClassLoader childURLClassLoader = new URLClassLoader( jarURLArray, classLoaderInstance ) ;
+
+		// initialize with "$METAFFI_HOME/xllr.openjdk.bridge.jar"
+		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/xllr.openjdk.bridge.jar";
+
+		jobjectArray jarURLArray = env->NewObjectArray(1, url_class, nullptr); // URL[]{}
+		check_and_throw_jvm_exception(env, jarURLArray,);
+		env->SetObjectArrayElement(jarURLArray, 0, env->NewObject(url_class, url_class_constructor, env->NewStringUTF(openjdk_bridge_url.c_str())));
+		check_and_throw_jvm_exception(env, true,);
+
+	    childURLClassLoader = env->NewObject(url_class_loader, url_class_loader_constructor, jarURLArray, classLoaderInstance);
+	    check_and_throw_jvm_exception(env, childURLClassLoader,);
+	}
+
+	// every URL that is NOT loaded - add URL
+	for(int i=0 ; i<path.size() ; i++)
+	{
+		std::string url_path = (std::string("file://")+path[i]);
+		if(loaded_paths.find(url_path) != loaded_paths.end())
+		{
+			continue;
+		}
+
+		jobject urlInstance = env->NewObject(url_class, url_class_constructor, env->NewStringUTF(url_path.c_str()));
+		check_and_throw_jvm_exception(env, urlInstance,);
+		env->CallObjectMethod(childURLClassLoader, add_url, urlInstance);
+		check_and_throw_jvm_exception(env, true,);
+
+		loaded_paths.insert(url_path);
+	}
+
+	jobject targetClass = env->CallStaticObjectMethod(class_class, for_name_method, env->NewStringUTF(class_name), JNI_TRUE, childURLClassLoader);
+	check_and_throw_jvm_exception(env, targetClass,);
+	loaded_classes[class_name] = (jclass)targetClass;
+
+	return (jclass)targetClass;
 }
 
 std::function<void()> get_environment(JNIEnv** env)
@@ -190,7 +388,7 @@ std::function<void()> get_environment(JNIEnv** env)
 	auto get_env_result = jvm->GetEnv((void**)env, JNI_VERSION_10);
 	if (get_env_result == JNI_EDETACHED)
 	{
-		if(jvm->AttachCurrentThread((void**)*env, nullptr) == JNI_OK)
+		if(jvm->AttachCurrentThread((void**)env, nullptr) == JNI_OK)
 		{
 			did_attach_thread = true;
 		}
@@ -245,19 +443,28 @@ jmethodID jmethod_{{$c.Name}}_{{$f.Name}} = nullptr;
 extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
 {
 	jvm = pjvm;
-
     {{range $mindex, $m := .Modules}}
         {{range $cindex, $c := $m.Classes}}
 
-            {{range $findex, $f := $c.Fields}}
-                {{if $f.Getter}}{{$f := $f.Getter}}
+            {{range $findex, $field := $c.Fields}}
+                {{if $field.Getter}}{{$f := $field.Getter}}
+				{{if IsExternalResources $m}}
+                jclass_{{$c.Name}}_get_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+                {{else}}
                 jclass_{{$c.Name}}_get_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+                {{end}}
+
                 check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_get_{{$f.Name}},);
                 jmethod_{{$c.Name}}_get_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_get_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
                 check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_get_{{$f.Name}},);
                 {{end}}
-                {{if $f.Setter}}{{$f := $f.Setter}}
+                {{if $field.Setter}}{{$f := $field.Setter}}
+                {{if IsExternalResources $m}}
+                jclass_{{$c.Name}}_set_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+                {{else}}
                 jclass_{{$c.Name}}_set_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+                {{end}}
+
                 check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_set_{{$f.Name}},);
                 jmethod_{{$c.Name}}_set_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_set_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
                 check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_set_{{$f.Name}},);
@@ -265,21 +472,36 @@ extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
             {{end}}
 
             {{range $cstrindex, $f := $c.Constructors}}
-	            jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+	            {{if IsExternalResources $m}}
+                jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+                {{else}}
+                jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+                {{end}}
+
 	            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
 	            jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
 	            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
             {{end}}
 
             {{if $c.Releaser}}{{$f := $c.Releaser}}
+            {{if IsExternalResources $m}}
+            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+            {{else}}
             jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+            {{end}}
+
             check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
             jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
             check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
             {{end}}
 
             {{range $cstrindex, $f := $c.Methods}}
+            {{if IsExternalResources $m}}
+            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+            {{else}}
             jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+            {{end}}
+
             check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
             jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
             check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
@@ -298,8 +520,8 @@ The signature of the entrypoint corresponds to the expected C-function returned 
 {{range $mindex, $m := .Modules}}
     {{range $cindex, $c := $m.Classes}}
 
-        {{range $findex, $f := $c.Fields}}
-            {{if $f.Getter}}{{$f := $f.Getter}}
+        {{range $findex, $field := $c.Fields}}
+            {{if $field.Getter}}{{$f := $field.Getter}}
 extern "C" void EntryPoint_{{$c.Name}}_get_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_get_" $f.Name) (print "jmethod_" $c.Name "_get_" $f.Name) $f.FunctionDefinition}}
@@ -307,7 +529,7 @@ extern "C" void EntryPoint_{{$c.Name}}_get_{{$f.Name}}({{CEntrypointParameters $
     releaser();
 }
             {{end}}
-            {{if $f.Setter}}{{$f := $f.Setter}}
+            {{if $field.Setter}}{{$f := $field.Setter}}
 extern "C" void EntryPoint_{{$c.Name}}_set_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_set_" $f.Name) (print "jmethod_" $c.Name "_set_" $f.Name) $f.FunctionDefinition}}

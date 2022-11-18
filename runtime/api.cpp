@@ -65,7 +65,7 @@ void free_runtime(char** err, uint32_t* err_len)
 	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
-std::shared_ptr<boost::dll::shared_library> lib; // TODO: support multiple libs!
+std::shared_ptr<boost::dll::shared_library> lib; // TODO: support multiple libs!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 std::vector<std::shared_ptr<boost::dll::detail::import_type<void(cdts[2],char**,int64_t*)>::type>> params_no_params_or_no_ret_funcs;
 std::vector<std::shared_ptr<boost::dll::detail::import_type<void(char**,int64_t*)>::type>> params_no_params_no_ret_funcs;
 
@@ -73,12 +73,11 @@ bool is_first = true;
 void* load_function(const char* function_path, uint32_t function_path_len, int8_t params_count, int8_t retval_count, char** err, uint32_t* err_len)
 {
 	void* res = nullptr;
-	
 	try
 	{
 		metaffi::utils::function_path_parser fp(function_path);
 		
-		if(is_first)// TODO: Replace with something better!!!!
+		if(is_first)// TODO: Replace with something better!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		{
 			is_first = false;
 			
@@ -103,6 +102,7 @@ void* load_function(const char* function_path, uint32_t function_path_len, int8_
 		
 	}
 	catch_and_fill(err, err_len);
+	
 	
 	return res;
 }

@@ -30,20 +30,15 @@ public:
 	
 	void load_function_path(const std::string& function_path, jclass* cls, jmethodID* meth);
 	
-	jclass load_class(const std::string& dir_or_jar, const std::string& class_name);
-	void free_class(jclass obj);
-	
 	// returns release environment function
 	// TODO: add scoped wrapper
 	std::function<void()> get_environment(JNIEnv** env);
 	
 	std::string get_exception_description(jthrowable throwable);
 	
-	jobject call_function(jmethodID meth, jclass cls = nullptr, jobject obj = nullptr, jobjectArray params = nullptr);
-
 	explicit operator JavaVM*();
 	
 private:
 	static void check_throw_error(jint err);
-	void load_object_loader(JNIEnv* penv, jclass* object_loader_class, jmethodID* load_object);
+	
 };

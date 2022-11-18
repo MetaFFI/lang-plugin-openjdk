@@ -73,6 +73,10 @@ func (this *HostCompiler) parseForeignStubs() (map[string]string, error) {
 	
 	// place in module file
 	modfile, err := TemplateFunctions2.RunTemplate("OpenJDK HostFunctionStubsTemplate", HostFunctionStubsTemplate, this.def, templatesFuncMap)
+	if err != nil {
+		return nil, err
+	}
+	
 	res[this.def.Modules[0].Name+".java"] = modfile
 	
 	for _, m := range this.def.Modules {

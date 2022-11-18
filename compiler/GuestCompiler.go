@@ -3,13 +3,15 @@ package main
 import (
 	"fmt"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
-	"text/template"
+	"github.com/yargevad/filepathx"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 )
 
 //--------------------------------------------------------------------
@@ -45,6 +47,7 @@ func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir stri
 		outputFilename = definition.IDLFilename
 	}
 	
+	// get "block"
 	if strings.Contains(outputFilename, "#") {
 		toRemove := outputFilename[strings.LastIndex(outputFilename, string(os.PathSeparator))+1 : strings.Index(outputFilename, "#")+1]
 		outputFilename = strings.ReplaceAll(outputFilename, toRemove, "")
@@ -67,7 +70,7 @@ func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir stri
 		return fmt.Errorf("Failed to generate guest C++ code: %v", err)
 	}
 	
-	jarfile, err := this.buildJar(jarcode)
+	jarfile, err := this.buildJar(jarcode, definition, outputDir)
 	if err != nil {
 		return fmt.Errorf("Failed to generate guest code: %v", err)
 	}
@@ -223,28 +226,29 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	}
 	
 	fmt.Println("Building Binary Entrypoint guest code")
-
+	
 	javaHome := os.Getenv("JAVA_HOME")
-	if javaHome == ""{
+	if javaHome == "" {
 		return nil, fmt.Errorf("JAVA_HOME is not set")
 	}
-
+	
 	mffiHome := os.Getenv("METAFFI_HOME")
-    if mffiHome == ""{
-        return nil, fmt.Errorf("METAFFI_HOME is not set")
-    }
-
+	if mffiHome == "" {
+		return nil, fmt.Errorf("METAFFI_HOME is not set")
+	}
+	
 	// compile generated java code
 	args := make([]string, 0)
 	args = append(args, "-o")
 	args = append(args, dir+this.def.IDLFilename+getDynamicLibSuffix())
 	args = append(args, "-I")
-    args = append(args, mffiHome+"/include")
+	args = append(args, mffiHome+"/include")
 	args = append(args, "-I")
 	args = append(args, javaHome+"/include")
 	args = append(args, "-I")
-    args = append(args, javaHome+"/include/"+runtime.GOOS)
-    args = append(args, "-fPIC")
+	args = append(args, javaHome+"/include/"+runtime.GOOS)
+	args = append(args, "-std=c++17")
+	args = append(args, "-fPIC")
 	args = append(args, "-shared")
 	args = append(args, cppFiles...)
 	buildCmd := exec.Command("gcc", args...)
@@ -264,7 +268,7 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 }
 
 //--------------------------------------------------------------------
-func (this *GuestCompiler) buildJar(code string) ([]byte, error) {
+func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, outputDir string) ([]byte, error) {
 	
 	dir, err := os.MkdirTemp("", "metaffi_openjdk_compiler*")
 	if err != nil {
@@ -281,12 +285,17 @@ func (this *GuestCompiler) buildJar(code string) ([]byte, error) {
 	// write generated code to temp folder
 	javaFiles := make([]string, 0)
 	for _, m := range this.def.Modules {
-		javaFilename := dir + m.Name + ".java"
+		javaFilename := dir + m.Name + "_Entrypoints.java"
 		javaFiles = append(javaFiles, javaFilename)
 		err = ioutil.WriteFile(javaFilename, []byte(code), 0700)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to write host java code: %v", err)
 		}
+	}
+	
+	// if IDL is a java file
+	if strings.ToLower(path.Ext(definition.IDLFilenameWithExtension)) == ".java" {
+		javaFiles = append(javaFiles, outputDir+string(os.PathSeparator)+definition.IDLFilenameWithExtension)
 	}
 	
 	fmt.Println("Building OpenJDK guest code")
@@ -305,7 +314,7 @@ func (this *GuestCompiler) buildJar(code string) ([]byte, error) {
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
 	
-	classFiles, err := filepath.Glob(dir + "metaffi_guest" + string(os.PathSeparator) + "*.class")
+	classFiles, err := filepathx.Glob(dir + "**" + string(os.PathSeparator) + "*.class")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "metaffi_guest", err)
 	}

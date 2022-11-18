@@ -41,20 +41,7 @@ add_custom_command(TARGET ${target_name} POST_BUILD
 
 
 # Unitest
-#file(GLOB JMV_TEST_SRC_FILES ${SRC_FILES})
-#add_executable(jvm_test ${CMAKE_CURRENT_LIST_DIR}/jvm_test.cpp ${JMV_TEST_SRC_FILES})
-#target_link_libraries(jvm_test dl Boost::filesystem ${JNI_LIBRARIES} xllr.openjdk.jni.bridge)
-#target_include_directories(jvm_test PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS} ${CMAKE_CURRENT_LIST_DIR}../xllr-openjdk-bridge/*.h)
-#set_property(TARGET jvm_test PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-add_executable(jvm_guest_test ${CMAKE_CURRENT_LIST_DIR}/jvm_guest_test.cpp ${METAFFI_SDK}/runtime/cdt_capi_loader.c)
+add_executable(jvm_guest_test ${CMAKE_CURRENT_LIST_DIR}/jvm_guest_test.cpp)
 target_link_libraries(jvm_guest_test ${target_name} xllr.test)
 add_test(NAME jvm_guest_test COMMAND jvm_guest_test)
 
-
-#add_test(NAME test_openjdk_module_success COMMAND xllr_openjdk_test 1)
-#add_test(NAME test_openjdk_module_free_module_via_free_runtime_success COMMAND xllr_openjdk_test 2)
-#add_test(NAME test_openjdk_module_lazy_runtime_success COMMAND xllr_openjdk_test 3)
-#add_test(NAME test_openjdk_module_module_not_exist_fail COMMAND xllr_openjdk_test 4)
-#add_test(NAME test_openjdk_call_success COMMAND xllr_openjdk_test 5)
-#add_test(NAME test_openjdk_call_fail COMMAND xllr_openjdk_test 6)

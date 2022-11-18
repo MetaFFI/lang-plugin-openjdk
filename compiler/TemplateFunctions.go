@@ -6,6 +6,7 @@ import (
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -31,6 +32,28 @@ var templatesFuncMap = map[string]any{
 	"CEntrypointParameters":        centrypointParameters,
 	"CEntrypointCallJVMEntrypoint": centrypointCallJVMEntrypoint,
 	"CallConstructor":              callConstructor,
+	"ExternalResourcesAsArray":     externalResourcesAsArray,
+	"IsExternalResources":          isExternalResources,
+}
+
+//--------------------------------------------------------------------
+func isExternalResources(module *IDL.ModuleDefinition) bool {
+	return len(module.ExternalResources) > 0
+}
+
+//--------------------------------------------------------------------
+func externalResourcesAsArray(module *IDL.ModuleDefinition) string {
+	res := make([]string, 0)
+	
+	for _, r := range module.ExternalResources {
+		res = append(res, fmt.Sprintf(`"%v"`, r))
+	}
+	wd, _ := os.Getwd()
+	wd += string(os.PathSeparator)
+	
+	res = append(res, `"`+wd+module.Name+`_MetaFFIGuest.jar"`)
+	
+	return strings.Join(res, ",")
 }
 
 //--------------------------------------------------------------------
@@ -124,7 +147,13 @@ func getFullClassName(cls *IDL.ClassDefinition) string {
 }
 
 //--------------------------------------------------------------------
-func getObject(cls *IDL.ClassDefinition, args []*IDL.ArgDefinition) string {
+func getObject(cls *IDL.ClassDefinition, meth *IDL.MethodDefinition) string {
+	
+	if !meth.InstanceRequired {
+		return ""
+	}
+	
+	args := meth.Parameters
 	
 	if len(args) == 0 {
 		panic("Object handle is expected in parameters[0]")
@@ -242,19 +271,19 @@ func returnGuest(retval []*IDL.ArgDefinition, functionName string) string {
 func callGuestMethod(methdef *IDL.MethodDefinition, indent int) string {
 	
 	// params
-	paramsStr := ""
+	paramsStrList := make([]string, 0)
 	if len(methdef.Parameters) != 0 {
 		for i, p := range methdef.Parameters {
 			if methdef.InstanceRequired && i == 0 { // In case calling a method (not static), skip the first parameter as it is the object
 				continue
 			}
 			
-			paramsStr += fmt.Sprintf("(%v)parameters[%v]", toJavaType(p.Type, p.Dimensions), i)
-			if i < len(paramsStr)-1 {
-				paramsStr += ", "
-			}
+			paramsStrList = append(paramsStrList, fmt.Sprintf("(%v)parameters[%v]", toJavaType(p.Type, p.Dimensions), i))
+			
 		}
 	}
+	
+	paramsStr := strings.Join(paramsStrList, ",")
 	paramsStr = fmt.Sprintf("(%v)", paramsStr)
 	
 	// ret
@@ -272,7 +301,7 @@ func callGuestMethod(methdef *IDL.MethodDefinition, indent int) string {
 	if methdef.InstanceRequired {
 		name = fmt.Sprintf("%v.%v", "instance", methdef.Name)
 	} else {
-		name = fmt.Sprintf("%v.%v", methdef.FunctionPath["class"], methdef.Name)
+		name = fmt.Sprintf("%v.%v", getFullClassName(methdef.GetParent()), methdef.Name)
 	}
 	
 	return retStr + name + paramsStr + ";"
@@ -401,7 +430,7 @@ func centrypointParameters(meth *IDL.FunctionDefinition) string {
 
 //--------------------------------------------------------------------
 func centrypointCallJVMEntrypoint(jclass string, jmethod string, meth *IDL.FunctionDefinition) string {
-	
+
 	code := "JNIEnv* env;\n"
 	code += "auto releaser = get_environment(&env);\n"
 	
