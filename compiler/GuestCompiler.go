@@ -99,7 +99,7 @@ func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir stri
 
 //--------------------------------------------------------------------
 func (this *GuestCompiler) generateEntrypointCPPCode() (string, error) {
-	tmpEntryPoint, err := template.New("guest_cpp").Funcs(templatesFuncMap).Parse(GuestCPPEntrypoint)
+	tmpEntryPoint, err := template.New("GuestCPPEntrypoint").Funcs(templatesFuncMap).Parse(GuestCPPEntrypoint)
 	if err != nil {
 		return "", fmt.Errorf("Failed to parse GuestCPPEntrypoint: %v", err)
 	}
@@ -112,7 +112,7 @@ func (this *GuestCompiler) generateEntrypointCPPCode() (string, error) {
 
 //--------------------------------------------------------------------
 func (this *GuestCompiler) parseHeader() (string, error) {
-	tmp, err := template.New("guest").Parse(GuestHeaderTemplate)
+	tmp, err := template.New("GuestHeaderTemplate").Parse(GuestHeaderTemplate)
 	if err != nil {
 		return "", fmt.Errorf("Failed to parse GuestHeaderTemplate: %v", err)
 	}
@@ -128,7 +128,7 @@ func (this *GuestCompiler) parseImports() (string, error) {
 	
 	// imports.Imports contains all the imports.
 	
-	tmp, err := template.New("guest").Funcs(templatesFuncMap).Parse(GuestImportsTemplate)
+	tmp, err := template.New("GuestImportsTemplate").Funcs(templatesFuncMap).Parse(GuestImportsTemplate)
 	if err != nil {
 		return "", fmt.Errorf("Failed to parse GuestImportsTemplate: %v", err)
 	}
@@ -143,7 +143,7 @@ func (this *GuestCompiler) parseImports() (string, error) {
 //--------------------------------------------------------------------
 func (this *GuestCompiler) parseForeignFunctions() (string, error) {
 	
-	tmpEntryPoint, err := template.New("guest").Funcs(templatesFuncMap).Parse(GuestFunctionXLLRTemplate)
+	tmpEntryPoint, err := template.New("GuestFunctionXLLRTemplate").Funcs(templatesFuncMap).Parse(GuestFunctionXLLRTemplate)
 	if err != nil {
 		return "", fmt.Errorf("Failed to parse GuestFunctionXLLRTemplate: %v", err)
 	}

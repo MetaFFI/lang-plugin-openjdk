@@ -170,12 +170,14 @@ func (this *HostCompiler) buildDynamicLibrary(codefiles map[string]string) ([]by
 	args = append(args, javaFiles...)
 	buildCmd := exec.Command("javac", args...)
 	fmt.Printf("%v\n", strings.Join(buildCmd.Args, " "))
-	output, err := buildCmd.CombinedOutput()
+	var output []byte
+	output, err = buildCmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
-	
-	classFiles, err := filepath.Glob(dir + "metaffi_host" + string(os.PathSeparator) + "*.class")
+
+	var classFiles []string
+	classFiles, err = filepath.Glob(dir + "metaffi_host" + string(os.PathSeparator) + "*.class")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "metaffi", err)
 	}
@@ -201,7 +203,8 @@ func (this *HostCompiler) buildDynamicLibrary(codefiles map[string]string) ([]by
 	}
 	
 	// read jar file and return
-	result, err := ioutil.ReadFile(dir + this.def.IDLFilename + ".jar")
+	var result []byte
+	result, err = ioutil.ReadFile(dir + this.def.IDLFilename + ".jar")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLFilename+"_MetaFFIHost.jar", err)
 	}

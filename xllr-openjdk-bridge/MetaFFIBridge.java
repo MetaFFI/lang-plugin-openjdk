@@ -26,13 +26,14 @@ public class MetaFFIBridge
 		xllrExtension = xllrExtension.substring(xllrExtension.lastIndexOf("."));
 		String metaffiHome = System.getenv("METAFFI_HOME");
 		System.load(metaffiHome+"/xllr.openjdk.jni.bridge"+xllrExtension);
-		init();
+
+		MetaFFIBridge.init();
 	}
 
 	//--------------------------------------------------------------------
 	public MetaFFIBridge() {}
 	//--------------------------------------------------------------------
-	public long getMetaFFIType(Object o)
+	public static long getMetaFFIType(Object o)
 	{
 		// TODO: get numbers directly from C++, and not hard-coded
 

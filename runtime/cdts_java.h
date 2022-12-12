@@ -66,20 +66,15 @@ public:
 	
 	static jclass string_class;
 	static jmethodID string_constructor;
-//	static jmethodID string_get_value;
 	static jclass string_array_class;
 	
 	static jclass object_class;
-//	static jmethodID object_constructor;
-//	static jmethodID object_get_value;
 	static jclass object_array_class;
 	
 	static jclass metaffi_handle_class;
 	static jmethodID metaffi_handle_constructor;
 	static jmethodID metaffi_handle_get_value;
 	
-	std::vector<metaffi_type_t> get_types(jobjectArray pArra);
-
 private:
 	static std::unordered_map<std::string, metaffi_types> java_to_metaffi_types;
 	

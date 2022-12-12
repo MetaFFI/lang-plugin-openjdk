@@ -4,6 +4,7 @@
 #include "objects_table.h"
 #include <utility>
 #include "utils/scope_guard.hpp"
+#include <typeinfo>
 
 using namespace metaffi::runtime;
 std::once_flag load_capi_flag;
@@ -412,6 +413,58 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	{
 		throw std::runtime_error("Does not support UTF32");
 	}
+	
+	metaffi_type resolve_dynamic_type(int index, void* values_to_set) override
+	{
+		jobject curObj = env->GetObjectArrayElement((jobjectArray)values_to_set, index);
+		
+		jclass objClass = env->GetObjectClass(curObj);
+		jclass cls = env->FindClass("java/lang/Class");
+		jmethodID mid_getName = env->GetMethodID(cls, "getName", "()Ljava/lang/String;");
+		jstring name = (jstring)env->CallObjectMethod(objClass, mid_getName);
+		
+		jboolean is_copy;
+		const char* objcls = env->GetStringUTFChars((jstring)name, &is_copy);
+		
+
+		#define if_class(cls, metaffitype) \
+			if(strcmp(cls, objcls) == 0){ \
+				return metaffitype; \
+			}
+		
+		if_class("java.lang.Float", metaffi_float32_type)
+		else if_class("[java.lang.Float", metaffi_float32_array_type)
+		
+		else if_class("java.lang.Double", metaffi_float64_type)
+		else if_class("[java.lang.Double", metaffi_float64_array_type)
+		
+		else if_class("java.lang.Byte", metaffi_int8_type)
+		else if_class("[java.lang.Byte", metaffi_int8_array_type)
+		
+		else if_class("java.lang.Short", metaffi_int16_type)
+		else if_class("[java.lang.Short", metaffi_int16_array_type)
+		
+		else if_class("java.lang.Integer", metaffi_int32_type)
+		else if_class("[java.lang.Integer", metaffi_int32_array_type)
+		
+		else if_class("java.lang.Long", metaffi_int64_type)
+		else if_class("[java.lang.Long", metaffi_int64_array_type)
+		
+		else if_class("java.lang.Boolean", metaffi_bool_type)
+		else if_class("[java.lang.Boolean", metaffi_bool_array_type)
+		
+		else if_class("java.lang.Character", metaffi_char8_type)
+		else if_class("[java.lang.Character", metaffi_char8_array_type)
+		
+		else if_class("Ljava.lang.String;", metaffi_string8_type)
+		else if_class("[Ljava.lang.String;", metaffi_string8_array_type)
+		
+		else // handle
+		{
+			return metaffi_handle_type;
+		}
+		
+	}
 };
 //--------------------------------------------------------------------
 //--------------------------------------------------------------------
@@ -427,7 +480,6 @@ struct java_cdts_parse_callbacks : public cdts_parse_callbacks_interface
 	void set_numeric_to_jobject(jobjectArray objects, int index, const T& val, jclass cls, jmethodID meth, const std::function<jT(T)>& ConvFunc)
 	{
 		env->SetObjectArrayElement(objects, index, env->NewObject(cls, meth, ConvFunc(val)));
-		
 	}
 	//--------------------------------------------------------------------
 	template<typename T, typename char_t>
@@ -774,7 +826,11 @@ struct java_cdts_parse_callbacks : public cdts_parse_callbacks_interface
 	void on_metaffi_string8(void* values_to_set, int index, metaffi_string8 const& val_to_set, const metaffi_size& val_length) override
 	{
 		set_string_to_jobject<metaffi_string8, char>((jobjectArray)values_to_set, index, val_to_set, val_length,
-		                                             [this](const char* p, metaffi_size)->jstring{ return env->NewStringUTF(p); });
+		                                             [this](const char* p, metaffi_size s)->jstring{
+			// JNI does not provide sized conversion from UTF to jstring, as it relies on null-terminator.
+			// thus, we copy to std::string. Another option is to set p[s]=0, but it is risky, as we might overwrite something.
+			return env->NewStringUTF(std::string(p, s).c_str() );
+		});
 		
 	}
 	
@@ -855,23 +911,16 @@ jclass cdts_java::char_array_class = nullptr;
 
 jclass cdts_java::string_class = nullptr;
 jmethodID cdts_java::string_constructor = nullptr;
-//jmethodID cdts_java::string_get_value = nullptr;
 jclass cdts_java::string_array_class = nullptr;
 
 jclass cdts_java::object_class = nullptr;
-//jmethodID cdts_java::object_constructor = nullptr;
-//jmethodID cdts_java::object_get_value = nullptr;
 jclass cdts_java::object_array_class = nullptr;
 
 jclass cdts_java::metaffi_handle_class = nullptr;
 jmethodID cdts_java::metaffi_handle_constructor = nullptr;
 jmethodID cdts_java::metaffi_handle_get_value = nullptr;
 
-//--------------------------------------------------------------------
-//cdts_java::cdts_java(cdt* cdts, metaffi_size cdts_length, std::shared_ptr<jvm> pjvm): cdts(cdts, cdts_length), pjvm(std::move(pjvm))
-//{
-//}
-//--------------------------------------------------------------------
+
 cdts_java::cdts_java(cdt* cdts, metaffi_size cdts_length, JNIEnv* env): cdts(cdts, cdts_length), env(env)
 {
 }
@@ -890,128 +939,11 @@ jobjectArray cdts_java::parse()
 	
 	
 	return array;
-	
-//	if(!env)
-//	{
-//		auto releaser = pjvm->get_environment(&env);
-//		metaffi::utils::scope_guard env_guard([&](){ releaser(); env = nullptr; });
-//
-//		return f();
-//	}
-//	else
-//	{
-//		return f();
-//	}
-	
 }
-//--------------------------------------------------------------------
-#include <unistd.h>
-/*
-void cdts_java::build(jobjectArray parameters, int starting_index)
-{
-	//auto f = [&]()
-	//{
-	printf("sleeping - %d\n", ::getpid());
-	sleep(30);
-		std::vector<metaffi_types> types = std::move(get_types(parameters));
-		
-//		auto releaser = pjvm->get_environment(&env);
-//		metaffi::utils::scope_guard env_guard([&](){ releaser(); env = nullptr; });
-		
-		java_cdts_build_callbacks bc(env);
-		this->cdts.build((const metaffi_types*)types.data(), types.size(), parameters, starting_index, bc);
-	//};
-	
-	//f();
-	
-//	if(!env)
-//	{
-//		auto releaser = pjvm->get_environment(&env);
-//		metaffi::utils::scope_guard env_guard([&](){ releaser(); env = nullptr; });
-//
-//		f();
-//	}
-//	else
-//	{
-//		f();
-//	}
-	
-}
-*/
 //--------------------------------------------------------------------
 void cdts_java::build(jobjectArray parameters, metaffi_types_ptr parameters_types, int params_count, int starting_index)
 {
-	//auto f = [&]()
-	//{
-		java_cdts_build_callbacks bc(env);
-		this->cdts.build(parameters_types, params_count, parameters, starting_index, bc);
-	//};
-	
-	//f();
-	
-//	if(!env)
-//	{
-//		auto releaser = pjvm->get_environment(&env);
-//		metaffi::utils::scope_guard env_guard([&](){ releaser(); env = nullptr; });
-//
-//		f();
-//	}
-//	else
-//	{
-//		f();
-//	}
-}
-//--------------------------------------------------------------------
-std::vector<metaffi_type_t> cdts_java::get_types(jobjectArray pArray)
-{
-	jsize objects_count = env->GetArrayLength(pArray);
-	std::vector<metaffi_type_t> result(objects_count);
-	
-	for(int i=0 ; i<objects_count ; i++)
-	{
-		jobject curObj = env->GetObjectArrayElement(pArray, i);
-
-#define if_class(cls, metaffitype) \
-		if(env->IsInstanceOf(curObj, cls)){ \
-			result[i] = metaffitype; \
-		}
-		
-		if_class(float_class, metaffi_float32_type)
-		else if_class(float_array_class, metaffi_float32_array_type)
-		
-		else if_class(double_class, metaffi_float64_type)
-		else if_class(double_array_class, metaffi_float64_array_type)
-		
-		else if_class(byte_class, metaffi_int8_type)
-		else if_class(byte_array_class, metaffi_int8_array_type)
-		
-		else if_class(short_class, metaffi_int16_type)
-		else if_class(short_array_class, metaffi_int16_array_type)
-		
-		else if_class(int_class, metaffi_int32_type)
-		else if_class(int_array_class, metaffi_int32_array_type)
-		
-		else if_class(long_class, metaffi_int64_type)
-		else if_class(long_array_class, metaffi_int64_array_type)
-		
-		else if_class(boolean_class, metaffi_bool_type)
-		else if_class(boolean_array_class, metaffi_bool_array_type)
-		
-		else if_class(char_class, metaffi_char8_type)
-		else if_class(char_array_class, metaffi_char8_array_type)
-		
-		else if_class(string_class, metaffi_string8_type)
-		else if_class(string_array_class, metaffi_string8_array_type)
-		
-		else if_class(object_class, metaffi_handle_type)
-		else if_class(object_array_class, metaffi_handle_array_type)
-		
-		else // handle
-		{
-			result[i] = metaffi_any_type;
-		}
-	}
-	
-	return result;
+	java_cdts_build_callbacks bc(env);
+	this->cdts.build(parameters_types, params_count, parameters, starting_index, bc);
 }
 //--------------------------------------------------------------------

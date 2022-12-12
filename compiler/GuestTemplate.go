@@ -37,8 +37,8 @@ public final class {{$m.Name}}_Entrypoints
 	// classes entities
 	{{range $cindex, $c := $m.Classes}}
 
-	{{range $findex, $f := $c.Fields}}
-	{{if $f.Getter}}{{$retvalLength := len $f.Getter.ReturnValues}}{{$f := $f.Getter}}
+	{{range $findex, $field := $c.Fields}}
+	{{if $field.Getter}}{{$retvalLength := len $field.Getter.ReturnValues}}{{$f := $field.Getter}}
     {{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
     public static void EntryPoint_{{$c.Name}}_get_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
 	{
@@ -50,12 +50,12 @@ public final class {{$m.Name}}_Entrypoints
 		{{GetObject $c $f}}
 
 		{{if $f.ReturnValues}}
-		metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ instance.{{$f.Name}} }, {{GetMetaFFITypes $f.ReturnValues}} );
+		metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ {{if not $f.InstanceRequired}}{{$c.Name}}{{else}}instance{{end}}.{{$field.Name}} }, {{GetMetaFFITypes $f.ReturnValues}} );
 		{{end}}
 	}
 	{{end}} {{/* End getter */}}
 
-	{{if $f.Setter}}{{$f := $f.Setter}}{{$retvalLength := len $f.Setter.ReturnValues}}
+	{{if $field.Setter}}{{$f := $field.Setter}}{{$retvalLength := len $f.ReturnValues}}
     {{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
     public static void EntryPoint_{{$c.Name}}_set_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
     {
@@ -66,7 +66,7 @@ public final class {{$m.Name}}_Entrypoints
 		// get object instance
 		{{GetObject $c $f}}
 
-		instance.{{$f.Name}} = parameters[1];
+		{{if not $f.InstanceRequired}}{{$c.Name}}{{else}}instance{{end}}.{{$field.Name}} = ({{ToJavaType $field.Type $field.Dimensions}})parameters[1];
     }
     {{end}} {{/* End setter */}}
     {{end}} {{/*End Fields*/}}
@@ -133,6 +133,10 @@ const GuestCPPEntrypoint = `
 #include <set>
 #include <unordered_map>
 #include <cdt_structs.h>
+#include <sstream>
+
+#include <dlfcn.h>
+
 {{/* Load entrypoints module function which loads all the entrypoints */}}
 
 JavaVM* jvm = nullptr;
@@ -254,132 +258,8 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	return res;
 }
 
-
-jclass class_loader_class = nullptr;
-jmethodID get_system_class_loader_method = nullptr;
-jclass url_class_loader = nullptr;
-jmethodID url_class_loader_constructor = nullptr;
-jobject classLoaderInstance = nullptr;
-jclass url_class = nullptr;
-jmethodID url_class_constructor = nullptr;
-jclass class_class = nullptr;
-jmethodID for_name_method = nullptr;
-jmethodID add_url = nullptr;
-jobject childURLClassLoader = nullptr;
-std::set<std::string> loaded_paths;
-std::unordered_map<std::string,jclass> loaded_classes;
-jclass load_class(JNIEnv* env, const std::vector<std::string>& path, const char* class_name)
-{
-	// if class already loaded - return jclass
-	if(auto it = loaded_classes.find(class_name); it != loaded_classes.end())
-	{
-		//printf("+++ already loaded %s\n", class_name);
-		return it->second;
-	}
-
-	// get class loader
-	if(!class_loader_class)
-	{
-		class_loader_class = env->FindClass("java/lang/ClassLoader");
-    	check_and_throw_jvm_exception(env, class_loader_class,);
-	}
-
-	if(!get_system_class_loader_method)
-	{
-		get_system_class_loader_method = env->GetStaticMethodID(class_loader_class, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-    	check_and_throw_jvm_exception(env, get_system_class_loader_method,);
-	}
-
-	if(!url_class_loader)
-	{
-		url_class_loader = env->FindClass("java/net/URLClassLoader");
-    	check_and_throw_jvm_exception(env, url_class_loader,);
-	}
-
-	if(!url_class_loader_constructor)
-	{
-		url_class_loader_constructor = env->GetMethodID(url_class_loader, "<init>", "([Ljava/net/URL;Ljava/lang/ClassLoader;)V");
-    	check_and_throw_jvm_exception(env, url_class_loader_constructor,);
-	}
-
-	if(!add_url)
-	{
-		add_url = env->GetMethodID(url_class_loader, "addURL", "(Ljava/net/URL;)V");
-        check_and_throw_jvm_exception(env, add_url,);
-	}
-
-	if(!classLoaderInstance)
-	{
-		// classLoaderInstance = ClassLoader.getSystemClassLoader()
-    	classLoaderInstance = env->CallStaticObjectMethod(class_loader_class, get_system_class_loader_method);
-    	check_and_throw_jvm_exception(env, classLoaderInstance,);
-	}
-
-	if(!url_class)
-	{
-		// new URL[]{ urlInstance }
-    	url_class = env->FindClass("java/net/URL");
-    	check_and_throw_jvm_exception(env, url_class,);
-	}
-
-	if(!url_class_constructor)
-	{
-		url_class_constructor = env->GetMethodID(url_class, "<init>", "(Ljava/lang/String;)V");
-    	check_and_throw_jvm_exception(env, url_class_constructor,);
-	}
-
-	if(!class_class)
-	{
-		// Class targetClass = Class.forName(class_name, true, child);
-        class_class = env->FindClass("java/lang/Class");
-        check_and_throw_jvm_exception(env, class_class,);
-	}
-
-	if(!for_name_method)
-	{
-		for_name_method = env->GetStaticMethodID(class_class, "forName", "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;");
-        check_and_throw_jvm_exception(env, for_name_method,);
-	}
-
-	if(!childURLClassLoader)
-	{
-		// URLClassLoader childURLClassLoader = new URLClassLoader( jarURLArray, classLoaderInstance ) ;
-
-		// initialize with "$METAFFI_HOME/xllr.openjdk.bridge.jar"
-		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/xllr.openjdk.bridge.jar";
-
-		jobjectArray jarURLArray = env->NewObjectArray(1, url_class, nullptr); // URL[]{}
-		check_and_throw_jvm_exception(env, jarURLArray,);
-		env->SetObjectArrayElement(jarURLArray, 0, env->NewObject(url_class, url_class_constructor, env->NewStringUTF(openjdk_bridge_url.c_str())));
-		check_and_throw_jvm_exception(env, true,);
-
-	    childURLClassLoader = env->NewObject(url_class_loader, url_class_loader_constructor, jarURLArray, classLoaderInstance);
-	    check_and_throw_jvm_exception(env, childURLClassLoader,);
-	}
-
-	// every URL that is NOT loaded - add URL
-	for(int i=0 ; i<path.size() ; i++)
-	{
-		std::string url_path = (std::string("file://")+path[i]);
-		if(loaded_paths.find(url_path) != loaded_paths.end())
-		{
-			continue;
-		}
-
-		jobject urlInstance = env->NewObject(url_class, url_class_constructor, env->NewStringUTF(url_path.c_str()));
-		check_and_throw_jvm_exception(env, urlInstance,);
-		env->CallObjectMethod(childURLClassLoader, add_url, urlInstance);
-		check_and_throw_jvm_exception(env, true,);
-
-		loaded_paths.insert(url_path);
-	}
-
-	jobject targetClass = env->CallStaticObjectMethod(class_class, for_name_method, env->NewStringUTF(class_name), JNI_TRUE, childURLClassLoader);
-	check_and_throw_jvm_exception(env, targetClass,);
-	loaded_classes[class_name] = (jclass)targetClass;
-
-	return (jclass)targetClass;
-}
+typedef jclass (*load_class_t)(JNIEnv* env, const std::vector<std::string>& path, const char* class_name);
+load_class_t load_class = nullptr;
 
 std::function<void()> get_environment(JNIEnv** env)
 {
@@ -442,6 +322,26 @@ jmethodID jmethod_{{$c.Name}}_{{$f.Name}} = nullptr;
 
 extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
 {
+	// load "load_class" function
+	std::string openjdk_plugin_path(std::getenv("METAFFI_HOME"));
+	openjdk_plugin_path += "/xllr.openjdk.so"; // TODO: multi-platform
+
+	void* openjdk_plugin_handle = dlopen(openjdk_plugin_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+	if(!openjdk_plugin_handle)
+	{
+		std::stringstream ss;
+		ss << "Failed to load openjdk plugin at path: \"" << openjdk_plugin_path << "\". Error: " << dlerror() << std::endl;
+		throw std::runtime_error(ss.str());
+	}
+
+	load_class = (load_class_t)dlsym(openjdk_plugin_handle, "load_class");
+	if(!load_class)
+	{
+        std::stringstream ss;
+        ss << "Failed to load load_class function. Error: " << dlerror() << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+
 	jvm = pjvm;
     {{range $mindex, $m := .Modules}}
         {{range $cindex, $c := $m.Classes}}

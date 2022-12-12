@@ -65,11 +65,10 @@ void free_runtime(char** err, uint32_t* err_len)
 	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
-std::shared_ptr<boost::dll::shared_library> lib; // TODO: support multiple libs!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+std::unordered_map<std::string, std::shared_ptr<boost::dll::shared_library>> libs; // TODO: support multiple libs!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 std::vector<std::shared_ptr<boost::dll::detail::import_type<void(cdts[2],char**,int64_t*)>::type>> params_no_params_or_no_ret_funcs;
 std::vector<std::shared_ptr<boost::dll::detail::import_type<void(char**,int64_t*)>::type>> params_no_params_no_ret_funcs;
 
-bool is_first = true;
 void* load_function(const char* function_path, uint32_t function_path_len, int8_t params_count, int8_t retval_count, char** err, uint32_t* err_len)
 {
 	void* res = nullptr;
@@ -77,10 +76,10 @@ void* load_function(const char* function_path, uint32_t function_path_len, int8_
 	{
 		metaffi::utils::function_path_parser fp(function_path);
 		
-		if(is_first)// TODO: Replace with something better!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		auto it_lib = libs.find(fp[function_path_entry_metaffi_guest_lib]);
+		std::shared_ptr<boost::dll::shared_library> lib;
+		if(it_lib == libs.end())// TODO: make thread safe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		{
-			is_first = false;
-			
 			std::string dylib_to_load = fp[function_path_entry_metaffi_guest_lib];
 			lib = metaffi::utils::load_library(dylib_to_load);
 			
@@ -91,6 +90,12 @@ void* load_function(const char* function_path, uint32_t function_path_len, int8_
 			
 			load_entrypoints((JavaVM*)(*pjvm), env);
 			releaser();
+			
+			libs[fp[function_path_entry_metaffi_guest_lib]] = lib;
+		}
+		else
+		{
+			lib = it_lib->second;
 		}
 		
 		auto pentrypoint = lib->get<void(cdts[2],char**,int64_t*)>(fp[function_path_entry_entrypoint_function]);
