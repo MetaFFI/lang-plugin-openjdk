@@ -1,12 +1,26 @@
 #pragma once
+
+#ifdef _MSC_VER
+#include "xllr_openjdk_exports.h"
+#endif
 #include "runtime/cdts_wrapper.h"
 #include <unordered_map>
 #include <memory>
+#ifdef _DEBUG
+#undef _DEBUG
 #include <jni.h>
+#define _DEBUG
+#else
+#include <jni.h>
+#endif
 #include <vector>
-#include <jvm.h>
+#include "jvm.h"
 
-class cdts_java
+class
+#ifdef _MSC_VER
+	XLLR_OPENJDK_EXPORTS
+#endif
+cdts_java
 {
 private:
 	metaffi::runtime::cdts_wrapper cdts;

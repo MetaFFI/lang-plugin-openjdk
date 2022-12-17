@@ -124,7 +124,13 @@ public final class {{$m.Name}}_Entrypoints
 `
 
 const GuestCPPEntrypoint = `
+#ifdef _DEBUG
+#undef _DEBUG
 #include <jni.h>
+#define _DEBUG
+#else
+#include <jni.h>
+#endif
 #include <string>
 #include <stdexcept>
 #include <functional>
@@ -135,7 +141,11 @@ const GuestCPPEntrypoint = `
 #include <cdt_structs.h>
 #include <sstream>
 
+#ifndef _WIN32
 #include <dlfcn.h>
+#else
+#include <Windows.h>
+#endif
 
 {{/* Load entrypoints module function which loads all the entrypoints */}}
 
@@ -320,27 +330,70 @@ jmethodID jmethod_{{$c.Name}}_{{$f.Name}} = nullptr;
 	{{end}}
 {{end}}
 
-extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
+const char* get_dynamic_lib_suffix()
 {
-	// load "load_class" function
-	std::string openjdk_plugin_path(std::getenv("METAFFI_HOME"));
-	openjdk_plugin_path += "/xllr.openjdk.so"; // TODO: multi-platform
+#if _WIN32
+	return ".dll";
+#elif __apple__
+	return ".dylib";
+#else
+	return ".so";
+#endif
+}
 
+void load_load_class()
+{
+	std::string openjdk_plugin_path(std::getenv("METAFFI_HOME"));
+	openjdk_plugin_path += "/xllr.openjdk";
+	openjdk_plugin_path += get_dynamic_lib_suffix();
+
+#ifdef _WIN32
+	HMODULE openjdk_plugin_handle = LoadLibrary(openjdk_plugin_path.c_str());
+#else
 	void* openjdk_plugin_handle = dlopen(openjdk_plugin_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+#endif
+
 	if(!openjdk_plugin_handle)
 	{
 		std::stringstream ss;
-		ss << "Failed to load openjdk plugin at path: \"" << openjdk_plugin_path << "\". Error: " << dlerror() << std::endl;
+		ss << "Failed to load openjdk plugin at path: \"" << openjdk_plugin_path << "\". Error: ";
+#ifdef _WIN32
+		ss << GetLastError();
+#else
+		ss << dlerror();
+#endif
+	    ss << std::endl;
+
 		throw std::runtime_error(ss.str());
 	}
 
+#ifdef _WIN32
+	load_class = (load_class_t)GetProcAddress(openjdk_plugin_handle, "load_class");
+#else
 	load_class = (load_class_t)dlsym(openjdk_plugin_handle, "load_class");
+#endif
+
 	if(!load_class)
 	{
         std::stringstream ss;
-        ss << "Failed to load load_class function. Error: " << dlerror() << std::endl;
+        ss << "Failed to load load_class function. Error: ";
+
+#ifdef _WIN32
+        ss << GetLastError();
+#else
+        ss << dlerror();
+#endif
+        ss << std::endl;
+
         throw std::runtime_error(ss.str());
     }
+
+}
+
+extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
+{
+	// load "load_class" function
+	load_load_class();
 
 	jvm = pjvm;
     {{range $mindex, $m := .Modules}}

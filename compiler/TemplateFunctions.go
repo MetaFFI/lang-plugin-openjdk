@@ -46,12 +46,12 @@ func externalResourcesAsArray(module *IDL.ModuleDefinition) string {
 	res := make([]string, 0)
 	
 	for _, r := range module.ExternalResources {
-		res = append(res, fmt.Sprintf(`"%v"`, r))
+		res = append(res, fmt.Sprintf(`R"(%v)"`, r))
 	}
 	wd, _ := os.Getwd()
 	wd += string(os.PathSeparator)
 	
-	res = append(res, `"`+wd+module.Name+`_MetaFFIGuest.jar"`)
+	res = append(res, `R"(`+wd+module.Name+`_MetaFFIGuest.jar)"`)
 	
 	return strings.Join(res, ",")
 }

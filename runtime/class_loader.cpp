@@ -1,8 +1,8 @@
 #include "class_loader.h"
 #include <set>
-#include <string>
 #include <unordered_map>
 #include <functional>
+#include <stdexcept>
 
 jclass class_loader_class = nullptr;
 jmethodID get_system_class_loader_method = nullptr;
@@ -135,6 +135,10 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	return res;
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4297)
+#endif
 jclass load_class(JNIEnv* env, const std::vector<std::string>& path, const char* class_name)
 {
 	// if class already loaded - return jclass
@@ -247,3 +251,6 @@ jclass load_class(JNIEnv* env, const std::vector<std::string>& path, const char*
 	
 	return (jclass)targetClass;
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

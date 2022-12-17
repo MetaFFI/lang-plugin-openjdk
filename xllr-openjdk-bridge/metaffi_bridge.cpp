@@ -1,3 +1,6 @@
+#ifdef _MSC_VER
+#include <corecrt.h> // https://www.reddit.com/r/cpp_questions/comments/qpo93t/error_c2039_invalid_parameter_is_not_a_member_of/
+#endif
 #include "metaffi_bridge.h"
 #include <runtime/cdts_wrapper.h>
 #include <runtime/cdt_capi_loader.h>
@@ -294,7 +297,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 			env->ReleaseLongArrayElements(pmetaffi_types, pmtypes_array, 0);
 		}
 		
-		return reinterpret_cast<jlong>(pcdts);
+		return pcdts;
 	}
 	catch(std::exception& err)
 	{

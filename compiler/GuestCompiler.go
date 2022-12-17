@@ -181,7 +181,9 @@ func (this *GuestCompiler) generateJarCode() (string, error) {
 func (this *GuestCompiler) getClassPath() string {
 	
 	classPathSet := make(map[string]bool, 0)
-	classPathSet["."] = true
+	wd, err := os.Getwd()
+	if err != nil{ panic(err) }
+	classPathSet[wd] = true
 	classPathSet[fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator))] = true
 	
 	for _, m := range this.def.Modules {
@@ -245,6 +247,12 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	args = append(args, mffiHome+"/include")
 	args = append(args, "-I")
 	args = append(args, javaHome+"/include")
+
+	if runtime.GOOS == "windows"{
+		args = append(args, "-I")
+		args = append(args, javaHome+"/include/win32")
+	}
+
 	args = append(args, "-I")
 	args = append(args, javaHome+"/include/"+runtime.GOOS)
 	args = append(args, "-std=c++17")

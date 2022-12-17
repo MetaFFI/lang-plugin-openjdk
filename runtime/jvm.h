@@ -1,5 +1,15 @@
+#ifdef _MSC_VER
+#include <corecrt.h> // https://www.reddit.com/r/cpp_questions/comments/qpo93t/error_c2039_invalid_parameter_is_not_a_member_of/
+#endif
 #pragma once
+#ifdef _DEBUG
+#undef _DEBUG
 #include <jni.h>
+#define _DEBUG
+#else
+#include <jni.h>
+#endif
+
 #include <vector>
 #include <string>
 #include <functional>

@@ -276,7 +276,7 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	void set_metaffi_bool(void* values_to_set, int index, metaffi_bool& val_to_set, int starting_index) override
 	{
 		set_numeric_to_cdts<metaffi_bool>((jobjectArray)values_to_set, index+starting_index, val_to_set,
-		                                  [this](jobject val_to_set)->metaffi_uint64 {return env->CallBooleanMethod(val_to_set, cdts_java::boolean_get_value);});
+		                                  [this](jobject val_to_set)->metaffi_bool {return env->CallBooleanMethod(val_to_set, cdts_java::boolean_get_value);});
 		
 	}
 	

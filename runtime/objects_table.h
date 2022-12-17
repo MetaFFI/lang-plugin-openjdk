@@ -3,7 +3,13 @@
 #include <set>
 #include "runtime/metaffi_primitives.h"
 #include <shared_mutex>
+#ifdef _DEBUG
+#undef _DEBUG
 #include <jni.h>
+#define _DEBUG
+#else
+#include <jni.h>
+#endif
 
 
 extern "C" void openjdk_release_object(metaffi_handle h);

@@ -5,6 +5,8 @@ find_package(Java 11 REQUIRED COMPONENTS Development)
 include(CTest)
 enable_testing()
 
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 set(target_name "xllr.openjdk")
 
 # build xllr.openjdk
@@ -27,10 +29,18 @@ set_property(TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES PREFIX "")
 
 if(WIN32)
-	target_link_libraries(${target_name} Boost::filesystem ${JNI_LIBRARIES})
+	target_link_libraries(${target_name} ${JNI_LIBRARIES})
+	target_link_directories(${target_name} PUBLIC ${BOOST_LIBRARYDIR})
 else()
 	target_link_libraries(${target_name} dl Boost::filesystem ${JNI_LIBRARIES})
 endif()
+
+include(GenerateExportHeader)
+GENERATE_EXPORT_HEADER(xllr.openjdk
+		BASE_NAME xllr.openjdk
+		EXPORT_MACRO_NAME XLLR_OPENJDK_EXPORTS
+		EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/xllr_openjdk_exports.h
+		STATIC_DEFINE SHARED_EXPORTS_BUILT_AS_STATIC)
 
 # Copy to metaffi directory
 add_custom_command(TARGET ${target_name} POST_BUILD
