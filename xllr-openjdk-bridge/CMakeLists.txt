@@ -43,3 +43,7 @@ add_custom_command(TARGET ${target_jar_name} POST_BUILD
 		"${CMAKE_CURRENT_BINARY_DIR}/${target_jar_name}.jar"
 		"$ENV{METAFFI_HOME}/${target_jar_name}.jar"
 		COMMENT "Copy ${CMAKE_CURRENT_BINARY_DIR}/${target_jar_name}.jar -> $ENV{METAFFI_HOME}/${target_jar_name}.jar")
+
+# install
+install(TARGETS ${target_jni_name})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${target_jar_name}.jar DESTINATION "lib")

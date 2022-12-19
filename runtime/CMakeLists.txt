@@ -55,3 +55,5 @@ add_executable(jvm_guest_test ${CMAKE_CURRENT_LIST_DIR}/jvm_guest_test.cpp)
 target_link_libraries(jvm_guest_test ${target_name} xllr.test)
 add_test(NAME jvm_guest_test COMMAND jvm_guest_test)
 
+# install
+install(TARGETS ${target_name})
