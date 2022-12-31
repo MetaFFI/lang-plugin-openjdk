@@ -390,10 +390,19 @@ void load_load_class()
 
 }
 
-extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
+extern "C" void load_entrypoints(const char* module_path, uint32_t module_path_len, JavaVM* pjvm, JNIEnv* env)
 {
 	// load "load_class" function
 	load_load_class();
+
+	std::string mod_path(module_path, module_path_len);
+	std::string tmp;
+    std::stringstream ss(mod_path);
+    std::vector<std::string> classpath;
+
+    while(std::getline(ss, tmp, ';')){
+        classpath.push_back(tmp);
+    }
 
 	jvm = pjvm;
     {{range $mindex, $m := .Modules}}
@@ -402,7 +411,7 @@ extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
             {{range $findex, $field := $c.Fields}}
                 {{if $field.Getter}}{{$f := $field.Getter}}
 				{{if IsExternalResources $m}}
-                jclass_{{$c.Name}}_get_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+                jclass_{{$c.Name}}_get_{{$f.Name}} = load_class(env, classpath, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
                 {{else}}
                 jclass_{{$c.Name}}_get_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
                 {{end}}
@@ -413,7 +422,7 @@ extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
                 {{end}}
                 {{if $field.Setter}}{{$f := $field.Setter}}
                 {{if IsExternalResources $m}}
-                jclass_{{$c.Name}}_set_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+                jclass_{{$c.Name}}_set_{{$f.Name}} = load_class(env, { mod_path {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
                 {{else}}
                 jclass_{{$c.Name}}_set_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
                 {{end}}
@@ -426,7 +435,7 @@ extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
 
             {{range $cstrindex, $f := $c.Constructors}}
 	            {{if IsExternalResources $m}}
-                jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+                jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { mod_path {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
                 {{else}}
                 jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
                 {{end}}
@@ -438,7 +447,7 @@ extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
 
             {{if $c.Releaser}}{{$f := $c.Releaser}}
             {{if IsExternalResources $m}}
-            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { mod_path {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
             {{else}}
             jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
             {{end}}
@@ -450,7 +459,7 @@ extern "C" void load_entrypoints(JavaVM* pjvm, JNIEnv* env)
 
             {{range $cstrindex, $f := $c.Methods}}
             {{if IsExternalResources $m}}
-            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, { mod_path {{ExternalResourcesAsArray $m}} }, "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
             {{else}}
             jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
             {{end}}

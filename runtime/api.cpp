@@ -65,30 +65,47 @@ void free_runtime(char** err, uint32_t* err_len)
 	catch_and_fill(err, err_len);
 }
 //--------------------------------------------------------------------
-std::unordered_map<std::string, std::shared_ptr<boost::dll::shared_library>> libs; // TODO: support multiple libs!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+std::unordered_map<std::string, std::shared_ptr<boost::dll::shared_library>> libs;
 std::vector<std::shared_ptr<boost::dll::detail::import_type<void(cdts[2],char**,int64_t*)>::type>> params_no_params_or_no_ret_funcs;
 std::vector<std::shared_ptr<boost::dll::detail::import_type<void(char**,int64_t*)>::type>> params_no_params_no_ret_funcs;
 
-void* load_function(const char* function_path, uint32_t function_path_len, int8_t params_count, int8_t retval_count, char** err, uint32_t* err_len)
+std::vector<std::string> parse_module_path(const std::string& module_path)
+{
+	std::string tmp;
+	std::stringstream ss(module_path);
+	std::vector<std::string> classpath;
+	
+	while(std::getline(ss, tmp, ';')){
+		classpath.push_back(tmp);
+	}
+	
+	return classpath;
+}
+//--------------------------------------------------------------------
+void* load_function(const char* module_path, uint32_t module_path_len, const char* function_path, uint32_t function_path_len, int8_t params_count, int8_t retval_count, char** err, uint32_t* err_len)
 {
 	void* res = nullptr;
 	try
 	{
-		metaffi::utils::function_path_parser fp(function_path);
+		metaffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
 		
-		auto it_lib = libs.find(fp[function_path_entry_metaffi_guest_lib]);
+		std::string modpath(module_path, module_path_len);
+		auto it_lib = libs.find(modpath);
 		std::shared_ptr<boost::dll::shared_library> lib;
 		if(it_lib == libs.end())// TODO: make thread safe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		{
-			std::string dylib_to_load = fp[function_path_entry_metaffi_guest_lib];
-			lib = metaffi::utils::load_library(dylib_to_load);
+			std::vector<std::string> modules = parse_module_path(modpath);
 			
-			auto load_entrypoints = lib->get<void(JavaVM*,JNIEnv*)>("load_entrypoints");
+			// first module must be the dynamic library
+			lib = metaffi::utils::load_library(modules[0], false, false);
+			
+			
+			auto load_entrypoints = lib->get<void(const char*, uint32_t, JavaVM*,JNIEnv*)>("load_entrypoints");
 			
 			JNIEnv* env;
 			auto releaser = pjvm->get_environment(&env);
 			
-			load_entrypoints((JavaVM*)(*pjvm), env);
+			load_entrypoints(module_path, module_path_len, (JavaVM*)(*pjvm), env);
 			releaser();
 			
 			libs[fp[function_path_entry_metaffi_guest_lib]] = lib;

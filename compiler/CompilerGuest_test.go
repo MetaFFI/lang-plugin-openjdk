@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -157,62 +156,6 @@ public class GuestCode
 `
 
 //--------------------------------------------------------------------
-func TestGuest(t *testing.T) {
-	
-	def, err := IDL.NewIDLDefinitionFromJSON(idl_guest)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	
-	_ = os.RemoveAll("temp")
-	
-	err = os.Mkdir("temp", 0700)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	
-	defer func() {
-		err = os.RemoveAll("temp")
-		if err != nil {
-			t.Fatal(err)
-			return
-		}
-	}()
-	
-	err = ioutil.WriteFile("./temp/GuestCode.java", []byte(GuestCode), 0600)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	
-	cmp := NewGuestCompiler()
-	err = cmp.Compile(def, "temp", "", "", "")
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	
-	err = os.Chdir("temp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	
-	defer func() {
-		err = os.Chdir("..")
-		if err != nil {
-			t.Fatal(err)
-			return
-		}
-	}()
-	
-	if CallHostMock() != 0 {
-		t.Fatal("Failed calling guest")
-	}
-}
-
-//--------------------------------------------------------------------
 func TestJavaExtractorGuest(t *testing.T) {
 	
 	t.Skip("Java IDL plugin not ready yet")
@@ -229,14 +172,14 @@ func TestJavaExtractorGuest(t *testing.T) {
 		t.Fatal(err)
 	}
 	
-	err = os.Mkdir("temp", 0700)
+	err = os.Mkdir("temp_guest2", 0700)
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 	
 	defer func() {
-		err = os.RemoveAll("temp")
+		err = os.RemoveAll("temp_guest2")
 		if err != nil {
 			t.Fatal(err)
 			return
@@ -244,7 +187,7 @@ func TestJavaExtractorGuest(t *testing.T) {
 	}()
 	
 	cmp := NewGuestCompiler()
-	err = cmp.Compile(def, "temp", "", "", "")
+	err = cmp.Compile(def, "temp_guest2", "", "", "")
 	if err != nil {
 		t.Fatal(err)
 		return

@@ -45,5 +45,23 @@ add_custom_command(TARGET ${target_jar_name} POST_BUILD
 		COMMENT "Copy ${CMAKE_CURRENT_BINARY_DIR}/${target_jar_name}.jar -> $ENV{METAFFI_HOME}/${target_jar_name}.jar")
 
 # install
-install(TARGETS ${target_jni_name})
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${target_jar_name}.jar DESTINATION "lib")
+install(TARGETS ${target_jni_name} DESTINATION .)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${target_jar_name}.jar DESTINATION .)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES Linux)
+	ADD_DEB_DEPENDS(${CMAKE_BINARY_DIR} ${target_jni_name} "python|boost|expat|jvm" INSTALL_FILES INSTALL_RESOLVED_FILES INSTALL_FILES_ERROR)
+
+	if (${INSTALL_FILES_ERROR})
+		message( FATAL_ERROR "Dependencies files resolution failed: " ${INSTALL_FILES_ERROR} )
+	endif (${INSTALL_FILES_ERROR})
+
+	if(INSTALL_FILES)
+		install(FILES ${INSTALL_FILES} # Copy all libraries and symlinks pointing to real paths
+				DESTINATION .)
+	endif()
+
+	if(INSTALL_RESOLVED_FILES)
+		install(FILES ${INSTALL_RESOLVED_FILES} # Copy all libraries real paths
+				DESTINATION .)
+	endif()
+endif()

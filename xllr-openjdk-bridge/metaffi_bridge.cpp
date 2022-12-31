@@ -136,19 +136,22 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* 
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jstring function_path, jbyte params_count, jbyte retval_count)
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jstring module_path, jstring function_path, jbyte params_count, jbyte retval_count)
 {
 	try
 	{
 		const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
 		jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
 		
+		const char* str_module_path = env->GetStringUTFChars(module_path, nullptr);
+		jsize str_module_path_len = env->GetStringLength(module_path);
+		
 		const char* str_function_path = env->GetStringUTFChars(function_path, nullptr);
 		jsize str_function_path_len = env->GetStringLength(function_path);
 		
 		char* out_err_buf = nullptr;
 		uint32_t out_err_len = 0;
-		void* pff = xllr->load_function(str_runtime_plugin, str_runtime_plugin_len, str_function_path, str_function_path_len, nullptr, params_count, retval_count, &out_err_buf, &out_err_len);
+		void* pff = xllr->load_function(str_runtime_plugin, str_runtime_plugin_len, str_module_path, str_module_path_len, str_function_path, str_function_path_len, nullptr, params_count, retval_count, &out_err_buf, &out_err_len);
 		
 		// release runtime_plugin
 		env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);

@@ -40,10 +40,10 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin
 /*
  * Class:     metaffi_MetaFFIBridge
  * Method:    load_function
- * Signature: (Ljava/lang/String;Ljava/lang/String;BB)Ljava/lang/Object;
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;BB)Ljava/lang/Object;
  */
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function
-		(JNIEnv *, jobject, jstring, jstring, jbyte, jbyte);
+		(JNIEnv *, jobject, jstring, jstring, jstring, jbyte, jbyte);
 
 /*
  * Class:     metaffi_MetaFFIBridge

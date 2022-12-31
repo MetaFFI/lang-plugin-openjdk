@@ -6,7 +6,6 @@ import (
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -48,12 +47,14 @@ func externalResourcesAsArray(module *IDL.ModuleDefinition) string {
 	for _, r := range module.ExternalResources {
 		res = append(res, fmt.Sprintf(`R"(%v)"`, r))
 	}
-	wd, _ := os.Getwd()
-	wd += string(os.PathSeparator)
-	
-	res = append(res, `R"(`+wd+module.Name+`_MetaFFIGuest.jar)"`)
-	
-	return strings.Join(res, ",")
+
+	if len(res) > 0{
+		return "," + strings.Join(res, ",")
+	} else {
+		return ""
+	}
+
+
 }
 
 //--------------------------------------------------------------------

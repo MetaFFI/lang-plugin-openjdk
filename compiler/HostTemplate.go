@@ -41,37 +41,37 @@ public final class {{$m.Name}}
 
 	{{end}}{{/*End classes*/}}
 
-	static
+	public static void load(String modulePath)
 	{
 		metaffi = new MetaFFIBridge();
 		metaffi.load_runtime_plugin("xllr.{{$targetLanguage}}");
 
 		{{range $findex, $f := $m.Globals}}
-		{{if $f.Getter}}{{$f.Getter.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-	    {{if $f.Setter}}{{$f.Setter.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
+		{{if $f.Getter}}{{$f.Getter.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+	    {{if $f.Setter}}{{$f.Setter.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 	    {{end}}{{/* End globals */}}
 
 		{{range $findex, $f := $m.Functions}}
-		{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+		{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 		{{end}}
 
 		{{range $cindex, $c := $m.Classes}}
 
 		{{range $findex, $f := $c.Fields}}
-		{{if $f.Getter}}{{$c.Name}}_{{$f.Getter.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-	    {{if $f.Setter}}{{$c.Name}}_{{$f.Setter.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
+		{{if $f.Getter}}{{$c.Name}}_{{$f.Getter.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+	    {{if $f.Setter}}{{$c.Name}}_{{$f.Setter.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 		{{end}}
 
 		{{range $findex, $f := $c.Constructors}}
-		{{$c.Name}}_{{$f.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+		{{$c.Name}}_{{$f.Name}}ID = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 		{{end}}
 
 		{{if $c.Releaser}}{{$f := $c.Releaser}}
-		{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+		{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 		{{end}}
 
 		{{range $findex, $f := $c.Methods}}
-		{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+		{{$f.GetEntityIDName}} = metaffi.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 		{{end}}
 
 		{{end}}{{/*End classes*/}}

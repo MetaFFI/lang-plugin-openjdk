@@ -28,4 +28,4 @@ add_custom_command(TARGET ${target_name} POST_BUILD
 
 # install
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-		DESTINATION "lib")
+		DESTINATION .)
