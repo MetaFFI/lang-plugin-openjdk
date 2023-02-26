@@ -3,6 +3,9 @@
 #include <unordered_map>
 #include <functional>
 #include <stdexcept>
+#include <utility>
+#include <sstream>
+#include <boost/algorithm/string.hpp>
 
 jclass class_loader_class = nullptr;
 jmethodID get_system_class_loader_method = nullptr;
@@ -15,8 +18,15 @@ jclass class_class = nullptr;
 jmethodID for_name_method = nullptr;
 jmethodID add_url = nullptr;
 jobject childURLClassLoader = nullptr;
+bool is_bridge_added = false;
 std::set<std::string> loaded_paths;
 std::unordered_map<std::string,jclass> loaded_classes;
+
+#ifdef _WIN32
+std::string file_protocol("file:///");
+#else
+std::string file_protocol("file://");
+#endif
 
 
 #define check_and_throw_jvm_exception(env, var, before_throw_code) \
@@ -44,7 +54,7 @@ throw std::runtime_error(err_msg);\
 
 struct block_guard
 {
-	block_guard(std::function<void()> f):f(f){}
+	explicit block_guard(std::function<void()> f):f(std::move(f)){}
 	~block_guard()
 	{
 		try{ f(); } catch(...){printf("block_guard function threw an exception\n");}
@@ -139,116 +149,140 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 #pragma warning(push)
 #pragma warning(disable: 4297)
 #endif
-jclass load_class(JNIEnv* env, const std::vector<std::string>& path, const char* class_name)
+jclass load_class(JNIEnv* env, const char* class_path, const char* class_name)
 {
-//	std::string prt;
-//	for(const std::string& s : path){
-//		prt += s + " ; ";
-//	}
-//	printf("+++ %s\n", prt.c_str());
-	
+	printf("+++++++++ %s:%d ; class_name: %s\n", __FILE__, __LINE__, class_name);
 	// if class already loaded - return jclass
 	if(auto it = loaded_classes.find(class_name); it != loaded_classes.end())
 	{
-	//printf("+++ already loaded %s\n", class_name);
-	return it->second;
+		//printf("+++ already loaded %s\n", class_name);
+		return it->second;
 	}
 	
 	// get class loader
 	if(!class_loader_class)
 	{
-	class_loader_class = env->FindClass("java/lang/ClassLoader");
-	check_and_throw_jvm_exception(env, class_loader_class,);
+		class_loader_class = env->FindClass("java/lang/ClassLoader");
+		check_and_throw_jvm_exception(env, class_loader_class,);
 	}
 	
 	if(!get_system_class_loader_method)
 	{
-	get_system_class_loader_method = env->GetStaticMethodID(class_loader_class, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-	check_and_throw_jvm_exception(env, get_system_class_loader_method,);
+		get_system_class_loader_method = env->GetStaticMethodID(class_loader_class, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+		check_and_throw_jvm_exception(env, get_system_class_loader_method,);
 	}
 	
 	if(!url_class_loader)
 	{
-	url_class_loader = env->FindClass("java/net/URLClassLoader");
-	check_and_throw_jvm_exception(env, url_class_loader,);
+		url_class_loader = env->FindClass("java/net/URLClassLoader");
+		check_and_throw_jvm_exception(env, url_class_loader,);
 	}
 	
 	if(!url_class_loader_constructor)
 	{
-	url_class_loader_constructor = env->GetMethodID(url_class_loader, "<init>", "([Ljava/net/URL;Ljava/lang/ClassLoader;)V");
-	check_and_throw_jvm_exception(env, url_class_loader_constructor,);
+		url_class_loader_constructor = env->GetMethodID(url_class_loader, "<init>", "([Ljava/net/URL;Ljava/lang/ClassLoader;)V");
+		check_and_throw_jvm_exception(env, url_class_loader_constructor,);
 	}
 	
 	if(!add_url)
 	{
-	add_url = env->GetMethodID(url_class_loader, "addURL", "(Ljava/net/URL;)V");
-	check_and_throw_jvm_exception(env, add_url,);
+		add_url = env->GetMethodID(url_class_loader, "addURL", "(Ljava/net/URL;)V");
+		check_and_throw_jvm_exception(env, add_url,);
 	}
 	
 	if(!classLoaderInstance)
 	{
-	// classLoaderInstance = ClassLoader.getSystemClassLoader()
-	classLoaderInstance = env->CallStaticObjectMethod(class_loader_class, get_system_class_loader_method);
-	check_and_throw_jvm_exception(env, classLoaderInstance,);
+		// classLoaderInstance = ClassLoader.getSystemClassLoader()
+		classLoaderInstance = env->CallStaticObjectMethod(class_loader_class, get_system_class_loader_method);
+		check_and_throw_jvm_exception(env, classLoaderInstance,);
 	}
 	
 	if(!url_class)
 	{
-	// new URL[]{ urlInstance }
-	url_class = env->FindClass("java/net/URL");
-	check_and_throw_jvm_exception(env, url_class,);
+		// new URL[]{ urlInstance }
+		url_class = env->FindClass("java/net/URL");
+		check_and_throw_jvm_exception(env, url_class,);
 	}
 	
 	if(!url_class_constructor)
 	{
-	url_class_constructor = env->GetMethodID(url_class, "<init>", "(Ljava/lang/String;)V");
-	check_and_throw_jvm_exception(env, url_class_constructor,);
+		url_class_constructor = env->GetMethodID(url_class, "<init>", "(Ljava/lang/String;)V");
+		check_and_throw_jvm_exception(env, url_class_constructor,);
 	}
 	
 	if(!class_class)
 	{
-	// Class targetClass = Class.forName(class_name, true, child);
-	class_class = env->FindClass("java/lang/Class");
-	check_and_throw_jvm_exception(env, class_class,);
+		// Class targetClass = Class.forName(class_name, true, child);
+		class_class = env->FindClass("java/lang/Class");
+		check_and_throw_jvm_exception(env, class_class,);
 	}
 	
 	if(!for_name_method)
 	{
-	for_name_method = env->GetStaticMethodID(class_class, "forName", "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;");
-	check_and_throw_jvm_exception(env, for_name_method,);
+		for_name_method = env->GetStaticMethodID(class_class, "forName", "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;");
+		check_and_throw_jvm_exception(env, for_name_method,);
 	}
 	
 	if(!childURLClassLoader)
 	{
-	// URLClassLoader childURLClassLoader = new URLClassLoader( jarURLArray, classLoaderInstance ) ;
+		// URLClassLoader childURLClassLoader = new URLClassLoader( jarURLArray, classLoaderInstance ) ;
+		
+		// initialize with "$METAFFI_HOME/xllr.openjdk.bridge.jar"
+		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/xllr.openjdk.bridge.jar";
+		
+		jobjectArray jarURLArray = env->NewObjectArray(1, url_class, nullptr); // URL[]{}
+		check_and_throw_jvm_exception(env, jarURLArray,);
+		env->SetObjectArrayElement(jarURLArray, 0, env->NewObject(url_class, url_class_constructor, env->NewStringUTF(openjdk_bridge_url.c_str())));
+		check_and_throw_jvm_exception(env, true,);
+		
+		childURLClassLoader = env->NewObject(url_class_loader, url_class_loader_constructor, jarURLArray, classLoaderInstance);
+		check_and_throw_jvm_exception(env, childURLClassLoader,);
+	}
 	
-	// initialize with "$METAFFI_HOME/xllr.openjdk.bridge.jar"
-	std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/xllr.openjdk.bridge.jar";
+	if(!is_bridge_added)
+	{
+		std::string openjdk_bridge = file_protocol + std::getenv("METAFFI_HOME");
+		openjdk_bridge += "/";
+		openjdk_bridge += "xllr.openjdk.bridge.jar";
+		
+#ifdef _WIN32
+		boost::replace_all(openjdk_bridge, "\\", "/");
+#endif
+		
+		jobject urlInstance = env->NewObject(url_class, url_class_constructor, env->NewStringUTF(openjdk_bridge.c_str()));
+		check_and_throw_jvm_exception(env, urlInstance,);
+		env->CallObjectMethod(childURLClassLoader, add_url, urlInstance);
+		check_and_throw_jvm_exception(env, true,);
+		
+		is_bridge_added = true;
+	}
 	
-	jobjectArray jarURLArray = env->NewObjectArray(1, url_class, nullptr); // URL[]{}
-	check_and_throw_jvm_exception(env, jarURLArray,);
-	env->SetObjectArrayElement(jarURLArray, 0, env->NewObject(url_class, url_class_constructor, env->NewStringUTF(openjdk_bridge_url.c_str())));
-	check_and_throw_jvm_exception(env, true,);
-	
-	childURLClassLoader = env->NewObject(url_class_loader, url_class_loader_constructor, jarURLArray, classLoaderInstance);
-	check_and_throw_jvm_exception(env, childURLClassLoader,);
+	std::string tmp;
+	std::stringstream ss(class_path);
+	std::vector<std::string> classpath_vec;
+	while(std::getline(ss, tmp, ';')){
+		classpath_vec.push_back(tmp);
 	}
 	
 	// every URL that is NOT loaded - add URL
-	for(int i=0 ; i<path.size() ; i++)
+	for(const auto & i : classpath_vec)
 	{
-	std::string url_path = (std::string("file://")+path[i]);
-	if(loaded_paths.find(url_path) != loaded_paths.end())
-	{
-	continue;
-	}
+		std::string url_path = file_protocol+i;
+		if(loaded_paths.find(url_path) != loaded_paths.end())
+		{
+			continue;
+		}
+
+#ifdef _WIN32
+		boost::replace_all(url_path, "\\", "/");
+#endif
 	
-	jobject urlInstance = env->NewObject(url_class, url_class_constructor, env->NewStringUTF(url_path.c_str()));
-	check_and_throw_jvm_exception(env, urlInstance,);
-	env->CallObjectMethod(childURLClassLoader, add_url, urlInstance);
-	check_and_throw_jvm_exception(env, true,);
-	
-	loaded_paths.insert(url_path);
+		jobject urlInstance = env->NewObject(url_class, url_class_constructor, env->NewStringUTF(url_path.c_str()));
+		check_and_throw_jvm_exception(env, urlInstance,);
+		env->CallObjectMethod(childURLClassLoader, add_url, urlInstance);
+		check_and_throw_jvm_exception(env, true,);
+		
+		loaded_paths.insert(url_path);
 	}
 	
 	jobject targetClass = env->CallStaticObjectMethod(class_class, for_name_method, env->NewStringUTF(class_name), JNI_TRUE, childURLClassLoader);

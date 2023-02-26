@@ -1,72 +1,36 @@
-find_package(Boost REQUIRED COMPONENTS filesystem) # Boost library
-find_package(JNI REQUIRED) # JNI library
-find_package(Java 11 REQUIRED COMPONENTS Development)
 
-include(CTest)
-enable_testing()
+#------------------------------- OpenJDK Language Support - Runtime Plugin ------------------------------------------
+project(lang-plugin-openjdk-runtime VERSION 0.0.1)
 
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+add_boost(filesystem)
+add_jni()
+add_java()
+
+include(UseJava)
 
 set(target_name "xllr.openjdk")
 
 # build xllr.openjdk
-file(GLOB SRC_FILES ${CMAKE_CURRENT_LIST_DIR}/*.cpp
-		${CMAKE_CURRENT_LIST_DIR}/*.h
-		${CMAKE_CURRENT_LIST_DIR}/*.hpp
-		${METAFFI_SDK}/utils/*.cpp
-		${METAFFI_SDK}/runtime/cdts_wrapper.*
-		${METAFFI_SDK}/runtime/cdt_capi_loader.c)
+get_dir_sources(${CMAKE_CURRENT_LIST_DIR} ${target_name}_sources)
+get_sdk_utils_sources(utils_srcs)
+get_sdk_runtime_sources(runtime_srcs)
 
-add_library(${target_name}
-			SHARED
-			${SRC_FILES}
-)
-target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
+add_library(${target_name} SHARED ${${target_name}_sources} ${utils_srcs} ${runtime_srcs})
+target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
+set_target_properties(${target_name} PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(${target_name} PRIVATE Boost::filesystem ${JNI_LIBRARIES})
+link_to_dl_for_non_windows(${target_name})
 
-set_property(TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-# remove the "lib" prefix in linux to get the expected filename
-SET_TARGET_PROPERTIES(${target_name} PROPERTIES PREFIX "")
-
-if(WIN32)
-	target_link_libraries(${target_name} ${JNI_LIBRARIES})
-	target_link_directories(${target_name} PUBLIC ${BOOST_LIBRARYDIR})
-else()
-	target_link_libraries(${target_name} dl Boost::filesystem ${JNI_LIBRARIES})
-endif()
-
+# Generate exports for XLLR
 include(GenerateExportHeader)
-GENERATE_EXPORT_HEADER(xllr.openjdk
-		BASE_NAME xllr.openjdk
-		EXPORT_MACRO_NAME XLLR_OPENJDK_EXPORTS
-		EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/xllr_openjdk_exports.h
+GENERATE_EXPORT_HEADER(${target_name}
+		BASE_NAME ${target_name}
+		EXPORT_MACRO_NAME ${target_name}_EXPORTS
+		EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/xllr_openjdk_exports.h
 		STATIC_DEFINE SHARED_EXPORTS_BUILT_AS_STATIC)
 
 # Copy to metaffi directory
-add_custom_command(TARGET ${target_name} POST_BUILD
-		COMMAND "${CMAKE_COMMAND}" -E copy
-		"${CMAKE_CURRENT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}"
-		"$ENV{METAFFI_HOME}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}"
-		COMMENT "Copy ${CMAKE_CURRENT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX} -> $ENV{METAFFI_HOME}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
+copy_file_from_project_binary_to_metaffi_home(${target_name} "${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # install
-install(TARGETS ${target_name} DESTINATION .)
-
-if(${CMAKE_SYSTEM_NAME} MATCHES Linux)
-	ADD_DEB_DEPENDS(${CMAKE_BINARY_DIR} ${target_name} "python|boost|expat|jvm" INSTALL_FILES INSTALL_RESOLVED_FILES INSTALL_FILES_ERROR)
-
-	if (${INSTALL_FILES_ERROR})
-		message( FATAL_ERROR "Dependencies files resolution failed: " ${INSTALL_FILES_ERROR} )
-	endif (${INSTALL_FILES_ERROR})
-
-	if(INSTALL_FILES)
-		install(FILES ${INSTALL_FILES} # Copy all libraries and symlinks pointing to real paths
-				DESTINATION .)
-	endif()
-
-	if(INSTALL_RESOLVED_FILES)
-		install(FILES ${INSTALL_RESOLVED_FILES} # Copy all libraries real paths
-				DESTINATION .)
-	endif()
-endif()
+install_target(${target_name} .)

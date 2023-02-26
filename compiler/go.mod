@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/MetaFFI/plugin-sdk v0.0.0-00010101000000-000000000000
+	github.com/yargevad/filepathx v1.0.0
 	golang.org/x/text v0.3.7
 )
 
@@ -18,7 +19,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
-	github.com/yargevad/filepathx v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904 // indirect
 )
 

@@ -23,6 +23,7 @@ std::unique_ptr<xllr_api_wrapper> xllr;
 // https://stackoverflow.com/questions/230689/best-way-to-throw-exceptions-in-jni-code
 bool throwMetaFFIException( JNIEnv* env,  const char* message )
 {
+	printf("++++++++++++++ GOING TO THROW METAFFI EXCEPTION FROM C++\n");
 	jclass metaffiException = env->FindClass( "metaffi/MetaFFIException" );
 	if(!metaffiException)
 	{
@@ -30,7 +31,11 @@ bool throwMetaFFIException( JNIEnv* env,  const char* message )
 		return env->ThrowNew( noSuchClass, "Cannot find MetaFFIException Class" ) == 0;
 	}
 	
-	return env->ThrowNew( metaffiException, message ) == 0;
+	printf("++++++++++++++ 111 GOING TO THROW METAFFI EXCEPTION FROM C++\n");
+	jint res = env->ThrowNew( metaffiException, message );
+	printf("++++++++++++++ 222 GOING TO THROW METAFFI EXCEPTION FROM C++\n");
+	
+	return res == 0;
 }
 //--------------------------------------------------------------------
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_init(JNIEnv* env, jclass obj)
@@ -99,7 +104,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_load_1runtime_1plugin(JNIEnv* 
 		if(out_err_buf)
 		{
 			throwMetaFFIException(env, out_err_buf);
-			free(out_err_buf);
+			//free(out_err_buf);
 			return;
 		}
 	}
@@ -127,7 +132,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* 
 		if(out_err_buf)
 		{
 			throwMetaFFIException(env, out_err_buf);
-			free(out_err_buf);
+			//free(out_err_buf);
 		}
 	}
 	catch(std::exception& err)
@@ -161,7 +166,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 		if(!pff)
 		{
 			throwMetaFFIException(env, out_err_buf);
-			free(out_err_buf);
+			//free(out_err_buf);
 			return -1;
 		}
 		
@@ -192,7 +197,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1function(JNIEnv* env, jo
 		if (out_err_buf)
 		{
 			throwMetaFFIException(env, out_err_buf);
-			free(out_err_buf);
+			//free(out_err_buf);
 			return;
 		}
 	}
@@ -214,7 +219,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1ret(JNIEnv* env
 		if (out_err_len) // throw an exception in the JVM
 		{
 			throwMetaFFIException(env, out_err_buf);
-			free(out_err_buf);
+			//free(out_err_buf);
 			return;
 		}
 	}
@@ -235,7 +240,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1ret(JNIEnv*
 	if(out_err_len) // throw an exception in the JVM
 	{
 		throwMetaFFIException(env, out_err_buf);
-		free(out_err_buf);
+		//free(out_err_buf);
 		return;
 	}
 }
@@ -252,7 +257,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret(JNIEnv*
 		if (out_err_len) // throw an exception in the JVM
 		{
 			throwMetaFFIException(env, out_err_buf);
-			free(out_err_buf);
+			//free(out_err_buf);
 			return;
 		}
 	}
@@ -273,8 +278,11 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret(JNI
 		
 		if (out_err_len) // throw an exception in the JVM
 		{
+			printf("+++++ %s:%d\n", __FILE__, __LINE__);
 			throwMetaFFIException(env, out_err_buf);
-			free(out_err_buf);
+			printf("+++++ %s:%d\n", __FILE__, __LINE__);
+			//free(out_err_buf);
+			printf("+++++ %s:%d\n", __FILE__, __LINE__);
 			return;
 		}
 	}

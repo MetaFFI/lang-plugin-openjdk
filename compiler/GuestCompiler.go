@@ -210,7 +210,7 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	}
 	defer func() {
 		if err == nil {
-			_ = os.RemoveAll(dir)
+			//_ = os.RemoveAll(dir)
 		}
 	}()
 	
@@ -259,8 +259,8 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	args = append(args, "-fPIC")
 	args = append(args, "-shared")
 	args = append(args, cppFiles...)
-	buildCmd := exec.Command("gcc", args...)
-	fmt.Printf("%v\n", strings.Join(buildCmd.Args, " "))
+	buildCmd := exec.Command("g++", args...)
+	fmt.Printf("Compiling %v\n", strings.Join(buildCmd.Args, " "))
 	output, err := buildCmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("Failed compiling dynamic library entrypoints for OpenJDK guest. Exit with error: %v.\nOutput:\n%v", err, string(output))
@@ -284,7 +284,7 @@ func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, 
 	}
 	defer func() {
 		if err == nil {
-			_ = os.RemoveAll(dir)
+			//_ = os.RemoveAll(dir)
 		}
 	}()
 	

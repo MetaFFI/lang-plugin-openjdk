@@ -14,8 +14,7 @@ import metaffi.*;
 
 public final class TestModule
 {
-	public static MetaFFIBridge metaffi;
-	private static metaffi.MetaFFIBridge metaffiBridge = new metaffi.MetaFFIBridge();
+	public static metaffi.MetaFFIBridge metaffiBridge = new MetaFFIBridge();
 
 	
 
@@ -27,16 +26,20 @@ public final class TestModule
 
 	public static void load(String modulePath)
 	{
-		metaffi = new MetaFFIBridge();
-		metaffi.load_runtime_plugin("xllr.test");
+		metaffiBridge.load_runtime_plugin("xllr.test");
 
 		
 
 		
-		f1ID = metaffi.load_function("xllr.test", modulePath, "function=f1,metaffi_guest_lib=,module=$PWD/temp,package=GoFuncs", (byte)14, (byte)14);
+		f1ID = metaffiBridge.load_function("xllr.test", modulePath, "function=f1,metaffi_guest_lib=,module=$PWD/temp,package=GoFuncs", (byte)14, (byte)14);
 		
 
 		
+	}
+
+	public static void free()
+	{
+		metaffiBridge.free_runtime_plugin("xllr.test");
 	}
 
 	

@@ -142,7 +142,7 @@ func (this *HostCompiler) buildDynamicLibrary(codefiles map[string]string) ([]by
 	}
 	defer func() {
 		if err == nil {
-			_ = os.RemoveAll(dir)
+			//_ = os.RemoveAll(dir)
 		}
 	}()
 	

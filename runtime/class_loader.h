@@ -12,4 +12,5 @@
 #include <vector>
 
 // NOTICE: although it is "extern C" the function does throw an exception!
-extern "C" jclass load_class(JNIEnv* env, const std::vector<std::string>& path, const char* class_name);
+typedef jclass (*load_class_t)(JNIEnv* env, const char* path, const char* class_name);
+extern "C" jclass load_class(JNIEnv* env, const char* class_path, const char* class_name);

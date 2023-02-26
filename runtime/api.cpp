@@ -14,6 +14,7 @@
 #include "utils/scope_guard.hpp"
 #include "utils/function_path_parser.h"
 #include "utils/library_loader.h"
+#include "class_loader.h"
 
 
 #define TRUE 1
@@ -26,6 +27,7 @@ std::once_flag once_flag;
 #define catch_and_fill(err, err_len, ...)\
 catch(std::exception& exp) \
 {\
+    printf("++++ catch exception\n");                                     \
     __VA_ARGS__; \
 	int len = strlen(exp.what());\
 	char* errbuf = (char*)calloc(len+1, sizeof(char));\
@@ -34,7 +36,8 @@ catch(std::exception& exp) \
 	*err_len = len;\
 }\
 catch(...)\
-{\
+{                                        \
+	printf("++++ catch ...\n");        \
 	__VA_ARGS__;\
 	int len = strlen("Unknown Error");\
 	char* errbuf = (char*)calloc(len+1, sizeof(char));\
@@ -86,45 +89,57 @@ void* load_function(const char* module_path, uint32_t module_path_len, const cha
 {
 	void* res = nullptr;
 	try
-	{
+	{printf("++++ %s:%d\n", __FILE__, __LINE__);
 		metaffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
-		
+		printf("++++ %s:%d\n", __FILE__, __LINE__);
 		std::string modpath(module_path, module_path_len);
 		auto it_lib = libs.find(modpath);
 		std::shared_ptr<boost::dll::shared_library> lib;
+		printf("++++ %s:%d\n", __FILE__, __LINE__);
 		if(it_lib == libs.end())// TODO: make thread safe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		{
+		{printf("++++ %s:%d\n", __FILE__, __LINE__);
 			std::vector<std::string> modules = parse_module_path(modpath);
 			
 			// first module must be the dynamic library
 			lib = metaffi::utils::load_library(modules[0], false, false);
 			
-			
-			auto load_entrypoints = lib->get<void(const char*, uint32_t, JavaVM*,JNIEnv*)>("load_entrypoints");
+			printf("++++ %s:%d\n", __FILE__, __LINE__);
+			auto load_entrypoints = lib->get<const char*(const char*, uint32_t, JavaVM*,JNIEnv*, load_class_t)>("load_entrypoints");
 			
 			JNIEnv* env;
 			auto releaser = pjvm->get_environment(&env);
-			
-			load_entrypoints(module_path, module_path_len, (JavaVM*)(*pjvm), env);
+			printf("++++ %s:%d\n", __FILE__, __LINE__);
+			const char* ep_err = load_entrypoints(module_path, module_path_len, (JavaVM*)(*pjvm), env, &load_class);
+			if(ep_err)
+			{
+				printf("++++ %s:%d\n", __FILE__, __LINE__);
+				std::string load_entrypoints_error = ep_err;
+				free((void*)ep_err);
+				throw std::runtime_error(load_entrypoints_error);
+			}
+			printf("++++ %s:%d\n", __FILE__, __LINE__);
 			releaser();
 			
 			libs[fp[function_path_entry_metaffi_guest_lib]] = lib;
+			printf("++++ %s:%d\n", __FILE__, __LINE__);
 		}
 		else
 		{
+			printf("++++ %s:%d\n", __FILE__, __LINE__);
 			lib = it_lib->second;
 		}
-		
+		printf("++++ %s:%d\n", __FILE__, __LINE__);
 		auto pentrypoint = lib->get<void(cdts[2],char**,int64_t*)>(fp[function_path_entry_entrypoint_function]);
 		if(!pentrypoint){
 			throw std::runtime_error(std::string("Failed to load: ")+fp[function_path_entry_entrypoint_function]);
 		}
-		
+		printf("++++ %s:%d\n", __FILE__, __LINE__);
 		res = (void*)pentrypoint;
 		
 	}
 	catch_and_fill(err, err_len);
 	
+	printf("+++ return load function\n");
 	
 	return res;
 }

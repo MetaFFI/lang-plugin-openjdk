@@ -838,7 +838,7 @@ struct java_cdts_parse_callbacks : public cdts_parse_callbacks_interface
 	{
 		string_n_array_wrapper<metaffi_string8> arr_wrap((metaffi_string8*)parray_to_set, (metaffi_size*)pelements_lengths_to_set, (metaffi_size*)parray_dimensions_lengths, (metaffi_size&)array_dimensions);
 		set_string_array_to_jobject<metaffi_string8, char>((jobjectArray)values_to_set, index, arr_wrap,
-		                                                   [this](const char* str, metaffi_size)->jstring{ return env->NewStringUTF(str); });
+		                                                   [this](const char* str, metaffi_size s)->jstring{ return env->NewStringUTF(std::string(str, s).c_str() ); });
 	}
 	
 	void on_metaffi_string16(void* values_to_set, int index, metaffi_string16 const& val_to_set, const metaffi_size& val_length) override

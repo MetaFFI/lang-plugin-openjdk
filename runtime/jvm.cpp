@@ -6,27 +6,25 @@
 #include <utils/function_path_parser.h>
 #include <utils/foreign_function.h>
 
+#define EXCEPTION_ACCESS_VIOLATION 0xc0000005
+
 using namespace metaffi::utils;
 
 //--------------------------------------------------------------------
 jvm::jvm()
 {
+	printf("++++ %s:%d\n", __FILE__, __LINE__);
+	
 	// if there's a JVM already loaded, get it.
 	jsize nVMs;
 	check_throw_error(JNI_GetCreatedJavaVMs(nullptr, 0, &nVMs));
-	
 	JNIEnv* penv = nullptr;
-	
 	if(nVMs > 0) // JVM already exists
 	{
 		check_throw_error(JNI_GetCreatedJavaVMs(&this->pjvm, 1, &nVMs));
 		
 		auto release_env = this->get_environment(&penv);
 		scope_guard sg([&](){ release_env(); });
-		
-		// TODO: Load METAFFI module
-		// TODO: currently calling from Java main host to Java code via MetaFFI won't work (nor it is recommended).
-		
 		
 		return;
 	}
@@ -37,20 +35,31 @@ jvm::jvm()
 	//ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
 	//printf("JVM classpath: %s\n", ss.str().c_str());
 	//std::string options_string = ss.str();
-	//JavaVMOption options[1] = {0};
+	//JavaVMOption* options = new JavaVMOption[3];
 	//options[0].optionString = (char*)options_string.c_str();
 
 	// set initialization args
 	JavaVMInitArgs vm_args = {0};
 	vm_args.version = JNI_VERSION_10;
 	vm_args.nOptions = 0;
-	vm_args.options = nullptr;//&options[0];
+	vm_args.options = nullptr;
 	vm_args.ignoreUnrecognized = JNI_FALSE;
 	
 	// load jvm
-	check_throw_error(JNI_CreateJavaVM(&this->pjvm, (void**)&penv, &vm_args));
-	is_destroy = true;
+	jint res = 0;
 	
+	printf("++++ %s:%d\n", __FILE__, __LINE__);
+	
+	// FOR WINDOWS: In order from this code to run from Go executable - "runtime.testingWER" must be set to true!!!!
+	res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
+	
+	printf("++++ %s:%d\n", __FILE__, __LINE__);
+	
+	check_throw_error(res);
+	
+	printf("++++ %s:%d\n", __FILE__, __LINE__);
+	
+	is_destroy = true;
 }
 //--------------------------------------------------------------------
 void jvm::fini()
