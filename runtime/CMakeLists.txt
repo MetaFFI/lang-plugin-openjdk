@@ -1,6 +1,5 @@
 
 #------------------------------- OpenJDK Language Support - Runtime Plugin ------------------------------------------
-project(lang-plugin-openjdk-runtime VERSION 0.0.1)
 
 add_boost(filesystem)
 add_jni()
@@ -28,9 +27,6 @@ GENERATE_EXPORT_HEADER(${target_name}
 		EXPORT_MACRO_NAME ${target_name}_EXPORTS
 		EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/xllr_openjdk_exports.h
 		STATIC_DEFINE SHARED_EXPORTS_BUILT_AS_STATIC)
-
-# Copy to metaffi directory
-copy_file_from_project_binary_to_metaffi_home(${target_name} "${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # install
 install_target(${target_name} .)

@@ -1,16 +1,15 @@
 # ------------- vscode -------------
 .vscode
-
+.vs
 # ------------- CLion -------------
 .idea
-
-# ------------- IntelliJ -------------
-*.iml
 
 # ------------- CMake -------------
 build/
 cmake-build*
 output*
+
+out/*
 
 # ------------ Python -------------
 *__pycache__*

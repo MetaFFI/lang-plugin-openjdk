@@ -22,4 +22,4 @@ require (
 	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904 // indirect
 )
 
-replace github.com/MetaFFI/plugin-sdk => ../../plugin-sdk
+replace github.com/MetaFFI/plugin-sdk => ../plugin-sdk
