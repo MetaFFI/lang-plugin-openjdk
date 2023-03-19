@@ -151,7 +151,6 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 #endif
 jclass load_class(JNIEnv* env, const char* class_path, const char* class_name)
 {
-	printf("+++++++++ %s:%d ; class_name: %s\n", __FILE__, __LINE__, class_name);
 	// if class already loaded - return jclass
 	if(auto it = loaded_classes.find(class_name); it != loaded_classes.end())
 	{

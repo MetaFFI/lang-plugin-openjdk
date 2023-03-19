@@ -13,8 +13,6 @@ using namespace metaffi::utils;
 //--------------------------------------------------------------------
 jvm::jvm()
 {
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
-	
 	// if there's a JVM already loaded, get it.
 	jsize nVMs;
 	check_throw_error(JNI_GetCreatedJavaVMs(nullptr, 0, &nVMs));
@@ -48,16 +46,10 @@ jvm::jvm()
 	// load jvm
 	jint res = 0;
 	
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
-	
 	// FOR WINDOWS: In order from this code to run from Go executable - "runtime.testingWER" must be set to true!!!!
 	res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
 	
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
-	
 	check_throw_error(res);
-	
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
 	
 	is_destroy = true;
 }

@@ -23,7 +23,6 @@ std::unique_ptr<xllr_api_wrapper> xllr;
 // https://stackoverflow.com/questions/230689/best-way-to-throw-exceptions-in-jni-code
 bool throwMetaFFIException( JNIEnv* env,  const char* message )
 {
-	printf("++++++++++++++ GOING TO THROW METAFFI EXCEPTION FROM C++\n");
 	jclass metaffiException = env->FindClass( "metaffi/MetaFFIException" );
 	if(!metaffiException)
 	{
@@ -31,9 +30,8 @@ bool throwMetaFFIException( JNIEnv* env,  const char* message )
 		return env->ThrowNew( noSuchClass, "Cannot find MetaFFIException Class" ) == 0;
 	}
 	
-	printf("++++++++++++++ 111 GOING TO THROW METAFFI EXCEPTION FROM C++\n");
 	jint res = env->ThrowNew( metaffiException, message );
-	printf("++++++++++++++ 222 GOING TO THROW METAFFI EXCEPTION FROM C++\n");
+	
 	
 	return res == 0;
 }
@@ -278,11 +276,10 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret(JNI
 		
 		if (out_err_len) // throw an exception in the JVM
 		{
-			printf("+++++ %s:%d\n", __FILE__, __LINE__);
 			throwMetaFFIException(env, out_err_buf);
-			printf("+++++ %s:%d\n", __FILE__, __LINE__);
+			
 			//free(out_err_buf);
-			printf("+++++ %s:%d\n", __FILE__, __LINE__);
+			
 			return;
 		}
 	}

@@ -18,7 +18,8 @@ FILE(GLOB JAVA_FILES ${CMAKE_CURRENT_LIST_DIR}/*.java)
 list(REMOVE_ITEM JAVA_FILES ${CMAKE_CURRENT_LIST_DIR}/TestClass.java)
 add_jar(JavaExtractor
 		SOURCES ${JAVA_FILES}
-		INCLUDE_JARS ${CMAKE_CURRENT_LIST_DIR}/javaparser-core-3.24.4.jar)
+		INCLUDE_JARS ${CMAKE_CURRENT_LIST_DIR}/javaparser-core-3.24.4.jar
+		OUTPUT_DIR ${PROJECT_BINARY_DIR})
 
 copy_file_from_project_binary_to_metaffi_home(JavaExtractor JavaExtractor.jar)
 
@@ -42,8 +43,8 @@ copy_file_from_project_binary_to_metaffi_home(${target_name}_build_openjdk_idl_p
 add_go_test("java IDL plugin test")
 
 # install
-install(FILES   ${CMAKE_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-				${CMAKE_BINARY_DIR}/JavaExtractor.jar
+install(FILES   ${PROJECT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+				${PROJECT_BINARY_DIR}/JavaExtractor.jar
 				${CMAKE_CURRENT_LIST_DIR}/javaparser-core-3.24.4.jar
 				${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest.jar
 				${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest${CMAKE_SHARED_LIBRARY_SUFFIX}

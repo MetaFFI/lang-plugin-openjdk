@@ -346,30 +346,30 @@ extern "C" const char* load_entrypoints(const char* module_path, uint32_t module
 {
 	try
 	{
-	printf("++++ first line %s:%d\n", __FILE__, __LINE__);
+
 		//load_class = pload_class;
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
+
 		char* out_err_data = nullptr;
-		printf("++++ %s:%d\n", __FILE__, __LINE__);
+
 		uint64_t out_err_len_data = 0;
-		printf("++++ %s:%d\n", __FILE__, __LINE__);
+
 		char** out_err = &out_err_data;
-		printf("++++ %s:%d\n", __FILE__, __LINE__);
+
 		uint64_t* out_err_len = &out_err_len_data;
-printf("++++ %s:%d\n", __FILE__, __LINE__);
+
 		std::string mod_path(module_path, module_path_len);
-printf("++++ %s:%d\n", __FILE__, __LINE__);
+
 		jvm = pjvm;
-printf("++++ %s:%d\n", __FILE__, __LINE__);
+
 	    {{range $mindex, $m := .Modules}}
 	        {{range $cindex, $c := $m.Classes}}
 
 	            {{range $findex, $field := $c.Fields}}
 	                {{if $field.Getter}}{{$f := $field.Getter}}
 					{{if IsExternalResources $m}}
-	printf("++++ 1 %s:%d\n", __FILE__, __LINE__);
+
 	                jclass_{{$c.Name}}_get_{{$f.Name}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
-	printf("++++ 2 %s:%d\n", __FILE__, __LINE__);
+
 	                {{else}}
 	                jclass_{{$c.Name}}_get_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
 	                {{end}}
@@ -382,9 +382,9 @@ printf("++++ %s:%d\n", __FILE__, __LINE__);
 	                {{end}}
 	                {{if $field.Setter}}{{$f := $field.Setter}}
 	                {{if IsExternalResources $m}}
-	printf("++++ 3 %s:%d\n", __FILE__, __LINE__);
+
 	                jclass_{{$c.Name}}_set_{{$f.Name}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
-	printf("++++ 4 %s:%d\n", __FILE__, __LINE__);
+
 	                {{else}}
 	                jclass_{{$c.Name}}_set_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
 	                {{end}}
@@ -399,9 +399,9 @@ printf("++++ %s:%d\n", __FILE__, __LINE__);
 
 	            {{range $cstrindex, $f := $c.Constructors}}
 		            {{if IsExternalResources $m}}
-	printf("++++ 5 %s:%d\n", __FILE__, __LINE__);
+
 	                jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
-	printf("++++ 6 %s:%d\n", __FILE__, __LINE__);
+
 	                {{else}}
 	                jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
 	                {{end}}
@@ -415,9 +415,9 @@ printf("++++ %s:%d\n", __FILE__, __LINE__);
 
 	            {{if $c.Releaser}}{{$f := $c.Releaser}}
 	            {{if IsExternalResources $m}}
-	printf("++++ 7 %s:%d\n", __FILE__, __LINE__);
+
 	            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
-	printf("++++ 8 %s:%d\n", __FILE__, __LINE__);
+
 	            {{else}}
 	            jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
 	            {{end}}
@@ -431,9 +431,9 @@ printf("++++ %s:%d\n", __FILE__, __LINE__);
 
 	            {{range $cstrindex, $f := $c.Methods}}
 	            {{if IsExternalResources $m}}
-	printf("++++ 9 %s:%d\n", __FILE__, __LINE__);
+
 	            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
-	printf("++++ 10 %s:%d\n", __FILE__, __LINE__);
+
 	            {{else}}
 	            jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
 	            {{end}}
