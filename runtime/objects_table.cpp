@@ -1,4 +1,5 @@
 #include "objects_table.h"
+#include <mutex>
 
 //--------------------------------------------------------------------
 void openjdk_objects_table_impl::free()

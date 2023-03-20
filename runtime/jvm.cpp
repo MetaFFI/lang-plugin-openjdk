@@ -48,7 +48,6 @@ jvm::jvm()
 	
 	// FOR WINDOWS: In order from this code to run from Go executable - "runtime.testingWER" must be set to true!!!!
 	res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
-	
 	check_throw_error(res);
 	
 	is_destroy = true;

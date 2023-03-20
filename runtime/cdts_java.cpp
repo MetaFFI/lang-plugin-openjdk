@@ -5,6 +5,7 @@
 #include <utility>
 #include "utils/scope_guard.hpp"
 #include <typeinfo>
+#include <cstring>
 
 using namespace metaffi::runtime;
 std::once_flag load_capi_flag;
