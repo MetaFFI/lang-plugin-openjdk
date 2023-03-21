@@ -51,4 +51,28 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/idl/)
 set(CMAKE_INSTALL_PREFIX [[$ENV{METAFFI_HOME}]])
 set(CMAKE_SKIP_INSTALL_RPATH ON)
 
+# package notes
+set(NOTES "Standard Python3 (e.g. CPython) must be installed to use plugin.
+In case of 'Could not find platform independent libraries', set PYTHONHOME environment variable to install path")
+
 #-----------------------------------------------------------------------------------------------
+
+install(CODE "set(CMAKE_SCRIPTS_DIR ${CMAKE_CURRENT_LIST_DIR}/plugin-sdk/cmake)")
+install(CODE "set(PACKAGE_ROOT ${PROJECT_BINARY_DIR})")
+install(CODE "set(dylib_ext ${CMAKE_SHARED_LIBRARY_SUFFIX})")
+install(CODE "set(package_notes ${NOTES})")
+install(CODE
+		[[
+		file(WRITE ${PACKAGE_ROOT}/notes.txt ${package_notes})
+
+		include(${CMAKE_SCRIPTS_DIR}/MetaFFI.cmake)
+
+		list(APPEND package_files ${PACKAGE_ROOT}/notes.txt)
+		list(APPEND package_files metaffi.idl.java${dylib_ext})
+		list(APPEND package_files JavaExtractor_MetaFFIGuest${dylib_ext})
+		list(APPEND package_files JavaExtractor_MetaFFIGuest.jar)
+		list(APPEND package_files JavaExtractor.jar)
+		list(APPEND package_files metaffi.compiler.openjdk${dylib_ext})
+		list(APPEND package_files xllr.openjdk${dylib_ext})
+		metaffi_pack(${PACKAGE_ROOT} "${package_files}")
+]])

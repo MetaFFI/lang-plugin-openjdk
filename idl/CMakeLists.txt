@@ -1,7 +1,5 @@
 
 #------------------------------- "py" IDL Plugin ------------------------------------------
-project(idl-plugin-java VERSION 0.0.1)
-
 set(target_name "metaffi.idl.java")
 
 add_java()
@@ -38,6 +36,11 @@ copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LI
 copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest.jar" "$ENV{METAFFI_HOME}/JavaExtractor_MetaFFIGuest.jar")
 copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest${CMAKE_SHARED_LIBRARY_SUFFIX}" "$ENV{METAFFI_HOME}/JavaExtractor_MetaFFIGuest${CMAKE_SHARED_LIBRARY_SUFFIX}")
 copy_file_from_project_binary_to_metaffi_home(${target_name}_build_openjdk_idl_plugin ${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX})
+
+copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/javaparser-core-3.24.4.jar" "${PROJECT_BINARY_DIR}/javaparser-core-3.24.4.jar")
+copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest.jar" "${PROJECT_BINARY_DIR}/JavaExtractor_MetaFFIGuest.jar")
+copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest${CMAKE_SHARED_LIBRARY_SUFFIX}" "${PROJECT_BINARY_DIR}/JavaExtractor_MetaFFIGuest${CMAKE_SHARED_LIBRARY_SUFFIX}")
+copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}" "${PROJECT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # Unitest
 add_go_test("java IDL plugin test")
