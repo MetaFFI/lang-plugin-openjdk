@@ -52,8 +52,8 @@ set(CMAKE_INSTALL_PREFIX [[$ENV{METAFFI_HOME}]])
 set(CMAKE_SKIP_INSTALL_RPATH ON)
 
 # package notes
-set(NOTES "Standard Python3 (e.g. CPython) must be installed to use plugin.
-In case of 'Could not find platform independent libraries', set PYTHONHOME environment variable to install path")
+set(NOTES "JVM and JNI must be installed to use this plugin.
+Make sure JAVA_HOME environment variable is set.")
 
 #-----------------------------------------------------------------------------------------------
 
