@@ -1,7 +1,5 @@
 
 #------------------------------- OpenJDK Language Support - Runtime Bridge ------------------------------------------
-project(lang-plugin-openjdk-bridge VERSION 0.0.1)
-
 add_boost(filesystem)
 add_jni()
 add_java()
@@ -20,10 +18,19 @@ target_link_libraries(${target_jni_name} PRIVATE Boost::filesystem ${JNI_LIBRARI
 add_dependencies(${target_jni_name} xllr.openjdk)
 link_to_dl_for_non_windows(${target_jni_name})
 
+set_target_properties( ${target_jni_name}
+		PROPERTIES
+		ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+		LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+		RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+		)
+
 # build xllr.openjdk.bridge
 # compile java files and place in JAR
 FILE(GLOB JAVA_FILES ${CMAKE_CURRENT_LIST_DIR}/*.java)
-add_jar(${target_jar_name} SOURCES ${JAVA_FILES} )
+add_jar(${target_jar_name}
+		SOURCES ${JAVA_FILES}
+		OUTPUT_DIR ${PROJECT_BINARY_DIR})
 
 # Copy to metaffi directory
 copy_file_from_project_binary_to_metaffi_home(${target_jni_name} "${target_jni_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")

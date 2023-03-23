@@ -43,7 +43,7 @@ copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LI
 copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}" "${PROJECT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # Unitest
-add_go_test("java IDL plugin test")
+add_go_test("java IDL plugin test" WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
 # install
 install(FILES   ${PROJECT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
