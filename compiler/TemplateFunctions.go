@@ -312,10 +312,10 @@ func callGuestMethod(methdef *IDL.MethodDefinition, indent int) string {
 func getParamsFromCDTS(params []*IDL.ArgDefinition, indent int) string {
 
 	/*
-				{{if $f.Parameters}}
-		        // get parameters from CDTS
-		        Object[] parameters = cdts_to_java(xcall_params, {{MetaFFITypes $f.Parameters}});
-		        {{end}}
+		{{if $f.Parameters}}
+        // get parameters from CDTS
+        Object[] parameters = cdts_to_java(xcall_params, {{MetaFFITypes $f.Parameters}});
+        {{end}}
 	*/
 
 	if len(params) == 0 {
@@ -382,7 +382,7 @@ func getCDTSPointers(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition, i
 		if len(retval) > 0 {
 			code += fmt.Sprintf("%vlong return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)1);\n", indentStr)
 		}
-	} else {
+	} else if len(retval) > 0{
 		code += "long return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)0);\n"
 	}
 
@@ -434,7 +434,8 @@ func centrypointCallJVMEntrypoint(jclass string, jmethod string, meth *IDL.Funct
 
 	code := "JNIEnv* env;\n"
 	code += "auto releaser = get_environment(&env);\n"
-	
+//	code += fmt.Sprintf(`printf("++++ before CallStaticObjectMethod(%v, %v). `, jclass, jmethod)
+//	code += `env: %p\n", env);`+"\n"
 	code += fmt.Sprintf(`env->CallStaticObjectMethod(%v, %v`, jclass, jmethod)
 	
 	if len(meth.Parameters) == 0 && len(meth.ReturnValues) == 0 {

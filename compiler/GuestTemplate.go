@@ -105,7 +105,6 @@ public final class {{$m.Name}}_Entrypoints
 	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
 	{
 		{{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
-
 		{{GetParamsFromCDTS $f.Parameters 2}}
 
 		// call method
@@ -468,8 +467,6 @@ extern "C" const char* load_entrypoints(const char* module_path, uint32_t module
         return c;
     }
 
-    printf("++++ got to the end %s:%d\n", __FILE__, __LINE__);
-
     return nullptr;
 }
 
@@ -522,7 +519,9 @@ extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.Fu
         {{range $cstrindex, $f := $c.Methods}}
 extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
+//	printf("++++ Before CEntrypointCallJVMEntrypoint\n");
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_" $f.Name) (print "jmethod_" $c.Name "_" $f.Name) $f.FunctionDefinition}}
+//  printf("++++ After CEntrypointCallJVMEntrypoint\n");
     if_jvm_exception_set_error(env);
     releaser();
 }

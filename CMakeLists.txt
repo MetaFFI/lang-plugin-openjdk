@@ -33,13 +33,9 @@ project(lang-plugin-openjdk VERSION 0.0.1)
 hunter_add_package(Catch)
 add_ctest_and_catch2_packages()
 
-set(plugin_dir "python3")
-
 # set RPATH
 set(CMAKE_MACOSX_RPATH 1) # tell MacOS RPATH is in use
-list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN")
-list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN/lib")
-list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN/${plugin_dir}")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # add targets
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/compiler/)
@@ -52,10 +48,10 @@ set(CMAKE_INSTALL_PREFIX [[$ENV{METAFFI_HOME}]])
 set(CMAKE_SKIP_INSTALL_RPATH ON)
 
 # package notes
-set(NOTES "JVM and JNI must be installed to use this plugin.
+set(INSTALL_NOTES "JVM and JNI must be installed to use this plugin.
 Make sure JAVA_HOME environment variable is set.")
 
-file(WRITE ${PROJECT_BINARY_DIR}/notes.txt ${NOTES})
+file(WRITE ${PROJECT_BINARY_DIR}/notes.txt ${INSTALL_NOTES})
 
 #-----------------------------------------------------------------------------------------------
 
@@ -66,12 +62,13 @@ install(CODE
 		[[
 		include(${CMAKE_SCRIPTS_DIR}/MetaFFI.cmake)
 
-#		list(APPEND package_files ${PACKAGE_ROOT}/notes.txt)
+		list(APPEND package_files notes.txt)
 		list(APPEND package_files metaffi.idl.java${dylib_ext})
 		list(APPEND package_files JavaExtractor_MetaFFIGuest${dylib_ext})
 		list(APPEND package_files JavaExtractor_MetaFFIGuest.jar)
 		list(APPEND package_files xllr.openjdk.bridge.jar)
 		list(APPEND package_files xllr.openjdk.jni.bridge${dylib_ext})
+		list(APPEND package_files javaparser-core-3.24.4.jar)
 		list(APPEND package_files JavaExtractor.jar)
 		list(APPEND package_files metaffi.compiler.openjdk${dylib_ext})
 		list(APPEND package_files xllr.openjdk${dylib_ext})

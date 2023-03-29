@@ -6,6 +6,7 @@ add_java()
 
 include(UseJava)
 
+# set RPATH
 set(target_jni_name "xllr.openjdk.jni.bridge")
 set(target_jar_name "xllr.openjdk.bridge")
 
@@ -24,6 +25,10 @@ set_target_properties( ${target_jni_name}
 		LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
 		RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
 		)
+
+set_property(TARGET ${target_jni_name} APPEND PROPERTY INSTALL_RPATH "$ORIGIN;$ORIGIN/lib")
+set_property(TARGET ${target_jni_name} APPEND PROPERTY BUILD_RPATH "$ORIGIN;$ORIGIN/lib")
+
 
 # build xllr.openjdk.bridge
 # compile java files and place in JAR

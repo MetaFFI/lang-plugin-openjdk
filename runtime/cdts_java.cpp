@@ -299,17 +299,22 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 			// check if first item is a java object
 			jobject elem = env->GetObjectArrayElement((jobjectArray)jobj, 0);
 			metaffi_handle* res = (metaffi_handle*)malloc(sizeof(metaffi_handle)*parray_dimensions_lengths[0]);
+			//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
 			if(env->IsInstanceOf(jobj, cdts_java::metaffi_handle_class))
 			{
+				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
 				// metaffi handle, pass as it is.
 				for(int i=0 ; i<parray_dimensions_lengths[0] ; i++)
 				{
 					jobject curObject = env->GetObjectArrayElement((jobjectArray)jobj, i);
 					res[i] = (metaffi_handle)env->CallLongMethod(curObject, cdts_java::metaffi_handle_get_value);
 				}
+				
+				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
 			}
 			else
 			{
+				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
 				// java objects
 				for(int i=0 ; i<parray_dimensions_lengths[0] ; i++)
 				{
@@ -325,6 +330,7 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 						res[i] = curObject;
 					}
 				}
+				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
 			}
 			
 			return res;
@@ -345,10 +351,15 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 			if(!openjdk_objects_table::instance().contains(jobj))
 			{
 				// if metaffi handle - pass as it is.
+				//printf("\n+++ before IsInstanceOf: jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
+				// happen every time.
 				if(env->IsInstanceOf(jobj, cdts_java::metaffi_handle_class))
-				{
+				{//printf("+++ after IsInstanceOf TRUE jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
 					return (metaffi_handle)env->CallLongMethod(jobj, cdts_java::metaffi_handle_get_value);
 				}
+				//else{
+				//	printf("+++ after IsInstanceOf FALSE jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
+				//}
 				
 				// a java object
 				jobject g_jobj = env->NewGlobalRef(jobj);
@@ -924,6 +935,41 @@ jmethodID cdts_java::metaffi_handle_get_value = nullptr;
 
 cdts_java::cdts_java(cdt* cdts, metaffi_size cdts_length, JNIEnv* env): cdts(cdts, cdts_length), env(env)
 {
+#define load_class_methods(type_name, fq_type_name, sig_cstr, array_sig) \
+		cdts_java::type_name##_class = env->FindClass( #fq_type_name ); \
+		if(!cdts_java::type_name##_class){ throw std::runtime_error("Failed to find class" #fq_type_name); } \
+		cdts_java::type_name##_constructor = env->GetMethodID(cdts_java::type_name##_class, "<init>", #sig_cstr ); \
+		if(!cdts_java::type_name##_constructor){ throw std::runtime_error("Failed to find method ID of " #fq_type_name " constructor with signature " #sig_cstr); } \
+		cdts_java::type_name##_array_class = env->FindClass( #array_sig ); \
+		if(!cdts_java::type_name##_array_class){ throw std::runtime_error("Failed to find class " #array_sig ); }
+
+#define load_primitive_class_methods(type_name, fq_type_name, sig_cstr, sig_val, get_value, array_sig) \
+        load_class_methods(type_name, fq_type_name, sig_cstr, array_sig); \
+		cdts_java::type_name##_get_value = env->GetMethodID(cdts_java::type_name##_class, #get_value, #sig_val ); \
+		if(!cdts_java::type_name##_get_value){ throw std::runtime_error("Failed to find method ID of " #fq_type_name " get value with signature " #sig_val); }
+	
+	
+	load_primitive_class_methods(byte, java/lang/Byte, (B)V, ()B, byteValue, [B);
+	load_primitive_class_methods(short, java/lang/Short, (S)V, ()S, shortValue, [S);
+	load_primitive_class_methods(int, java/lang/Integer, (I)V, ()I, intValue, [I);
+	load_primitive_class_methods(long, java/lang/Long, (J)V, ()J, longValue, [J);
+	load_primitive_class_methods(float, java/lang/Float, (F)V, ()F, floatValue, [F);
+	load_primitive_class_methods(double, java/lang/Double, (D)V, ()D, doubleValue, [D);
+	load_primitive_class_methods(char, java/lang/Character, (C)V, ()C, charValue, [C);
+	load_primitive_class_methods(boolean, java/lang/Boolean, (Z)V, ()Z, booleanValue, [Z);
+	load_class_methods(string, java/lang/String, (Ljava/lang/String;)V, [Ljava/lang/String;);
+	
+	cdts_java::object_class = env->FindClass("java/lang/Object");
+	if (!cdts_java::object_class) { throw std::runtime_error("Failed to find class" "java/lang/Object"); }
+	cdts_java::object_array_class = env->FindClass("[Ljava/lang/Object" ";");
+	if (!cdts_java::object_array_class) { throw std::runtime_error("Failed to find class [L" "java/lang/Object" ";"); }
+	
+	cdts_java::metaffi_handle_class = env->FindClass( "Lmetaffi/MetaFFIHandle;" );
+	if(!cdts_java::metaffi_handle_class){ throw std::runtime_error("Failed to find Lmetaffi/MetaFFIHandle;"); }
+	cdts_java::metaffi_handle_constructor = env->GetMethodID(cdts_java::metaffi_handle_class, "<init>", "(J)V" );
+	if(!cdts_java::metaffi_handle_constructor){ throw std::runtime_error("Failed to find method ID of metaffi/MetaFFIHandle constructor"); }
+	cdts_java::metaffi_handle_get_value = env->GetMethodID(cdts_java::metaffi_handle_class, "Handle", "()J" );
+	if(!cdts_java::metaffi_handle_get_value){ throw std::runtime_error("Failed to find method ID of Lmetaffi/MetaFFIHandle get value"); }
 }
 //--------------------------------------------------------------------
 cdt* cdts_java::get_cdts()

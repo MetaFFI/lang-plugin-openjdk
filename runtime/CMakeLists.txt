@@ -20,6 +20,10 @@ set_target_properties(${target_name} PROPERTIES PREFIX "" POSITION_INDEPENDENT_C
 target_link_libraries(${target_name} PRIVATE Boost::filesystem ${JNI_LIBRARIES})
 link_to_dl_for_non_windows(${target_name})
 
+# set RPATH
+set_property(TARGET ${target_name} APPEND PROPERTY INSTALL_RPATH "$ORIGIN;$ORIGIN/lib")
+set_property(TARGET ${target_name} APPEND PROPERTY BUILD_RPATH "$ORIGIN;$ORIGIN/lib")
+
 # Generate exports for XLLR
 include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${target_name}
