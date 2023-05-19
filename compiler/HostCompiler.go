@@ -264,7 +264,15 @@ func (this *HostCompiler) buildDynamicLibrary(codefiles map[string]string) ([]by
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLFilename+"_MetaFFIHost.jar", err)
 	}
-	
+
+	// delete generated class files
+	for _, file := range javaFiles {
+        err := os.Remove(file)
+        if err != nil {
+            fmt.Printf("Failed to delete and cleanup %v - %v\n", file, err)
+        }
+    }
+
 	return result, nil
 }
 
