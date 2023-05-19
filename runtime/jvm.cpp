@@ -44,14 +44,11 @@ jvm::jvm()
 	vm_args.nOptions = 0;
 	vm_args.options = nullptr;
 	vm_args.ignoreUnrecognized = JNI_FALSE;
-	printf("++++ Before JNI_CreateJavaVM %s:%d\n", __FILE__, __LINE__);
 	// load jvm
 	
 	// FOR WINDOWS: In order from this code to run from Go executable - "runtime.testingWER" must be set to true!!!!
 	jint res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
-	printf("++++ After JNI_CreateJavaVM %ld %s:%d\n", res, __FILE__, __LINE__);
 	check_throw_error(res);
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
 	is_destroy = true;
 }
 //--------------------------------------------------------------------

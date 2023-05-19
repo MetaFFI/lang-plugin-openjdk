@@ -360,7 +360,7 @@ func (this *VariableInfo) Name() (name string, err error){
 
 
 
-func (this *VariableInfo) Type() (Type string, err error){
+func (this *VariableInfo) Type() (type__ string, err error){
 	
 	
 
@@ -391,18 +391,18 @@ func (this *VariableInfo) Type() (Type string, err error){
 
 	
 	
-	TypeAsInterface := fromCDTToGo(return_valuesCDTS, 0)
-	if TypeAsInterface != nil{
+	type__AsInterface := fromCDTToGo(return_valuesCDTS, 0)
+	if type__AsInterface != nil{
 		
 		// not handle
-		Type = string(TypeAsInterface.(string))
+		type__ = string(type__AsInterface.(string))
 		
 		
 	}
 
 	
 
-	return Type, nil	
+	return type__, nil	
 }
 
 
@@ -592,7 +592,7 @@ func (this *ParameterInfo) Name() (name string, err error){
 
 
 
-func (this *ParameterInfo) Type() (Type string, err error){
+func (this *ParameterInfo) Type() (type__ string, err error){
 	
 	
 
@@ -623,18 +623,18 @@ func (this *ParameterInfo) Type() (Type string, err error){
 
 	
 	
-	TypeAsInterface := fromCDTToGo(return_valuesCDTS, 0)
-	if TypeAsInterface != nil{
+	type__AsInterface := fromCDTToGo(return_valuesCDTS, 0)
+	if type__AsInterface != nil{
 		
 		// not handle
-		Type = string(TypeAsInterface.(string))
+		type__ = string(type__AsInterface.(string))
 		
 		
 	}
 
 	
 
-	return Type, nil	
+	return type__, nil	
 }
 
 
