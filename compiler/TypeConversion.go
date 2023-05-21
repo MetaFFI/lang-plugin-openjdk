@@ -41,4 +41,5 @@ var MetaFFITypeToJavaType = map[IDL.MetaFFIType]string{
 	IDL.HANDLE_ARRAY: "Object[]",
 	
 	IDL.ANY: "Object",
+	IDL.ANY_ARRAY: "Object",
 }
