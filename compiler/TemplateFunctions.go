@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 var templatesFuncMap = map[string]any{
 	"GenerateCodeAllocateCDTS":     generateCodeAllocateCDTS,
 	"SetParamsToCDTS":              setParamsToCDTS,
@@ -18,7 +18,7 @@ var templatesFuncMap = map[string]any{
 	"XCallMetaFFI":                 xCallMetaFFI,
 	"SetReturnToCDTSAndReturn":     setReturnToCDTSAndReturn,
 	"ReturnValuesClass":            returnValuesClass,
-	"ToJavaType":                   toJavaType,
+	"ToJavaType":                   ToJavaType,
 	"Title":                        title,
 	"ReturnValuesClassName":        returnValuesClassName,
 	"GetMetaFFITypes":              getMetaFFITypes,
@@ -35,60 +35,59 @@ var templatesFuncMap = map[string]any{
 	"IsExternalResources":          isExternalResources,
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func isExternalResources(module *IDL.ModuleDefinition) bool {
 	return len(module.ExternalResources) > 0
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func externalResourcesAsArray(module *IDL.ModuleDefinition) string {
 	res := make([]string, 0)
-	
+
 	for _, r := range module.ExternalResources {
 		res = append(res, fmt.Sprintf(`R"(%v)"`, r))
 	}
 
-	if len(res) > 0{
+	if len(res) > 0 {
 		return "," + strings.Join(res, ",")
 	} else {
 		return ""
 	}
 
-
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func callConstructor(class *IDL.ClassDefinition, constructor *IDL.ConstructorDefinition) string {
-	
+
 	paramsCode := ""
 	if constructor.Parameters != nil {
 		for i := 0; i < len(constructor.Parameters); i = i + 1 {
-			paramsCode += fmt.Sprintf("(%v)parameters[%v]", toJavaType(constructor.Parameters[i].Type, constructor.Parameters[i].Dimensions), i)
+			paramsCode += fmt.Sprintf("(%v)parameters[%v]", ToJavaType(constructor.Parameters[i].Type, constructor.Parameters[i].Dimensions), i)
 			if i+1 < len(constructor.Parameters) {
 				paramsCode += ", "
 			}
 		}
 	}
-	
+
 	clsName := ""
 	if pck, found := constructor.FunctionPath["package"]; found {
 		clsName = pck + "." + class.Name
 	} else {
 		clsName = class.Name
 	}
-	
+
 	code := fmt.Sprintf("var instance = new %v(%v);", clsName, paramsCode)
-	
+
 	// set object
-	
+
 	return code
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func getImports(definition *IDL.IDLDefinition) string {
-	
+
 	imports := make([]string, 0)
-	
+
 	for _, m := range definition.Modules {
 		for _, c := range m.Classes {
 			if pck, found := c.FunctionPath["package"]; found {
@@ -96,23 +95,23 @@ func getImports(definition *IDL.IDLDefinition) string {
 			}
 		}
 	}
-	
+
 	res := ""
-	
+
 	for _, imp := range imports {
 		res += fmt.Sprintf("import %v.*;\n", imp)
 	}
-	
+
 	return res
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func Panic(msg string) string {
 	panic(msg)
 	return ""
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func getMetaFFITypes(args []*IDL.ArgDefinition) string {
 	res := "new long[]{"
 	for i, p := range args {
@@ -125,12 +124,12 @@ func getMetaFFITypes(args []*IDL.ArgDefinition) string {
 	return res
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func returnValuesClassName(name string) string {
 	return name + "Result"
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func title(elem string) string {
 	caser := cases.Title(language.Und, cases.NoLower)
 	elem = strings.ReplaceAll(elem, "_", " ")
@@ -138,7 +137,7 @@ func title(elem string) string {
 	return strings.ReplaceAll(elem, " ", "")
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func getFullClassName(cls *IDL.ClassDefinition) string {
 	if pck, found := cls.FunctionPath["package"]; found {
 		return fmt.Sprintf("%v.%v", pck, cls.Name)
@@ -147,26 +146,26 @@ func getFullClassName(cls *IDL.ClassDefinition) string {
 	}
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func getObject(cls *IDL.ClassDefinition, meth *IDL.MethodDefinition) string {
-	
+
 	if !meth.InstanceRequired {
 		return ""
 	}
-	
+
 	args := meth.Parameters
-	
+
 	if len(args) == 0 {
 		panic("Object handle is expected in parameters[0]")
 	}
-	
+
 	code := fmt.Sprintf("var instance = (%v)parameters[0];\n", getFullClassName(cls)) // TODO: needs to be fixed after we can see exception data
-	
+
 	return code
 }
 
-//--------------------------------------------------------------------
-func toJavaType(elem IDL.MetaFFIType, dims int) string {
+// --------------------------------------------------------------------
+func ToJavaType(elem IDL.MetaFFIType, dims int) string {
 	if dims > 0 && strings.Index(string(elem), "_array") == -1 {
 		elem += "_array"
 	}
@@ -174,11 +173,11 @@ func toJavaType(elem IDL.MetaFFIType, dims int) string {
 	if !found {
 		panic("Type \"" + elem + "\" is not a MetaFFI type")
 	}
-	
+
 	return javaType
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func returnValuesClass(typeName string, retval []*IDL.ArgDefinition, indent int) string {
 	/*
 		{{if gt $ReturnValuesLength 1}}
@@ -189,24 +188,24 @@ func returnValuesClass(typeName string, retval []*IDL.ArgDefinition, indent int)
 		}
 		{{end}}
 	*/
-	
+
 	if len(retval) < 2 {
 		return ""
 	}
-	
+
 	indentStr := strings.Repeat("\t", indent)
-	
+
 	res := fmt.Sprintf("public static class %vResult\n", typeName)
 	res += fmt.Sprintf("%v{\n", indentStr)
 	for _, rv := range retval {
-		res += fmt.Sprintf("%v\tpublic %v %v;\n", indentStr, toJavaType(rv.Type, rv.Dimensions), rv.Name)
+		res += fmt.Sprintf("%v\tpublic %v %v;\n", indentStr, ToJavaType(rv.Type, rv.Dimensions), rv.Name)
 	}
 	res += fmt.Sprintf("%v}\n", indentStr)
-	
+
 	return res
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func setReturnToCDTSAndReturn(retval []*IDL.ArgDefinition, returnValuesType string, indent int) string {
 	/*
 		{{if gt $ReturnValuesLength 0}}
@@ -226,7 +225,7 @@ func setReturnToCDTSAndReturn(retval []*IDL.ArgDefinition, returnValuesType stri
 	}
 
 	if len(retval) == 1 {
-		return fmt.Sprintf("return (%v)metaffiBridge.cdts_to_java(return_valuesCDTS, 1)[0];", toJavaType(retval[0].Type, retval[0].Dimensions))
+		return fmt.Sprintf("return (%v)metaffiBridge.cdts_to_java(return_valuesCDTS, 1)[0];", ToJavaType(retval[0].Type, retval[0].Dimensions))
 	}
 
 	indentStr := strings.Repeat("\t", indent)
@@ -234,14 +233,14 @@ func setReturnToCDTSAndReturn(retval []*IDL.ArgDefinition, returnValuesType stri
 	res := fmt.Sprintf("%v returnValuesResult = new %v();\n", returnValuesType, returnValuesType)
 	res += fmt.Sprintf("%vObject[] rets = metaffiBridge.cdts_to_java(return_valuesCDTS, %v);\n", indentStr, len(retval))
 	for i, rv := range retval {
-		res += fmt.Sprintf("%vreturnValuesResult.%v = (%v)rets[%v];\n", indentStr, rv.Name, toJavaType(rv.Type, rv.Dimensions), i)
+		res += fmt.Sprintf("%vreturnValuesResult.%v = (%v)rets[%v];\n", indentStr, rv.Name, ToJavaType(rv.Type, rv.Dimensions), i)
 	}
 	res += fmt.Sprintf("%vreturn returnValuesResult;\n", indentStr)
 
 	return res
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func xCallMetaFFI(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition, funcIDName string, indent int) string {
 	// metaffiBridge.{{xcall $f.Parameters $f.ReturnValues}}({{$f.GetEntityIDName}}, xcall_params);
 	res := fmt.Sprintf("metaffiBridge.%v(%v", XCallFunctionName(params, retval), funcIDName)
@@ -254,7 +253,7 @@ func xCallMetaFFI(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition, func
 	return res
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func returnGuest(retval []*IDL.ArgDefinition, functionName string) string {
 	if len(retval) == 0 {
 		return ""
@@ -264,7 +263,7 @@ func returnGuest(retval []*IDL.ArgDefinition, functionName string) string {
 		panic(fmt.Sprintf("multiple return values for java is illegal. function %v has more than 1 return values", functionName))
 	}
 
-	return fmt.Sprintf("(%v)result", toJavaType(retval[0].Type, retval[0].Dimensions))
+	return fmt.Sprintf("(%v)result", ToJavaType(retval[0].Type, retval[0].Dimensions))
 }
 
 //--------------------------------------------------------------------
@@ -279,7 +278,7 @@ func callGuestMethod(methdef *IDL.MethodDefinition, indent int) string {
 				continue
 			}
 
-			paramsStrList = append(paramsStrList, fmt.Sprintf("(%v)parameters[%v]", toJavaType(p.Type, p.Dimensions), i))
+			paramsStrList = append(paramsStrList, fmt.Sprintf("(%v)parameters[%v]", ToJavaType(p.Type, p.Dimensions), i))
 
 		}
 	}
@@ -308,14 +307,14 @@ func callGuestMethod(methdef *IDL.MethodDefinition, indent int) string {
 	return retStr + name + paramsStr + ";"
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func getParamsFromCDTS(params []*IDL.ArgDefinition, indent int) string {
 
 	/*
-		{{if $f.Parameters}}
-        // get parameters from CDTS
-        Object[] parameters = cdts_to_java(xcall_params, {{MetaFFITypes $f.Parameters}});
-        {{end}}
+				{{if $f.Parameters}}
+		        // get parameters from CDTS
+		        Object[] parameters = cdts_to_java(xcall_params, {{MetaFFITypes $f.Parameters}});
+		        {{end}}
 	*/
 
 	if len(params) == 0 {
@@ -327,7 +326,7 @@ func getParamsFromCDTS(params []*IDL.ArgDefinition, indent int) string {
 	return res
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func setParamsToCDTS(params []*IDL.ArgDefinition, indent int) string {
 	/*
 		{{if gt $ParametersLength 0}}
@@ -369,7 +368,7 @@ func setParamsToCDTS(params []*IDL.ArgDefinition, indent int) string {
 	return res
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func getCDTSPointers(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition, indent int) string {
 
 	indentStr := strings.Repeat("\t", indent)
@@ -382,14 +381,14 @@ func getCDTSPointers(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition, i
 		if len(retval) > 0 {
 			code += fmt.Sprintf("%vlong return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)1);\n", indentStr)
 		}
-	} else if len(retval) > 0{
+	} else if len(retval) > 0 {
 		code += "long return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)0);\n"
 	}
 
 	return code
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func generateCodeAllocateCDTS(params []*IDL.ArgDefinition, retval []*IDL.ArgDefinition) string {
 	/*
 		parametersCDTS := C.xllr_alloc_cdts_buffer( {{$paramsLength}} )
@@ -408,17 +407,17 @@ func generateCodeAllocateCDTS(params []*IDL.ArgDefinition, retval []*IDL.ArgDefi
 		} else {
 			code += "\t\tlong return_valuesCDTS = metaffiBridge.get_pcdt(xcall_params, (byte)0);\n"
 		}
-		
+
 		return code
-		
+
 	} else {
 		return ""
 	}
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func centrypointParameters(meth *IDL.FunctionDefinition) string {
-	
+
 	if len(meth.Parameters) == 0 && len(meth.ReturnValues) == 0 {
 		return `char** out_err, uint64_t* out_err_len`
 	} else if len(meth.Parameters) > 0 && len(meth.ReturnValues) > 0 {
@@ -426,24 +425,24 @@ func centrypointParameters(meth *IDL.FunctionDefinition) string {
 	} else {
 		return `cdts xcall_params[1], char** out_err, uint64_t* out_err_len`
 	}
-	
+
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func centrypointCallJVMEntrypoint(jclass string, jmethod string, meth *IDL.FunctionDefinition) string {
 
 	code := "JNIEnv* env;\n"
 	code += "auto releaser = get_environment(&env);\n"
-//	code += fmt.Sprintf(`printf("++++ before CallStaticObjectMethod(%v, %v). `, jclass, jmethod)
-//	code += `env: %p\n", env);`+"\n"
+	//	code += fmt.Sprintf(`printf("++++ before CallStaticObjectMethod(%v, %v). `, jclass, jmethod)
+	//	code += `env: %p\n", env);`+"\n"
 	code += fmt.Sprintf(`env->CallStaticObjectMethod(%v, %v`, jclass, jmethod)
-	
+
 	if len(meth.Parameters) == 0 && len(meth.ReturnValues) == 0 {
 		code += ");\n"
 	} else {
 		code += ", (jlong)xcall_params);\n"
 	}
-	
+
 	return code
 }
 

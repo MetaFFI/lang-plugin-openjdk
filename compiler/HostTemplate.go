@@ -132,7 +132,7 @@ public final class {{$m.Name}}
 		{{SetReturnToCDTSAndReturn $f.ReturnValues $returnValuesTypeName 2}}
 		
 	}
-	{{end}}
+	{{end}}{{/* End Functions */}}
 }
 {{end}}
 `
@@ -190,7 +190,7 @@ public class {{$c.Name}}
 
 		{{SetParamsToCDTS $f.Parameters 2}}
 
-		{{ $entityIDName := (print $m.Name "." $c.Name "_" $f.Name "ID")}}
+		{{ $entityIDName := (print $m.Name "." $c.Name "_" $f.GetEntityIDName)}}
 		{{XCallMetaFFI $f.Parameters $f.ReturnValues $entityIDName 2}}
 
 		this.this_instance = (metaffi.MetaFFIHandle)metaffiBridge.cdts_to_java(return_valuesCDTS, 1)[0];
