@@ -22,20 +22,20 @@ public final class {{$m.Name}}
 	{{range $cindex, $c := $m.Classes}}
 
 	{{range $findex, $f := $c.Fields}}
-	{{if $f.Getter}}public static long {{$c.Name}}_{{$f.Getter.Name}}ID = 0;{{end}}
-    {{if $f.Setter}}public static long {{$c.Name}}_{{$f.Setter.Name}}ID = 0;{{end}}
+	{{if $f.Getter}}public static long {{$c.Name}}_{{$f.Getter.GetNameWithOverloadIndex}}ID = 0;{{end}}
+    {{if $f.Setter}}public static long {{$c.Name}}_{{$f.Setter.GetNameWithOverloadIndex}}ID = 0;{{end}}
 	{{end}}
 
 	{{range $findex, $f := $c.Constructors}}
-	public static long {{$c.Name}}_{{$f.Name}}ID = 0;
+	public static long {{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = 0;
 	{{end}}
 
 	{{if $c.Releaser}}{{$f := $c.Releaser}}
-	public static long {{$c.Name}}_{{$f.Name}}ID = 0;
+	public static long {{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = 0;
 	{{end}}
 
 	{{range $findex, $f := $c.Methods}}
-	public static long {{$c.Name}}_{{$f.Name}}ID = 0;
+	public static long {{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = 0;
 	{{end}}
 
 	{{end}}{{/*End classes*/}}
@@ -56,12 +56,12 @@ public final class {{$m.Name}}
 		{{range $cindex, $c := $m.Classes}}
 
 		{{range $findex, $f := $c.Fields}}
-		{{if $f.Getter}}{{$c.Name}}_{{$f.Getter.Name}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-	    {{if $f.Setter}}{{$c.Name}}_{{$f.Setter.Name}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
+		{{if $f.Getter}}{{$c.Name}}_{{$f.Getter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+	    {{if $f.Setter}}{{$c.Name}}_{{$f.Setter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 		{{end}}
 
 		{{range $findex, $f := $c.Constructors}}
-		{{$c.Name}}_{{$f.Name}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+		{{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 		{{end}}
 
 		{{if $c.Releaser}}{{$f := $c.Releaser}}
