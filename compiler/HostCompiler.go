@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/MetaFFI/plugin-sdk/compiler/go"
+	compiler "github.com/MetaFFI/plugin-sdk/compiler/go"
 	TemplateFunctions2 "github.com/MetaFFI/plugin-sdk/compiler/go/CodeTemplates"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"io/ioutil"

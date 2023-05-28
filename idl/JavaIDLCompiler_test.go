@@ -88,7 +88,7 @@ func TestGoIDLCompiler_Compile(t *testing.T) {
 
 	comp := NewJavaIDLCompiler()
 
-	idl, _, err := comp.ParseIDL(src, "TestClass.java", false)
+	idl, _, err := comp.ParseIDL(src, "TestClass.java")
 	if err != nil {
 		t.Fatal(err)
 	}

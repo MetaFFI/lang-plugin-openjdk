@@ -13,8 +13,6 @@ using namespace metaffi::utils;
 //--------------------------------------------------------------------
 jvm::jvm()
 {
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
-	
 	// if there's a JVM already loaded, get it.
 	jsize nVMs;
 	check_throw_error(JNI_GetCreatedJavaVMs(nullptr, 0, &nVMs));
@@ -28,7 +26,6 @@ jvm::jvm()
 		
 		return;
 	}
-	printf("++++ %s:%d\n", __FILE__, __LINE__);
 	// create new JVM
 	
 	//std::stringstream ss;

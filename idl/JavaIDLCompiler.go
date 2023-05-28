@@ -29,7 +29,7 @@ func NewJavaIDLCompiler() *JavaIDLCompiler {
 }
 
 //--------------------------------------------------------------------
-func (this *JavaIDLCompiler) ParseIDL(sourceCode string, filePath string, isEmbeddedCode bool) (*IDL.IDLDefinition, bool, error) {
+func (this *JavaIDLCompiler) ParseIDL(sourceCode string, filePath string) (*IDL.IDLDefinition, bool, error) {
 
 	javafile, err := NewJavaExtractor(filePath)
 	if err != nil {

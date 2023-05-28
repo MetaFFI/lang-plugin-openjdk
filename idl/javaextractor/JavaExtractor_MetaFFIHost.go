@@ -311,6 +311,11 @@ type VariableInfo struct{
 
 
 
+func (this *VariableInfo) GetHandle() Handle{
+	return this.h
+}
+
+
 
 func (this *VariableInfo) Name() (name string, err error){
 	
@@ -543,6 +548,11 @@ type ParameterInfo struct{
 
 
 
+func (this *ParameterInfo) GetHandle() Handle{
+	return this.h
+}
+
+
 
 func (this *ParameterInfo) Name() (name string, err error){
 	
@@ -677,6 +687,11 @@ type MethodInfo struct{
 	h Handle
 }
 
+
+
+func (this *MethodInfo) GetHandle() Handle{
+	return this.h
+}
 
 
 
@@ -978,6 +993,11 @@ type ClassInfo struct{
 	h Handle
 }
 
+
+
+func (this *ClassInfo) GetHandle() Handle{
+	return this.h
+}
 
 
 
@@ -1353,6 +1373,11 @@ type JavaInfo struct{
 
 
 
+func (this *JavaInfo) GetHandle() Handle{
+	return this.h
+}
+
+
 
 func (this *JavaInfo) Classes() (classes []ClassInfo, err error){
 	
@@ -1454,6 +1479,7 @@ type JavaExtractor struct{
 	h Handle
 }
 
+
 func NewJavaExtractor( filename string) (instance *JavaExtractor, err error){
 	
 
@@ -1496,6 +1522,10 @@ func NewJavaExtractor( filename string) (instance *JavaExtractor, err error){
 	return inst, nil	
 }
 
+
+func (this *JavaExtractor) GetHandle() Handle{
+	return this.h
+}
 
 
 

@@ -145,6 +145,8 @@ public class {{$c.Name}}
 	private metaffi.MetaFFIHandle this_instance;
 	private static metaffi.MetaFFIBridge metaffiBridge = new metaffi.MetaFFIBridge();
 
+	public metaffi.MetaFFIHandle getHandle(){ return this_instance; }
+
 	{{/* --- Fields --- */}}
 	{{range $findex, $fi := $c.Fields}}
 	{{if $fi.Getter}}{{$f := $fi.Getter}}

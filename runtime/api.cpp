@@ -85,21 +85,16 @@ std::vector<std::string> parse_module_path(const std::string& module_path)
 //--------------------------------------------------------------------
 void* load_function(const char* module_path, uint32_t module_path_len, const char* function_path, uint32_t function_path_len, int8_t params_count, int8_t retval_count, char** err, uint32_t* err_len)
 {
-	printf("+++ -> load_function(%s)\n", function_path);
 	void* res = nullptr;
 	try
 	{
-		printf("++++ load_function -5\n");
 		metaffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
-		printf("++++ load_function -4\n");
 		
 		std::string modpath(module_path, module_path_len);
 		auto it_lib = libs.find(modpath);
 		std::shared_ptr<boost::dll::shared_library> lib;
 		
-		printf("++++ load_function 1\n");
 		std::string entry_func = fp[function_path_entry_entrypoint_function];
-		printf("++++ load_function 2\n");
 		
 		if(it_lib == libs.end())// TODO: make thread safe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		{
@@ -113,7 +108,7 @@ void* load_function(const char* module_path, uint32_t module_path_len, const cha
 			
 			JNIEnv* env;
 			auto releaser = pjvm->get_environment(&env);
-			printf("+++ loading entrypoints\n");
+	
 			const char* ep_err = load_entrypoints(module_path, module_path_len, (JavaVM*)(*pjvm), env, &load_class);
 			if(ep_err)
 			{
@@ -131,10 +126,9 @@ void* load_function(const char* module_path, uint32_t module_path_len, const cha
 			lib = it_lib->second;
 		}
 		
-		
-		printf("++++ load_function 3\n");
+	
 		auto pentrypoint = lib->get<void(cdts[2],char**,int64_t*)>(entry_func);
-		printf("++++ load_function 4\n");
+	
 		if(!pentrypoint){
 			throw std::runtime_error(std::string("Failed to load: ")+entry_func);
 		}
@@ -144,7 +138,6 @@ void* load_function(const char* module_path, uint32_t module_path_len, const cha
 	}
 	catch_and_fill(err, err_len);
 	
-	printf("+++ <- load_function(%s)\n", function_path);
 	return res;
 }
 //--------------------------------------------------------------------
