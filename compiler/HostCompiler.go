@@ -207,11 +207,79 @@ func mergeIdenticalConstructors(def *IDL.IDLDefinition) {
 }
 
 // --------------------------------------------------------------------
+func fixModuleNameIfMatchesToClass(def *IDL.IDLDefinition) {
+
+	// if module name == class name,
+	// the generated java class for the module, holding all the IDs
+	// overwrites the java class for the class.
+	// To fix this, in such a case, rename the module to "[module name]Module"
+
+	for _, m := range def.Modules {
+		for _, c := range m.Classes {
+			if strings.ToLower(m.Name) == strings.ToLower(c.Name) {
+				m.Name += "Module"
+				return
+			}
+		}
+	}
+}
+
+// --------------------------------------------------------------------
+func handleOptionalParameters(def *IDL.IDLDefinition) {
+	// turn default parameters into overloaded callables
+
+	for _, mod := range def.Modules {
+		functions, methods, constructors := mod.GetCallablesWithOptionalParameters(true, true, true)
+
+		for _, f := range functions {
+			firstIndexOfOptionalParameter := f.GetFirstIndexOfOptionalParameter()
+
+			var j int32 = 0
+			for i := firstIndexOfOptionalParameter; i < len(f.Parameters)-1; i++ {
+				j += 1
+				dup := f.Duplicate()
+				dup.OverloadIndex = j
+				dup.Parameters = dup.Parameters[:i]
+				mod.Functions = append(mod.Functions, dup)
+			}
+		}
+
+		for _, cstr := range constructors {
+			firstIndexOfOptionalParameter := cstr.GetFirstIndexOfOptionalParameter()
+
+			var j int32 = 0
+			for i := firstIndexOfOptionalParameter; i < len(cstr.Parameters)-1; i++ {
+				j += 1
+				dup := cstr.Duplicate()
+				dup.OverloadIndex = j
+				dup.Parameters = dup.Parameters[:i]
+				cstr.GetParent().AddConstructor(dup)
+			}
+		}
+
+		for _, m := range methods {
+			firstIndexOfOptionalParameter := m.GetFirstIndexOfOptionalParameter()
+
+			var j int32 = 0
+			for i := firstIndexOfOptionalParameter; i < len(m.Parameters); i++ {
+				j += 1
+				dup := m.Duplicate()
+				dup.OverloadIndex = j
+				dup.Parameters = dup.Parameters[:i]
+				m.GetParent().AddMethod(dup)
+			}
+		}
+	}
+}
+
+// --------------------------------------------------------------------
 func (this *HostCompiler) Compile(definition *IDL.IDLDefinition, outputDir string, outputFilename string, hostOptions map[string]string) (err error) {
 
 	compiler.ModifyKeywords(definition, javaKeywords, func(keyword string) string { return keyword + "__" })
 	mergeIdenticalConstructors(definition)
 	fixIdenticalFunctions(definition)
+	fixModuleNameIfMatchesToClass(definition)
+	handleOptionalParameters(definition)
 
 	this.def = definition
 	this.outputDir = outputDir

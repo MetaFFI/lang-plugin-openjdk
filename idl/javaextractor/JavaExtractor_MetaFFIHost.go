@@ -315,6 +315,10 @@ func (this *VariableInfo) GetHandle() Handle{
 	return this.h
 }
 
+func (this *VariableInfo) SetHandle(h Handle){
+	this.h = h
+}
+
 
 
 func (this *VariableInfo) Name() (name string, err error){
@@ -342,7 +346,7 @@ func (this *VariableInfo) Name() (name string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed VariableInfo.Name. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -390,7 +394,7 @@ func (this *VariableInfo) Type() (type__ string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed VariableInfo.Type. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -438,7 +442,7 @@ func (this *VariableInfo) IsStatic() (IsStatic bool, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed VariableInfo.IsStatic. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -486,7 +490,7 @@ func (this *VariableInfo) IsFinal() (IsFinal bool, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed VariableInfo.IsFinal. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -531,7 +535,7 @@ func (this *VariableInfo) ReleaseVariableInfo( this_instance interface{}) ( err 
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed VariableInfo.ReleaseVariableInfo. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -550,6 +554,10 @@ type ParameterInfo struct{
 
 func (this *ParameterInfo) GetHandle() Handle{
 	return this.h
+}
+
+func (this *ParameterInfo) SetHandle(h Handle){
+	this.h = h
 }
 
 
@@ -579,7 +587,7 @@ func (this *ParameterInfo) Name() (name string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ParameterInfo.Name. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -627,7 +635,7 @@ func (this *ParameterInfo) Type() (type__ string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ParameterInfo.Type. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -672,7 +680,7 @@ func (this *ParameterInfo) ReleaseParameterInfo( this_instance interface{}) ( er
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ParameterInfo.ReleaseParameterInfo. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -691,6 +699,10 @@ type MethodInfo struct{
 
 func (this *MethodInfo) GetHandle() Handle{
 	return this.h
+}
+
+func (this *MethodInfo) SetHandle(h Handle){
+	this.h = h
 }
 
 
@@ -720,7 +732,7 @@ func (this *MethodInfo) Name() (name string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed MethodInfo.Name. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -768,7 +780,7 @@ func (this *MethodInfo) IsStatic() (IsStatic bool, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed MethodInfo.IsStatic. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -816,7 +828,7 @@ func (this *MethodInfo) Comment() (Comment string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed MethodInfo.Comment. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -864,7 +876,7 @@ func (this *MethodInfo) Parameters() (Parameters []ParameterInfo, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed MethodInfo.Parameters. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -927,7 +939,7 @@ func (this *MethodInfo) ReturnValue() (return_values ParameterInfo, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed MethodInfo.ReturnValue. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -978,7 +990,7 @@ func (this *MethodInfo) ReleaseMethodInfo( this_instance interface{}) ( err erro
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed MethodInfo.ReleaseMethodInfo. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -997,6 +1009,10 @@ type ClassInfo struct{
 
 func (this *ClassInfo) GetHandle() Handle{
 	return this.h
+}
+
+func (this *ClassInfo) SetHandle(h Handle){
+	this.h = h
 }
 
 
@@ -1026,7 +1042,7 @@ func (this *ClassInfo) Name() (name string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ClassInfo.Name. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1074,7 +1090,7 @@ func (this *ClassInfo) Comment() (Comment string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ClassInfo.Comment. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1122,7 +1138,7 @@ func (this *ClassInfo) Package() (Package string, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ClassInfo.Package. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1170,7 +1186,7 @@ func (this *ClassInfo) Fields() (fields []VariableInfo, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ClassInfo.Fields. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1233,7 +1249,7 @@ func (this *ClassInfo) Methods() (methods []MethodInfo, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ClassInfo.Methods. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1296,7 +1312,7 @@ func (this *ClassInfo) Constructors() (constructors []MethodInfo, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ClassInfo.Constructors. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1356,7 +1372,7 @@ func (this *ClassInfo) ReleaseClassInfo( this_instance interface{}) ( err error)
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed ClassInfo.ReleaseClassInfo. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1375,6 +1391,10 @@ type JavaInfo struct{
 
 func (this *JavaInfo) GetHandle() Handle{
 	return this.h
+}
+
+func (this *JavaInfo) SetHandle(h Handle){
+	this.h = h
 }
 
 
@@ -1404,7 +1424,7 @@ func (this *JavaInfo) Classes() (classes []ClassInfo, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed JavaInfo.Classes. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1464,7 +1484,7 @@ func (this *JavaInfo) ReleaseJavaInfo( this_instance interface{}) ( err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed JavaInfo.ReleaseJavaInfo. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1502,7 +1522,7 @@ func NewJavaExtractor( filename string) (instance *JavaExtractor, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed JavaExtractor.JavaExtractor. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1525,6 +1545,10 @@ func NewJavaExtractor( filename string) (instance *JavaExtractor, err error){
 
 func (this *JavaExtractor) GetHandle() Handle{
 	return this.h
+}
+
+func (this *JavaExtractor) SetHandle(h Handle){
+	this.h = h
 }
 
 
@@ -1553,7 +1577,7 @@ func (this *JavaExtractor) Extract() (info JavaInfo, err error){
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed JavaExtractor.extract. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 
@@ -1602,7 +1626,7 @@ func (this *JavaExtractor) ReleaseJavaExtractor( this_instance interface{}) ( er
 	
 	// check errors
 	if out_err_len != 0{
-		err = fmt.Errorf("Function failed. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
+		err = fmt.Errorf("Function failed JavaExtractor.ReleaseJavaExtractor. Error: %v", string(C.GoBytes(unsafe.Pointer(out_err), C.int(out_err_len))))
 		return
 	}
 

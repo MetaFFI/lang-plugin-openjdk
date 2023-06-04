@@ -147,6 +147,8 @@ public class {{$c.Name}}
 
 	public metaffi.MetaFFIHandle getHandle(){ return this_instance; }
 
+	public {{$c.Name}}(metaffi.MetaFFIHandle h){ this.this_instance = h; }
+
 	{{/* --- Fields --- */}}
 	{{range $findex, $fi := $c.Fields}}
 	{{if $fi.Getter}}{{$f := $fi.Getter}}
