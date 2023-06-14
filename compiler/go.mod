@@ -3,15 +3,15 @@ module github.com/MetaFFI/lang-plugin-openjdk/compiler
 go 1.18
 
 require (
-	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/MetaFFI/plugin-sdk v0.0.0-00010101000000-000000000000
 	github.com/yargevad/filepathx v1.0.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 )
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/huandu/xstrings v1.3.1 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
