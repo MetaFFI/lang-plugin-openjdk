@@ -64,6 +64,8 @@ var javaKeywords = map[string]bool{
 	"void":         true,
 	"volatile":     true,
 	"while":        true,
+
+	"equals":       true,
 }
 
 // --------------------------------------------------------------------
