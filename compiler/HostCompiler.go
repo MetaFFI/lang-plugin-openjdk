@@ -65,7 +65,7 @@ var javaKeywords = map[string]bool{
 	"volatile":     true,
 	"while":        true,
 
-	"equals":       true,
+	"equals": true,
 }
 
 // --------------------------------------------------------------------
@@ -209,14 +209,19 @@ func mergeIdenticalConstructors(def *IDL.IDLDefinition) {
 }
 
 // --------------------------------------------------------------------
-func fixModuleNameIfMatchesToClass(def *IDL.IDLDefinition) {
-
-	// if module name == class name,
-	// the generated java class for the module, holding all the IDs
-	// overwrites the java class for the class.
-	// To fix this, in such a case, rename the module to "[module name]Module"
+func fixModuleName(def *IDL.IDLDefinition) {
 
 	for _, m := range def.Modules {
+
+		// if module name contains ".", replace with "_",
+		// as class generated to load the module == to module name
+		// class name cannot contain "."
+		m.Name = strings.ReplaceAll(m.Name, ".", "_")
+
+		// if module name == class name,
+		// the generated java class for the module, holding all the IDs
+		// overwrites the java class for the class.
+		// To fix this, in such a case, rename the module to "[module name]Module"
 		for _, c := range m.Classes {
 			if strings.ToLower(m.Name) == strings.ToLower(c.Name) {
 				m.Name += "Module"
@@ -237,7 +242,7 @@ func handleOptionalParameters(def *IDL.IDLDefinition) {
 			firstIndexOfOptionalParameter := f.GetFirstIndexOfOptionalParameter()
 
 			var j int32 = 0
-			for i := firstIndexOfOptionalParameter; i < len(f.Parameters)-1; i++ {
+			for i := firstIndexOfOptionalParameter; i < len(f.Parameters); i++ {
 				j += 1
 				dup := f.Duplicate()
 				dup.OverloadIndex = j
@@ -250,7 +255,7 @@ func handleOptionalParameters(def *IDL.IDLDefinition) {
 			firstIndexOfOptionalParameter := cstr.GetFirstIndexOfOptionalParameter()
 
 			var j int32 = 0
-			for i := firstIndexOfOptionalParameter; i < len(cstr.Parameters)-1; i++ {
+			for i := firstIndexOfOptionalParameter; i < len(cstr.Parameters); i++ {
 				j += 1
 				dup := cstr.Duplicate()
 				dup.OverloadIndex = j
@@ -280,7 +285,7 @@ func (this *HostCompiler) Compile(definition *IDL.IDLDefinition, outputDir strin
 	compiler.ModifyKeywords(definition, javaKeywords, func(keyword string) string { return keyword + "__" })
 	mergeIdenticalConstructors(definition)
 	fixIdenticalFunctions(definition)
-	fixModuleNameIfMatchesToClass(definition)
+	fixModuleName(definition)
 	handleOptionalParameters(definition)
 
 	this.def = definition
@@ -315,7 +320,7 @@ func (this *HostCompiler) Compile(definition *IDL.IDLDefinition, outputDir strin
 
 // --------------------------------------------------------------------
 func (this *HostCompiler) parseHeader() (string, error) {
-	return TemplateFunctions2.RunTemplate("parseHeader", HostHeaderTemplate, this.def)
+	return TemplateFunctions2.RunTemplateTxt("parseHeader", HostHeaderTemplate, this.def)
 }
 
 // --------------------------------------------------------------------
@@ -328,7 +333,7 @@ func (this *HostCompiler) parseForeignStubs() (map[string]string, error) {
 	}
 
 	// place in module file
-	modfile, err := TemplateFunctions2.RunTemplate("OpenJDK HostFunctionStubsTemplate", HostFunctionStubsTemplate, this.def, templatesFuncMap)
+	modfile, err := TemplateFunctions2.RunTemplateTxt("OpenJDK HostFunctionStubsTemplate", HostFunctionStubsTemplate, this.def, templatesFuncMap)
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +351,7 @@ func (this *HostCompiler) parseForeignStubs() (map[string]string, error) {
 				M: m,
 			}
 
-			res[c.Name+".java"], err = TemplateFunctions2.RunTemplate("OpenJDK HostClassesStubsTemplate", HostClassesStubsTemplate, tempParam, templatesFuncMap)
+			res[c.Name+".java"], err = TemplateFunctions2.RunTemplateTxt("OpenJDK HostClassesStubsTemplate", HostClassesStubsTemplate, tempParam, templatesFuncMap)
 
 			if err != nil {
 				return nil, err

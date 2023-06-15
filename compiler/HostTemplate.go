@@ -31,7 +31,7 @@ public final class {{$m.Name}}
 	{{end}}
 
 	{{if $c.Releaser}}{{$f := $c.Releaser}}
-	public static long {{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = 0;
+		public static long {{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = 0;
 	{{end}}
 
 	{{range $findex, $f := $c.Methods}}
@@ -40,40 +40,7 @@ public final class {{$m.Name}}
 
 	{{end}}{{/*End classes*/}}
 
-	public static void load(String modulePath)
-	{
-		metaffiBridge.load_runtime_plugin("xllr.{{$targetLanguage}}");
-
-		{{range $findex, $f := $m.Globals}}
-		{{if $f.Getter}}{{$f.Getter.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-	    {{if $f.Setter}}{{$f.Setter.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
-	    {{end}}{{/* End globals */}}
-
-		{{range $findex, $f := $m.Functions}}
-		{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
-		{{end}}
-
-		{{range $cindex, $c := $m.Classes}}
-
-		{{range $findex, $f := $c.Fields}}
-		{{if $f.Getter}}{{$c.Name}}_{{$f.Getter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-	    {{if $f.Setter}}{{$c.Name}}_{{$f.Setter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
-		{{end}}
-
-		{{range $findex, $f := $c.Constructors}}
-		{{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
-		{{end}}
-
-		{{if $c.Releaser}}{{$f := $c.Releaser}}
-		{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
-		{{end}}
-
-		{{range $findex, $f := $c.Methods}}
-		{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
-		{{end}}
-
-		{{end}}{{/*End classes*/}}
-	}
+	{{CreateLoadFunction $idl $m}}
 
 	public static void free()
 	{
