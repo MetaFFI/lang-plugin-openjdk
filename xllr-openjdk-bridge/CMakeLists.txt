@@ -43,4 +43,4 @@ copy_file_from_project_binary_to_metaffi_home(${target_jar_name} "${target_jar_n
 
 # install
 install_target(${target_jni_name} .)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${target_jar_name}.jar DESTINATION .)
+install(FILES ${CMAKE_BINARY_DIR}/${target_jar_name}.jar DESTINATION .)

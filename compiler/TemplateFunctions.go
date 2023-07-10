@@ -540,7 +540,7 @@ func createLoadFunction(idl *IDL.IDLDefinition, mod *IDL.ModuleDefinition) strin
 
 	// place them inside "load" functions
 
-	res := "public static void load(String modulePath)\n"
+	res := "public static void metaffi_load(String modulePath)\n"
 	res += "\t{\n"
 	res += fmt.Sprintf("\t\tmetaffiBridge.load_runtime_plugin(\"xllr.%v\");\n", idl.TargetLanguage) // metaffiBridge.load_runtime_plugin("xllr.{{$targetLanguage}}");
 	res += "\t\t\n"

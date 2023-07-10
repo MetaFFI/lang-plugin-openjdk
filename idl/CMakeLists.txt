@@ -40,7 +40,7 @@ copy_file_from_project_binary_to_metaffi_home(${target_name}_build_openjdk_idl_p
 copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/javaparser-core-3.24.4.jar" "${PROJECT_BINARY_DIR}/javaparser-core-3.24.4.jar")
 copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest.jar" "${PROJECT_BINARY_DIR}/JavaExtractor_MetaFFIGuest.jar")
 copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${CMAKE_CURRENT_LIST_DIR}/JavaExtractor_MetaFFIGuest${CMAKE_SHARED_LIBRARY_SUFFIX}" "${PROJECT_BINARY_DIR}/JavaExtractor_MetaFFIGuest${CMAKE_SHARED_LIBRARY_SUFFIX}")
-copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}" "${PROJECT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+#copy_file_post_build(${target_name}_build_openjdk_idl_plugin "${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}" "${PROJECT_BINARY_DIR}/${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
 # Unitest
 add_go_test("java IDL plugin test" WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})

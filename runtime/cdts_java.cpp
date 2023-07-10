@@ -76,10 +76,10 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 		val = jobject_to_c(val_to_set);
 	}
 	
-	template<typename T, typename jarray_t>
-	void set_numeric_array_to_cdts(jobjectArray objectArray, int index, T*& arr, metaffi_size*& dimensions_lengths, metaffi_size& dimensions, const std::function<T*(jarray_t)>& jobject_to_c)
+	template<typename T>
+	void set_numeric_array_to_cdts(jobjectArray objectArray, int index, T*& arr, metaffi_size*& dimensions_lengths, metaffi_size& dimensions, const std::function<T(jobject)>& jobject_to_c)
 	{
-		jarray_t val_to_set = (jarray_t)env->GetObjectArrayElement(objectArray, index);
+		auto val_to_set = (jobjectArray)(env->GetObjectArrayElement(objectArray, index));
 		jsize len = env->GetArrayLength(val_to_set);
 		if(len == 0)
 		{
@@ -93,7 +93,12 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 		dimensions_lengths = (metaffi_size*)malloc(sizeof(metaffi_size));
 		dimensions_lengths[0] = len;
 		
-		arr = jobject_to_c(val_to_set);
+		arr = (T*)malloc(sizeof(T)*len);
+		for(jsize i=0 ; i<len ; i++)
+		{
+			auto x = env->GetObjectArrayElement(val_to_set, i);
+			arr[i] = jobject_to_c(x);
+		}
 	}
 	
 	template<typename T, typename char_t>
@@ -137,8 +142,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_float32_array(void* values_to_set, int index, metaffi_float32*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_float32, jfloatArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                        [this](jfloatArray pjarr)->metaffi_float32*{ jboolean is_copy = 0; return env->GetFloatArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_float32>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                           [this](jobject val_to_set)->metaffi_float32 {return env->CallFloatMethod(val_to_set, cdts_java::float_get_value);});
 		
 	}
 	
@@ -158,8 +163,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_float64_array(void* values_to_set, int index, metaffi_float64*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_float64, jdoubleArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                         [this](jdoubleArray pjarr)->metaffi_float64*{ jboolean is_copy = 0; return env->GetDoubleArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_float64>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                                         [this](jobject val_to_set)->metaffi_float64 {return env->CallDoubleMethod(val_to_set, cdts_java::double_get_value);});
 		
 	}
 	
@@ -172,8 +177,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_int8_array(void* values_to_set, int index, metaffi_int8*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_int8, jbyteArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                    [this](jbyteArray pjarr)->metaffi_int8*{ jboolean is_copy = 0; return env->GetByteArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_int8>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                                    [this](jobject val_to_set)->metaffi_int8 {return env->CallByteMethod(val_to_set, cdts_java::byte_get_value);});
 		
 	}
 	
@@ -186,8 +191,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_int16_array(void* values_to_set, int index, metaffi_int16*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_int16, jshortArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                      [this](jshortArray pjarr)->metaffi_int16*{ jboolean is_copy = 0; return env->GetShortArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_int16>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                                      [this](jobject val_to_set)->metaffi_int16 {return env->CallShortMethod(val_to_set, cdts_java::short_get_value);});
 		
 	}
 	
@@ -200,8 +205,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_int32_array(void* values_to_set, int index, metaffi_int32*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_int32, jintArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                    [this](jintArray pjarr)->metaffi_int32*{ jboolean is_copy = 0; return (metaffi_int32*)env->GetIntArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_int32>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                         [this](jobject val_to_set)->metaffi_int32 {return env->CallIntMethod(val_to_set, cdts_java::int_get_value);});
 		
 	}
 	
@@ -214,15 +219,15 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_int64_array(void* values_to_set, int index, metaffi_int64*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_int64, jlongArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                     [this](jlongArray pjarr)->metaffi_int64*{ jboolean is_copy = 0; return env->GetLongArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_int64>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                         [this](jobject val_to_set)->metaffi_int64 {return env->CallLongMethod(val_to_set, cdts_java::long_get_value);});
 		
 	}
 	
 	void set_metaffi_uint8_array(void* values_to_set, int index, metaffi_uint8*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_uint8, jbyteArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-															[this](jbyteArray pjarr)->metaffi_uint8*{ jboolean is_copy = 0; return (metaffi_uint8*)env->GetByteArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_uint8>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                                     [this](jobject val_to_set)->metaffi_uint8 {return env->CallByteMethod(val_to_set, cdts_java::byte_get_value);});
 		
 	}
 	
@@ -242,8 +247,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_uint16_array(void* values_to_set, int index, metaffi_uint16*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_uint16, jshortArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                       [this](jshortArray pjarr)->metaffi_uint16*{ jboolean is_copy = 0; return (metaffi_uint16*)env->GetShortArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_uint16>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                                       [this](jobject val_to_set)->metaffi_uint16 {return env->CallShortMethod(val_to_set, cdts_java::short_get_value);});
 		
 	}
 	
@@ -256,8 +261,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_uint32_array(void* values_to_set, int index, metaffi_uint32*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_uint32, jintArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                     [this](jintArray pjarr)->metaffi_uint32*{ jboolean is_copy = 0; return (metaffi_uint32*)env->GetIntArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_uint32>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                        [this](jobject val_to_set)->metaffi_uint32 {return env->CallIntMethod(val_to_set, cdts_java::int_get_value);});
 		
 	}
 	
@@ -269,8 +274,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_uint64_array(void* values_to_set, int index, metaffi_uint64*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_uint64, jlongArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                      [this](jlongArray pjarr)->metaffi_uint64*{ jboolean is_copy = 0; return (metaffi_uint64*)env->GetLongArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_uint64>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+		                                                      [this](jobject val_to_set)->metaffi_uint64 {return env->CallLongMethod(val_to_set, cdts_java::long_get_value);});
 		
 	}
 	
@@ -283,60 +288,45 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	
 	void set_metaffi_bool_array(void* values_to_set, int index, metaffi_bool*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		set_numeric_array_to_cdts<metaffi_bool, jbooleanArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
-		                                                       [this](jbooleanArray pjarr)->metaffi_bool*{ jboolean is_copy = 0; return (metaffi_bool*)env->GetBooleanArrayElements(pjarr, &is_copy); });
+		set_numeric_array_to_cdts<metaffi_bool>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions,
+	                                                       [this](jobject val_to_set)->metaffi_bool {return env->CallBooleanMethod(val_to_set, cdts_java::boolean_get_value);});
 		
 	}
 	
 	void set_metaffi_handle_array(void* values_to_set, int index, metaffi_handle*& parray_to_set, metaffi_size*& parray_dimensions_lengths, metaffi_size& array_dimensions, metaffi_bool& is_free_required, int starting_index) override
 	{
-		auto set_object = [this, &parray_dimensions_lengths](jobject jobj)->metaffi_handle*
+		auto set_object = [this](jobject jobj)->metaffi_handle
 		{
-			if(!jobj || env->GetArrayLength((jarray)jobj) == 0){
+			if(!jobj){
 				return nullptr;
 			}
 			
-			// check if first item is a java object
-			jobject elem = env->GetObjectArrayElement((jobjectArray)jobj, 0);
-			metaffi_handle* res = (metaffi_handle*)malloc(sizeof(metaffi_handle)*parray_dimensions_lengths[0]);
-			//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
-			if(env->IsInstanceOf(jobj, cdts_java::metaffi_handle_class))
+			if(!openjdk_objects_table::instance().contains(jobj))
 			{
-				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
-				// metaffi handle, pass as it is.
-				for(int i=0 ; i<parray_dimensions_lengths[0] ; i++)
-				{
-					jobject curObject = env->GetObjectArrayElement((jobjectArray)jobj, i);
-					res[i] = (metaffi_handle)env->CallLongMethod(curObject, cdts_java::metaffi_handle_get_value);
+				// if metaffi handle - pass as it is.
+				//printf("\n+++ before IsInstanceOf: jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
+				// happen every time.
+				if(env->IsInstanceOf(jobj, cdts_java::metaffi_handle_class))
+				{//printf("+++ after IsInstanceOf TRUE jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
+					return (metaffi_handle)env->CallLongMethod(jobj, cdts_java::metaffi_handle_get_value);
 				}
+				//else{
+				//	printf("+++ after IsInstanceOf FALSE jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
+				//}
 				
-				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
+				// a java object
+				jobject g_jobj = env->NewGlobalRef(jobj);
+				openjdk_objects_table::instance().set(g_jobj);
+				return g_jobj;
 			}
 			else
 			{
-				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
-				// java objects
-				for(int i=0 ; i<parray_dimensions_lengths[0] ; i++)
-				{
-					jobject curObject = env->GetObjectArrayElement((jobjectArray)jobj, i);
-					if(!openjdk_objects_table::instance().contains(curObject))
-					{
-						jobject g_jobj = env->NewGlobalRef(curObject);
-						openjdk_objects_table::instance().set(g_jobj);
-						res[i] = g_jobj;
-					}
-					else
-					{
-						res[i] = curObject;
-					}
-				}
-				//printf("+++ set_metaffi_handle_array: %s:%d\n", __FUNCTION__, __LINE__);
+				return (metaffi_handle)jobj;
 			}
 			
-			return res;
 		};
 		
-		set_numeric_array_to_cdts<metaffi_handle, jobjectArray>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions, set_object);
+		set_numeric_array_to_cdts<metaffi_handle>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions, set_object);
 		
 	}
 	

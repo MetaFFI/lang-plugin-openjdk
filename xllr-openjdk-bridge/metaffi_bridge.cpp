@@ -212,6 +212,13 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1ret(JNIEnv* env
 		char* out_err_buf = nullptr;
 		uint64_t out_err_len = 0;
 		
+		if(!pff)
+		{
+			throwMetaFFIException(env, "internal error. pff is null");
+			return;
+		}
+		
+		
 		((pforeign_function_entrypoint_signature_params_ret) pff)((cdts*) xcall_params, &out_err_buf, &out_err_len);
 		
 		if (out_err_len) // throw an exception in the JVM
@@ -233,6 +240,12 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1ret(JNIEnv*
 	char* out_err_buf = nullptr;
 	uint64_t out_err_len = 0;
 	
+	if(!pff)
+	{
+		throwMetaFFIException(env, "internal error. pff is null");
+		return;
+	}
+	
 	((pforeign_function_entrypoint_signature_no_params_ret)pff)((cdts*)xcall_params, &out_err_buf, &out_err_len);
 	
 	if(out_err_len) // throw an exception in the JVM
@@ -249,6 +262,12 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret(JNIEnv*
 	{
 		char* out_err_buf = nullptr;
 		uint64_t out_err_len = 0;
+		
+		if(!pff)
+		{
+			throwMetaFFIException(env, "internal error. pff is null");
+			return;
+		}
 		
 		((pforeign_function_entrypoint_signature_params_no_ret) pff)((cdts*) xcall_params, &out_err_buf, &out_err_len);
 		
@@ -271,6 +290,12 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret(JNI
 	{
 		char* out_err_buf = nullptr;
 		uint64_t out_err_len = 0;
+		
+		if(!pff)
+		{
+			throwMetaFFIException(env, "internal error. pff is null");
+			return;
+		}
 		
 		((pforeign_function_entrypoint_signature_no_params_no_ret) pff)(&out_err_buf, &out_err_len);
 		
