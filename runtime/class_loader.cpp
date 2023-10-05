@@ -283,8 +283,10 @@ jclass load_class(JNIEnv* env, const char* class_path, const char* class_name)
 		
 		loaded_paths.insert(url_path);
 	}
-	
+
+	printf("++++ Class.forName(%s)\n", class_name);
 	jobject targetClass = env->CallStaticObjectMethod(class_class, for_name_method, env->NewStringUTF(class_name), JNI_TRUE, childURLClassLoader);
+
 	check_and_throw_jvm_exception(env, targetClass,);
 	loaded_classes[class_name] = (jclass)targetClass;
 	

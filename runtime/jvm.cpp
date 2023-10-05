@@ -28,22 +28,45 @@ jvm::jvm()
 	}
 	// create new JVM
 	
-	//std::stringstream ss;
-	//ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
-	//printf("JVM classpath: %s\n", ss.str().c_str());
-	//std::string options_string = ss.str();
-	//JavaVMOption* options = new JavaVMOption[3];
-	//options[0].optionString = (char*)options_string.c_str();
+//	std::stringstream ss;
+//	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
+//	printf("JVM classpath: %s\n", ss.str().c_str());
+//	std::string options_string = ss.str();
+//	JavaVMOption* options = new JavaVMOption[3];
+//	options[0].optionString = (char*)options_string.c_str();
+
+	// read classpath environment variable and set it, including "." as default.
+
+#ifdef _WIN32
+#define SEPARATOR ';'
+#else
+#define SEPARATOR ':'
+#endif
+
+	std::stringstream ss;
+	ss << "-Djava.class.path=." << SEPARATOR << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << SEPARATOR;
+	const char* classpath = std::getenv("CLASSPATH");
+	if(classpath){
+		ss << classpath << SEPARATOR;
+	}
+
+	std::string cp_option = ss.str();
 
 	// set initialization args
 	JavaVMInitArgs vm_args = {0};
 	vm_args.version = JNI_VERSION_10;
-	vm_args.nOptions = 0;
-	vm_args.options = nullptr;
+	vm_args.nOptions = 1;
+	vm_args.options = new JavaVMOption[1];
+	vm_args.options[0].optionString = (char*)cp_option.c_str();
 	vm_args.ignoreUnrecognized = JNI_FALSE;
+
+	printf("JVM classpath: %s\n", vm_args.options[0].optionString);
+
 	// load jvm
 	
-	// FOR WINDOWS: In order from this code to run from Go executable - "runtime.testingWER" must be set to true!!!!
+	// FOR WINDOWS: due to bug in Go, in order to load JVM Go executable - lastcontinuehandler() in signal_windows.go
+	// must return _EXCEPTION_CONTINUE_SEARCH
+	// https://github.com/golang/go/issues/58542
 	jint res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
 	check_throw_error(res);
 	is_destroy = true;

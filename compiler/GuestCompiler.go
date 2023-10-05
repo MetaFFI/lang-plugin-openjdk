@@ -19,8 +19,6 @@ type GuestCompiler struct {
 	def            *IDL.IDLDefinition
 	outputDir      string
 	outputFilename string
-	blockName      string
-	blockCode      string
 }
 
 //--------------------------------------------------------------------
@@ -41,22 +39,14 @@ func getDynamicLibSuffix() string {
 }
 
 //--------------------------------------------------------------------
-func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir string, outputFilename string, blockName string, blockCode string) (err error) {
+func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir string, outputFilename string, guestOptions map[string]string) (err error) {
 	
 	if outputFilename == "" {
 		outputFilename = definition.IDLFilename
 	}
-	
-	// get "block"
-	if strings.Contains(outputFilename, "#") {
-		toRemove := outputFilename[strings.LastIndex(outputFilename, string(os.PathSeparator))+1 : strings.Index(outputFilename, "#")+1]
-		outputFilename = strings.ReplaceAll(outputFilename, toRemove, "")
-	}
-	
+
 	this.def = definition
 	this.outputDir = outputDir
-	this.blockName = blockName
-	this.blockCode = blockCode
 	this.outputFilename = outputFilename
 	
 	// generate code
@@ -70,7 +60,7 @@ func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir stri
 		return fmt.Errorf("Failed to generate guest C++ code: %v", err)
 	}
 	
-	jarfile, err := this.buildJar(jarcode, definition, outputDir)
+	jarfile, err := this.buildJar(jarcode, definition, outputDir, guestOptions)
 	if err != nil {
 		return fmt.Errorf("Failed to generate guest code: %v", err)
 	}
@@ -178,14 +168,14 @@ func (this *GuestCompiler) generateJarCode() (string, error) {
 }
 
 //--------------------------------------------------------------------
-func (this *GuestCompiler) getClassPath() string {
+func (this *GuestCompiler) getClassPath(guestOptions map[string]string) string {
 	
 	classPathSet := make(map[string]bool, 0)
 	wd, err := os.Getwd()
 	if err != nil{ panic(err) }
 	classPathSet[wd] = true
 	classPathSet[fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator))] = true
-	
+
 	for _, m := range this.def.Modules {
 		for _, r := range m.ExternalResources {
 			classpathResource := os.ExpandEnv(r)
@@ -197,7 +187,11 @@ func (this *GuestCompiler) getClassPath() string {
 	for k, _ := range classPathSet {
 		classPath = append(classPath, k)
 	}
-	
+
+    if classPathOption, exists := guestOptions["classPath"]; exists{
+        classPath = append(classPath, strings.Split(classPathOption, ",")...)
+    }
+
 	return strings.Join(classPath, string(os.PathListSeparator))
 }
 
@@ -276,7 +270,7 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 }
 
 //--------------------------------------------------------------------
-func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, outputDir string) ([]byte, error) {
+func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, outputDir string, guestOptions map[string]string) ([]byte, error) {
 	
 	dir, err := os.MkdirTemp("", "metaffi_openjdk_compiler*")
 	if err != nil {
@@ -289,7 +283,6 @@ func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, 
 	}()
 	
 	dir = dir + string(os.PathSeparator)
-	
 	// write generated code to temp folder
 	javaFiles := make([]string, 0)
 	for _, m := range this.def.Modules {
@@ -300,6 +293,10 @@ func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, 
 			return nil, fmt.Errorf("Failed to write host java code: %v", err)
 		}
 	}
+
+	if javaFilesOption, exists := guestOptions["compileJavaFiles"]; exists{
+	    javaFiles = append(javaFiles, strings.Split(javaFilesOption, ",")...)
+	}
 	
 	// if IDL is a java file
 	if strings.ToLower(path.Ext(definition.IDLFilenameWithExtension)) == ".java" {
@@ -307,21 +304,27 @@ func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, 
 	}
 	
 	fmt.Println("Building OpenJDK guest code")
-	
+
 	// compile generated java code
 	args := make([]string, 0)
 	args = append(args, "-d")
 	args = append(args, dir)
 	args = append(args, "-cp")
-	args = append(args, this.getClassPath())
+
+
+	args = append(args, this.getClassPath(guestOptions))
+
+
 	args = append(args, javaFiles...)
 	buildCmd := exec.Command("javac", args...)
 	fmt.Printf("%v\n", strings.Join(buildCmd.Args, " "))
+
 	output, err := buildCmd.CombinedOutput()
+
 	if err != nil {
 		return nil, fmt.Errorf("Failed compiling host OpenJDK runtime linker. Exit with error: %v.\nOutput:\n%v", err, string(output))
 	}
-	
+
 	classFiles, err := filepathx.Glob(dir + "**" + string(os.PathSeparator) + "*.class")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get list of class files to compile in the path %v*.class: %v", "metaffi_guest", err)

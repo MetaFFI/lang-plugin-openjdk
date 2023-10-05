@@ -72,8 +72,9 @@ public final class {{$m.Name}}_Entrypoints
     {{end}} {{/*End Fields*/}}
 
 	{{range $cstrindex, $f := $c.Constructors}}
-	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
+	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}(long xcall_params) throws MetaFFIException, Exception
 	{
+	    //System.out.println("Java EP - EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}");
 		{{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
 
 		{{GetParamsFromCDTS $f.Parameters 2}}
@@ -102,7 +103,7 @@ public final class {{$m.Name}}_Entrypoints
 	{{range $findex, $f := $c.Methods}}
 
 	{{$retvalLength := len $f.ReturnValues}}{{$paramsLength := len $f.Parameters}}
-	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
+	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}(long xcall_params) throws MetaFFIException, Exception
 	{
 		{{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
 		{{GetParamsFromCDTS $f.Parameters 2}}
@@ -313,8 +314,8 @@ jmethodID jmethod_{{$c.Name}}_set_{{$f.Name}} = nullptr;
         {{end}}
 
         {{range $cstrindex, $f := $c.Constructors}}
-jclass jclass_{{$c.Name}}_{{$f.Name}} = nullptr;
-jmethodID jmethod_{{$c.Name}}_{{$f.Name}} = nullptr;
+jclass jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = nullptr;
+jmethodID jmethod_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = nullptr;
         {{end}}
 
         {{if $c.Releaser}}{{$f := $c.Releaser}}
@@ -323,8 +324,8 @@ jmethodID jmethod_{{$c.Name}}_{{$f.Name}} = nullptr;
         {{end}}
 
         {{range $cstrindex, $f := $c.Methods}}
-jclass jclass_{{$c.Name}}_{{$f.Name}} = nullptr;
-jmethodID jmethod_{{$c.Name}}_{{$f.Name}} = nullptr;
+jclass jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = nullptr;
+jmethodID jmethod_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = nullptr;
         {{end}}
 
 	{{end}}
@@ -399,16 +400,16 @@ extern "C" const char* load_entrypoints(const char* module_path, uint32_t module
 	            {{range $cstrindex, $f := $c.Constructors}}
 		            {{if IsExternalResources $m}}
 
-	                jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+	                jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
 
 	                {{else}}
-	                jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+	                jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
 	                {{end}}
 
-		            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
+		            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}},);
 		            if(out_err_data){ throw std::runtime_error(out_err_data); }
-		            jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
-		            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
+		            jmethod_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
+		            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}},);
 		            if(out_err_data){ throw std::runtime_error(out_err_data); }
 	            {{end}}
 
@@ -431,16 +432,16 @@ extern "C" const char* load_entrypoints(const char* module_path, uint32_t module
 	            {{range $cstrindex, $f := $c.Methods}}
 	            {{if IsExternalResources $m}}
 
-	            jclass_{{$c.Name}}_{{$f.Name}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
+	            jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = load_class(env, mod_path.c_str(), "metaffi_guest.{{index $f.FunctionPath "entrypoint_class"}}");
 
 	            {{else}}
-	            jclass_{{$c.Name}}_{{$f.Name}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
+	            jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = env->FindClass("metaffi_guest/{{index $f.FunctionPath "entrypoint_class"}}");
 	            {{end}}
 
-	            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}},);
+	            check_and_throw_jvm_exception(env, jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}},);
 	            if(out_err_data){ throw std::runtime_error(out_err_data); }
-	            jmethod_{{$c.Name}}_{{$f.Name}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
-	            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}},);
+	            jmethod_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}} = env->GetStaticMethodID(jclass_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}, "{{index $f.FunctionPath "entrypoint_function"}}", ("(J)V"));
+	            check_and_throw_jvm_exception(env, jmethod_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}},);
 	            if(out_err_data){ throw std::runtime_error(out_err_data); }
 	            {{end}}
 
@@ -499,9 +500,10 @@ extern "C" void EntryPoint_{{$c.Name}}_set_{{$f.Name}}({{CEntrypointParameters $
         {{end}}
 
         {{range $cstrindex, $f := $c.Constructors}}
-extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
+extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
-    {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_" $f.Name) (print "jmethod_" $c.Name "_" $f.Name) $f.FunctionDefinition}}
+    //printf("--> EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}\n");
+    {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_" $f.Name $f.GetOverloadIndexIfExists) (print "jmethod_" $c.Name "_" $f.Name $f.GetOverloadIndexIfExists) $f.FunctionDefinition}}
     if_jvm_exception_set_error(env);
     releaser();
 }
@@ -517,7 +519,7 @@ extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.Fu
         {{end}}
 
         {{range $cstrindex, $f := $c.Methods}}
-extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}({{CEntrypointParameters $f.FunctionDefinition}})
+extern "C" void EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}({{CEntrypointParameters $f.FunctionDefinition}})
 {
 //	printf("++++ Before CEntrypointCallJVMEntrypoint\n");
     {{CEntrypointCallJVMEntrypoint (print "jclass_" $c.Name "_" $f.Name) (print "jmethod_" $c.Name "_" $f.Name) $f.FunctionDefinition}}

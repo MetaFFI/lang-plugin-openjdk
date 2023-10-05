@@ -87,10 +87,16 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 			return nil, err
 		}
 		
-		for _, f := range javaconstructors {
+		for i, f := range javaconstructors {
 			javaconst := IDL.NewFunctionDefinition(javacls.Name)
-			javaconst.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javaconst.Name))
-			
+			javaconst.OverloadIndex = int32(i)
+
+			if i > 0{
+			    javaconst.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v%v", javacls.Name, javaconst.Name, i))
+			} else {
+			    javaconst.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javaconst.Name))
+			}
+
 			comment, err := f.Comment_MetaFFIGetter()
 			if err != nil {
 				return nil, err
@@ -137,16 +143,28 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
+		overloadMap := make(map[string]int)
 		for _, f := range javamethods {
 			name, err := f.Name_MetaFFIGetter()
 			if err != nil {
 				return nil, err
 			}
-			
+
 			javameth := IDL.NewFunctionDefinition(name)
-			
-			javameth.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javameth.Name))
+            if idx, exists := overloadMap[name]; exists{
+                idx += 1
+                javameth.OverloadIndex = int32(idx)
+                overloadMap[name] = idx
+            } else {
+                overloadMap[name] = 0
+            }
+
+            if javameth.OverloadIndex > 0{
+                javameth.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v%v", javacls.Name, javameth.Name, javameth.OverloadIndex))
+            } else {
+                javameth.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javameth.Name))
+            }
 			
 			comment, err := f.Comment_MetaFFIGetter()
 			if err != nil {

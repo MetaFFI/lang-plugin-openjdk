@@ -24,6 +24,7 @@ public class JavaExtractor
 	public JavaInfo extract() throws Exception
 	{
 		JavaParser jp = new JavaParser();
+		System.out.println("Parsing "+this.filename);
 		ParseResult<CompilationUnit> res = jp.parse(new File(this.filename));
 
 		if(!res.isSuccessful())
