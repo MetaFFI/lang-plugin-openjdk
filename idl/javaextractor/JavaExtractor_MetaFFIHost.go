@@ -7,6 +7,8 @@ import "fmt"
 import "unsafe"
 import . "github.com/MetaFFI/lang-plugin-go/go-runtime"
 
+
+
 // function IDs
 
 
@@ -132,114 +134,114 @@ func MetaFFILoad(modulePath string){
 		if err != nil{ // failed
 			panic(err)
 		}
+
 		return id
 	}
 
 	
 	
-	
-	
+
 	
 
 	
 	
-	VariableInfo_Name_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	VariableInfo_Name_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	VariableInfo_Type_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_Type,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	VariableInfo_Type_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_Type,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	VariableInfo_IsStatic_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_IsStatic,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	VariableInfo_IsStatic_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_IsStatic,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	VariableInfo_IsFinal_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_IsFinal,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	VariableInfo_IsFinal_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_get_IsFinal,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
 	
 	
 	
-	VariableInfo_ReleaseVariableInfo_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_ReleaseVariableInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 0)
+	VariableInfo_ReleaseVariableInfo_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_VariableInfo_ReleaseVariableInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 0)
 	
 	
 	
-	ParameterInfo_Name_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ParameterInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ParameterInfo_Name_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ParameterInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	ParameterInfo_Type_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ParameterInfo_get_Type,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ParameterInfo_Type_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ParameterInfo_get_Type,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
 	
 	
 	
-	ParameterInfo_ReleaseParameterInfo_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ParameterInfo_ReleaseParameterInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 0)
+	ParameterInfo_ReleaseParameterInfo_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ParameterInfo_ReleaseParameterInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 0)
 	
 	
 	
-	MethodInfo_Name_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	MethodInfo_Name_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	MethodInfo_IsStatic_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_IsStatic,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	MethodInfo_IsStatic_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_IsStatic,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	MethodInfo_Comment_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_Comment,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	MethodInfo_Comment_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_Comment,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	MethodInfo_Parameters_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_Parameters,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	MethodInfo_Parameters_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_Parameters,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	MethodInfo_ReturnValue_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_ReturnValue,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	MethodInfo_ReturnValue_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_get_ReturnValue,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
 	
 	
 	
-	MethodInfo_ReleaseMethodInfo_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_ReleaseMethodInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 0)
+	MethodInfo_ReleaseMethodInfo_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_MethodInfo_ReleaseMethodInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 0)
 	
 	
 	
-	ClassInfo_Name_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ClassInfo_Name_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Name,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	ClassInfo_Comment_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Comment,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ClassInfo_Comment_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Comment,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	ClassInfo_Package_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Package,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ClassInfo_Package_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Package,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	ClassInfo_Fields_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Fields,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ClassInfo_Fields_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Fields,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	ClassInfo_Methods_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Methods,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ClassInfo_Methods_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Methods,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	ClassInfo_Constructors_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Constructors,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	ClassInfo_Constructors_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_get_Constructors,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
 	
 	
 	
-	ClassInfo_ReleaseClassInfo_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_ReleaseClassInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 0)
+	ClassInfo_ReleaseClassInfo_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_ClassInfo_ReleaseClassInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 0)
 	
 	
 	
-	JavaInfo_Classes_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaInfo_get_Classes,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	JavaInfo_Classes_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaInfo_get_Classes,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
 	
 	
 	
-	JavaInfo_ReleaseJavaInfo_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaInfo_ReleaseJavaInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 0)
+	JavaInfo_ReleaseJavaInfo_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaInfo_ReleaseJavaInfo,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 0)
 	
 	
 	
 	
-	JavaExtractor_extract_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaExtractor_extract,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	JavaExtractor_extract_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaExtractor_extract,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	JavaExtractor_JavaExtractor_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaExtractor_JavaExtractor,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 1)
+	JavaExtractor_JavaExtractor_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaExtractor_JavaExtractor,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 1)
 	
 	
-	JavaExtractor_ReleaseJavaExtractor_id = loadFF(modulePath, "entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaExtractor_ReleaseJavaExtractor,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor", 1, 0)
+	JavaExtractor_ReleaseJavaExtractor_id = loadFF(modulePath, `entrypoint_class=JavaExtractor_Entrypoints,entrypoint_function=EntryPoint_JavaExtractor_ReleaseJavaExtractor,metaffi_guest_lib=JavaExtractor_MetaFFIGuest,module=JavaExtractor,package=java_extractor`, 1, 0)
 	
 	
 	
