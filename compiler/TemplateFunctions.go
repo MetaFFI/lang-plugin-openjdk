@@ -492,8 +492,8 @@ func createLoadFunction(idl *IDL.IDLDefinition, mod *IDL.ModuleDefinition) strin
 
 		/*
 			{{range $findex, $f := $c.Fields}}
-			{{if $f.Getter}}{{$c.Name}}_{{$f.Getter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-			{{if $f.Setter}}{{$c.Name}}_{{$f.Setter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
+			{{if $f.Getter}}{{$c.Name}}_overload{{$f.Getter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+			{{if $f.Setter}}{{$c.Name}}_overload{{$f.Setter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 			{{end}}
 		*/
 		for _, f := range c.Fields {
