@@ -1,4 +1,5 @@
 //go:build windows
+// +build windows
 
 package main
 
@@ -6,9 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"runtime"
 )
-
 
 var src string = `
 package sanity;
@@ -67,7 +66,6 @@ public class TestClass
 `
 
 func TestGoIDLCompiler_Compile(t *testing.T) {
-	runtime.TestingWER = true
 	ioutil.WriteFile("TestClass.java", []byte(src), 0600)
 	defer os.Remove("TestClass.java")
 

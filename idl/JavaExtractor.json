@@ -1010,7 +1010,7 @@
 				}
 			],
 			"globals": [],
-			"external_resources": ["$METAFFI_HOME/JavaExtractor.jar", "$METAFFI_HOME/javaparser-core-3.24.4.jar", "$METAFFI_HOME/JavaExtractor_MetaFFIGuest.jar"]
+			"external_resources": ["$METAFFI_HOME/JavaExtractor.jar", "$METAFFI_HOME/javaparser-core-3.24.4.jar", "$METAFFI_HOME/asm-tree-9.6.jar", "$METAFFI_HOME/asm-9.6.jar","$METAFFI_HOME/JavaExtractor_MetaFFIGuest.jar"]
 		}
 	]
 }

@@ -5,169 +5,70 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
+import java.nio.file.Paths;
+import java.security.InvalidParameterException;
+import java.util.*;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
 
 public class JavaExtractor
 {
+	public static void main(String[] args) throws Exception
+	{
+		JavaExtractor je = new JavaExtractor("C:\\src\\github.com\\MetaFFI\\Tests\\Hosts\\Go\\ToJava\\sanity_bytecode\\sanity\\TestMap.class");
+		JavaInfo ji = je.extract();
+
+		System.out.println(ji);
+	}
+
 	private final String filename;
 
-	public JavaExtractor(String filename) throws Exception
+	public JavaExtractor(String filename) throws RuntimeException
 	{
+		filename = filename.replace("\\", "/");
+
 		File f = new File(filename);
 	    if(!f.exists()) {
-	        throw new Exception("\""+filename + "\" to parse does not exist");
+	        throw new RuntimeException("\""+filename + "\" to parse does not exist");
 	    }
 		this.filename = filename;
 	}
 
 	public JavaInfo extract() throws Exception
 	{
-		JavaParser jp = new JavaParser();
-		System.out.println("Parsing "+this.filename);
-		ParseResult<CompilationUnit> res = jp.parse(new File(this.filename));
-
-		if(!res.isSuccessful())
+		Extractor ext = null;
+		if(this.filename.toLowerCase().endsWith(".java"))
 		{
-			StringBuilder msg = new StringBuilder("Failed to parse " + this.filename + " due to the following:\n");
-
-			for(var prob : res.getProblems())
-			{
-				msg.append(prob.getMessage()).append("\n");
-			}
-
-			throw new Exception(msg.toString());
+			ext = new JavaSourceExtractor();
 		}
-
-		if(res.getResult().isEmpty())
+		else if(this.filename.toLowerCase().endsWith(".class"))
 		{
-			throw new Exception("Failed to find Java classes or interfaces");
+			ext = new BytecodeExtractor();
 		}
-
-		JavaInfo ji = new JavaInfo();
-		List<ClassInfo> classes = new ArrayList<>();
-
-		CompilationUnit cp = res.getResult().get();
-
-		String packageName = "";
-		if(!cp.getPackageDeclaration().isEmpty()){
-			packageName = cp.getPackageDeclaration().get().getName().asString();
-		}
-
-		for(var type : cp.getTypes())
+		else if(this.filename.toLowerCase().endsWith(".jar"))
 		{
-			if(!type.isClassOrInterfaceDeclaration()){ // skip non-class / interface declaration
-				continue;
-			}
-
-			classes.add(fillClassInfo(type, packageName));
-		}
-
-		ji.Classes = classes.toArray(new ClassInfo[0]);
-
-		return ji;
-	}
-
-	private ClassInfo fillClassInfo(TypeDeclaration<?> classType, String packageName)
-	{
-		ClassInfo ci = new ClassInfo();
-		ci.Name = classType.getNameAsString();
-		ci.Package = packageName;
-		if(classType.getComment().isPresent())
-		{
-			ci.Comment = classType.getComment().get().getContent();
-		}
-
-		List<VariableInfo> fields = new ArrayList<>();
-		for(var field : classType.getFields())
-		{
-			if(!field.isPublic())
-				continue;
-
-			VariableInfo vi = new VariableInfo();
-			vi.Name = field.asFieldDeclaration().getVariables().get(0).getNameAsString();
-			vi.Type = field.asFieldDeclaration().getCommonType().asString();
-			vi.IsStatic = field.asFieldDeclaration().isStatic();
-			vi.IsFinal = field.asFieldDeclaration().isFinal();
-
-			fields.add(vi);
-		}
-		ci.Fields = fields.toArray(new VariableInfo[0]);
-
-		List<MethodInfo> constructors = new ArrayList<>();
-
-		if(classType.getConstructors().size() == 0)
-		{
-			// if there are no constructors - Java creates a default one
-			MethodInfo fi = new MethodInfo();
-			fi.Comment = "Default constructor";
-			fi.Name = ci.Name;
-			fi.Parameters = new ParameterInfo[]{};
-			constructors.add(fi);
+			ext = new JarExtractor();
 		}
 		else
 		{
-			for(var constructor : classType.getConstructors())
-			{
-				if(!constructor.isPublic())
-					continue;
-
-				MethodInfo fi = new MethodInfo();
-				if(constructor.getComment().isPresent())
-				{
-					fi.Comment = constructor.getComment().get().getContent();
-				}
-
-				fi.Name = ci.Name;
-
-				List<ParameterInfo> params = new ArrayList<>();
-				for(var param : constructor.getParameters())
-				{
-					ParameterInfo pi = new ParameterInfo();
-					pi.Name = param.getNameAsString();
-					pi.Type = param.getType().asString();
-					params.add(pi);
-				}
-				fi.Parameters = params.toArray(new ParameterInfo[0]);
-
-				constructors.add(fi);
-			}
-			ci.Constructors = constructors.toArray(new MethodInfo[0]);
+			throw new InvalidParameterException(String.format("Unexpected file type: %s", this.filename));
 		}
 
-		List<MethodInfo> methods = new ArrayList<>();
-		for(var method : classType.getMethods())
-		{
-			if(!method.isPublic())
-				continue;
-
-			MethodInfo fi = new MethodInfo();
-			fi.IsStatic = method.isStatic();
-			if(method.getComment().isPresent())
-			{
-				fi.Comment = method.getComment().get().getContent();
-			}
-
-			fi.Name = method.asMethodDeclaration().getName().asString();
-
-			List<ParameterInfo> params = new ArrayList<>();
-			for(var param : method.getParameters())
-			{
-				ParameterInfo pi = new ParameterInfo();
-				pi.Name = param.getNameAsString();
-				pi.Type = param.getType().asString();
-				params.add(pi);
-			}
-			fi.Parameters = params.toArray(new ParameterInfo[0]);
-
-			fi.ReturnValue = new ParameterInfo();
-			fi.ReturnValue.Type = method.getType().asString();
-			fi.ReturnValue.Name = "result";
-
-			methods.add(fi);
-		}
-		ci.Methods = methods.toArray(new MethodInfo[0]);
-
-		return ci;
+		return ext.extract(this.filename);
 	}
+
+
 }

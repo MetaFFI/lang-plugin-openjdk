@@ -24,7 +24,7 @@ func NewJavaIDLCompiler() *JavaIDLCompiler {
 	p := os.Getenv("METAFFI_HOME")
 	ext := compiler.GetDynamicLibSuffix()
 
-	MetaFFILoad(fmt.Sprintf("%v/JavaExtractor_MetaFFIGuest%v;%v/JavaExtractor.jar;%v/javaparser-core-3.24.4.jar;%v/JavaExtractor_MetaFFIGuest.jar", p, ext, p, p, p))
+	MetaFFILoad(fmt.Sprintf("%v/JavaExtractor_MetaFFIGuest%v;%v/JavaExtractor.jar;%v/asm-9.6.jar;%v/asm-tree-9.6.jar;%v/javaparser-core-3.24.4.jar;%v/JavaExtractor_MetaFFIGuest.jar", p, ext, p, p, p, p, p))
 	return &JavaIDLCompiler{}
 }
 
