@@ -39,8 +39,8 @@ public final class {{$m.Name}}_Entrypoints
 
 	{{range $findex, $field := $c.Fields}}
 	{{if $field.Getter}}{{$retvalLength := len $field.Getter.ReturnValues}}{{$f := $field.Getter}}
-    {{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
-    public static void EntryPoint_{{$c.Name}}_get_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
+    {{ReturnValuesClass $f.Name $f.ReturnValues 1 $c}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
+    public static void EntryPoint_{{ClassForName $c.Name}}_get_{{$f.Name}}(long xcall_params) throws MetaFFIException, Throwable
 	{
 		{{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
 
@@ -50,14 +50,14 @@ public final class {{$m.Name}}_Entrypoints
 		{{GetObject $c $f}}
 
 		{{if $f.ReturnValues}}
-		metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ {{if not $f.InstanceRequired}}{{$c.Name}}{{else}}instance{{end}}.{{$field.Name}} }, {{GetMetaFFITypes $f.ReturnValues}} );
+		metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ {{if not $f.InstanceRequired}}{{GetFullClassName $c}}{{else}}instance{{end}}.{{$field.Name}} }, {{GetMetaFFITypes $f.ReturnValues}} );
 		{{end}}
 	}
 	{{end}} {{/* End getter */}}
 
 	{{if $field.Setter}}{{$f := $field.Setter}}{{$retvalLength := len $f.ReturnValues}}
-    {{ReturnValuesClass $f.Name $f.ReturnValues 1}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
-    public static void EntryPoint_{{$c.Name}}_set_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
+    {{ReturnValuesClass $f.Name $f.ReturnValues 1 $c}}{{$returnValuesTypeName := ReturnValuesClassName $f.Name}}
+    public static void EntryPoint_{{ClassForName $c.Name}}_set_{{$f.Name}}(long xcall_params) throws MetaFFIException, Throwable
     {
         {{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
 
@@ -66,13 +66,13 @@ public final class {{$m.Name}}_Entrypoints
 		// get object instance
 		{{GetObject $c $f}}
 
-		{{if not $f.InstanceRequired}}{{$c.Name}}{{else}}instance{{end}}.{{$field.Name}} = ({{ToJavaType $field.Type $field.Dimensions}})parameters[1];
+		{{if not $f.InstanceRequired}}{{GetFullClassName $c}}{{else}}instance{{end}}.{{$field.Name}} = ({{ToJavaType $field.ArgDefinition}})parameters[1];
     }
     {{end}} {{/* End setter */}}
     {{end}} {{/*End Fields*/}}
 
 	{{range $cstrindex, $f := $c.Constructors}}
-	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}(long xcall_params) throws MetaFFIException, Exception
+	public static void EntryPoint_{{ClassForName $c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}(long xcall_params) throws MetaFFIException, Throwable
 	{
 	    //System.out.println("Java EP - EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}");
 		{{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
@@ -89,7 +89,7 @@ public final class {{$m.Name}}_Entrypoints
 	{{end}}
 
 	{{if $c.Releaser}}{{$f := $c.Releaser}}
-	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}(long xcall_params) throws MetaFFIException, Exception
+	public static void EntryPoint_{{ClassForName $c.Name}}_{{$f.Name}}(long xcall_params) throws MetaFFIException, Throwable
 	{
 		{{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
 
@@ -103,14 +103,14 @@ public final class {{$m.Name}}_Entrypoints
 	{{range $findex, $f := $c.Methods}}
 
 	{{$retvalLength := len $f.ReturnValues}}{{$paramsLength := len $f.Parameters}}
-	public static void EntryPoint_{{$c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}(long xcall_params) throws MetaFFIException, Exception
+	public static void EntryPoint_{{ClassForName $c.Name}}_{{$f.Name}}{{$f.GetOverloadIndexIfExists}}(long xcall_params) throws MetaFFIException, Throwable
 	{
 		{{GetCDTSPointers $f.Parameters $f.ReturnValues 2}}
 		{{GetParamsFromCDTS $f.Parameters 2}}
 
 		// call method
 		{{GetObject $c $f}}
-		{{ CallGuestMethod $f 2 }}
+		{{ CallGuestMethod $f 2 $c }}
 
 		{{if $f.ReturnValues}}
         metaffiBridge.java_to_cdts(return_valuesCDTS, new Object[]{ result }, {{GetMetaFFITypes $f.ReturnValues}} );

@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
+	github.com/MetaFFI/lang-plugin-openjdk/idl v0.0.0-20231116161737-5ab7c32c5996
 	github.com/MetaFFI/plugin-sdk v0.0.0-20230606151914-890f29e76128
 	github.com/yargevad/filepathx v1.0.0
 	golang.org/x/text v0.10.0
@@ -23,3 +24,5 @@ require (
 )
 
 replace github.com/MetaFFI/plugin-sdk => ../plugin-sdk
+
+replace github.com/MetaFFI/lang-plugin-openjdk/idl => ../idl

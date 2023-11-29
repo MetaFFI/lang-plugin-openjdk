@@ -80,7 +80,8 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 	void set_numeric_array_to_cdts(jobjectArray objectArray, int index, T*& arr, metaffi_size*& dimensions_lengths, metaffi_size& dimensions, const std::function<T(jobject)>& jobject_to_c)
 	{
 		auto val_to_set = (jobjectArray)(env->GetObjectArrayElement(objectArray, index));
-		jsize len = env->GetArrayLength(val_to_set);
+
+		jsize len = val_to_set == nullptr? 0 : env->GetArrayLength(val_to_set);
 		if(len == 0)
 		{
 			arr = nullptr;
@@ -88,17 +89,19 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 			dimensions_lengths[0] = 0;
 			return;
 		}
-		
+
 		dimensions = 1; // TODO: handle multi-dimensions
 		dimensions_lengths = (metaffi_size*)malloc(sizeof(metaffi_size));
 		dimensions_lengths[0] = len;
-		
+
 		arr = (T*)malloc(sizeof(T)*len);
 		for(jsize i=0 ; i<len ; i++)
 		{
 			auto x = env->GetObjectArrayElement(val_to_set, i);
+
 			arr[i] = jobject_to_c(x);
 		}
+
 	}
 	
 	template<typename T, typename char_t>
@@ -300,23 +303,26 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 			if(!jobj){
 				return nullptr;
 			}
-			
+
 			if(!openjdk_objects_table::instance().contains(jobj))
 			{
 				// if metaffi handle - pass as it is.
 				//printf("\n+++ before IsInstanceOf: jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
-				// happen every time.
+				// happens every time.
 				if(env->IsInstanceOf(jobj, cdts_java::metaffi_handle_class))
 				{//printf("+++ after IsInstanceOf TRUE jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
 					return (metaffi_handle)env->CallLongMethod(jobj, cdts_java::metaffi_handle_get_value);
 				}
+
 				//else{
 				//	printf("+++ after IsInstanceOf FALSE jobj: %p ; cdts_java::metaffi_handle_class: %p\n", jobj, cdts_java::metaffi_handle_class);
 				//}
 				
 				// a java object
 				jobject g_jobj = env->NewGlobalRef(jobj);
+
 				openjdk_objects_table::instance().set(g_jobj);
+
 				return g_jobj;
 			}
 			else
@@ -325,9 +331,9 @@ struct java_cdts_build_callbacks : public cdts_build_callbacks_interface
 			}
 			
 		};
-		
+
 		set_numeric_array_to_cdts<metaffi_handle>((jobjectArray)values_to_set, index+starting_index, parray_to_set, parray_dimensions_lengths, array_dimensions, set_object);
-		
+
 	}
 	
 	void set_metaffi_handle(void* values_to_set, int index, metaffi_handle& val_to_set, int starting_index) override

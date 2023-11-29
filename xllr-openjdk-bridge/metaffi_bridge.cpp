@@ -319,17 +319,17 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 	try
 	{
 		jsize len = env->GetArrayLength(parameters);
-		
+
 		cdts_java wrap(((cdt*) pcdts), len, env);
 		jboolean is_copy = JNI_FALSE;
-		
+
 		jlong* pmtypes_array = env->GetLongArrayElements(pmetaffi_types, &is_copy);
 		wrap.build(parameters, reinterpret_cast<metaffi_types_ptr>(pmtypes_array), len, 0);
-		
+
 		if(is_copy == JNI_TRUE){
 			env->ReleaseLongArrayElements(pmetaffi_types, pmtypes_array, 0);
 		}
-		
+
 		return pcdts;
 	}
 	catch(std::exception& err)

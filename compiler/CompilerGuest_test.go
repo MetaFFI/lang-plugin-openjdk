@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
+	IDL2 "github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"os"
 	"testing"
 )
@@ -155,29 +155,29 @@ public class GuestCode
 }
 `
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 func TestJavaExtractorGuest(t *testing.T) {
-	
+
 	t.Skip("Java IDL plugin not ready yet")
-	
+
 	const pathIDLPlugin = "../../idl-plugin-java/"
-	
+
 	idlJavaExtractor, err := os.ReadFile(pathIDLPlugin + "JavaExtractor.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	
-	def, err := IDL.NewIDLDefinitionFromJSON(string(idlJavaExtractor))
+
+	def, err := IDL2.NewIDLDefinitionFromJSON(string(idlJavaExtractor))
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	err = os.Mkdir("temp_guest2", 0700)
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
-	
+
 	defer func() {
 		err = os.RemoveAll("temp_guest2")
 		if err != nil {
@@ -185,14 +185,54 @@ func TestJavaExtractorGuest(t *testing.T) {
 			return
 		}
 	}()
-	
+
 	cmp := NewGuestCompiler()
-	err = cmp.Compile(def, "temp_guest2", "", "", "")
+	err = cmp.Compile(def, "temp_guest2", "", nil)
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
-	
+
+}
+
+// --------------------------------------------------------------------
+// --------------------------------------------------------------------
+func TestJar(t *testing.T) {
+	//const pathIDLPlugin = "../../idl-plugin-java/"
+
+	idlJavaExtractor, err := os.ReadFile("pdfbox.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	def, err := IDL2.NewIDLDefinitionFromJSON(string(idlJavaExtractor))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	os.RemoveAll("temp_guest2")
+
+	err = os.Mkdir("temp_guest2", 0700)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	defer func() {
+		err = os.RemoveAll("temp_guest2")
+		if err != nil {
+			t.Fatal(err)
+			return
+		}
+	}()
+
+	cmp := NewGuestCompiler()
+	err = cmp.Compile(def, "temp_guest2", "", nil)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
 }
 
 //--------------------------------------------------------------------

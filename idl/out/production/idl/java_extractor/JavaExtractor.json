@@ -1,0 +1,1016 @@
+{
+	"idl_filename": "JavaExtractor",
+	"idl_extension": ".json",
+	"idl_filename_with_extension": "JavaExtractor.json",
+	"idl_full_path": "JavaExtractor.json",
+	"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+	"target_language": "openjdk",
+	"modules": [
+		{
+			"name": "JavaExtractor",
+			"comment": "",
+			"tags": {},
+			"functions": [],
+			"classes": [
+				{
+					"name": "VariableInfo",
+					"comment": "",
+					"tags": {},
+					"constructors": [],
+					"function_path": { "package": "java_extractor" },
+					"release": {
+						"name": "ReleaseVariableInfo",
+						"comment": "Releases object",
+						"tags": {},
+						"function_path": {
+							"entrypoint_class": "JavaExtractor_Entrypoints",
+							"entrypoint_function": "EntryPoint_VariableInfo_ReleaseVariableInfo",
+							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+							"module": "JavaExtractor",
+							"package": "java_extractor"
+						},
+						"parameters": [
+							{
+								"name": "this_instance",
+								"type": "handle",
+								"type_alias": "",
+								"comment": "",
+								"tags": {},
+								"dimensions": 0
+							}
+						],
+						"return_values": []
+					},
+					"methods": [],
+					"fields": [
+						{
+							"name": "Name",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Name",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_VariableInfo_get_Name",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "name",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Type",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Type",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_VariableInfo_get_Type",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "type",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "IsStatic",
+							"type": "bool",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "IsStatic",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_VariableInfo_get_IsStatic",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "IsStatic",
+										"type": "bool",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "IsFinal",
+							"type": "bool",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "IsFinal",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_VariableInfo_get_IsFinal",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "IsFinal",
+										"type": "bool",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						}
+					]
+				},
+				{
+					"name": "ParameterInfo",
+					"comment": "",
+					"tags": {},
+					"constructors": [],
+					"function_path": { "package": "java_extractor" },
+					"release": {
+						"name": "ReleaseParameterInfo",
+						"comment": "Releases object",
+						"tags": {},
+						"function_path": {
+							"entrypoint_class": "JavaExtractor_Entrypoints",
+							"entrypoint_function": "EntryPoint_ParameterInfo_ReleaseParameterInfo",
+							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+							"module": "JavaExtractor"
+						},
+						"parameters": [
+							{
+								"name": "this_instance",
+								"type": "handle",
+								"type_alias": "",
+								"comment": "",
+								"tags": {},
+								"dimensions": 0
+							}
+						],
+						"return_values": []
+					},
+					"methods": [],
+					"fields": [
+						{
+							"name": "Name",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Name",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ParameterInfo_get_Name",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "name",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Type",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Type",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ParameterInfo_get_Type",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "type",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						}
+					]
+				},
+				{
+					"name": "MethodInfo",
+					"comment": "",
+					"tags": {},
+					"constructors": [],
+					"function_path": { "package": "java_extractor" },
+					"release": {
+						"name": "ReleaseMethodInfo",
+						"comment": "Releases object",
+						"tags": {},
+						"function_path": {
+							"entrypoint_class": "JavaExtractor_Entrypoints",
+							"entrypoint_function": "EntryPoint_MethodInfo_ReleaseMethodInfo",
+							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+							"module": "JavaExtractor"
+						},
+						"parameters": [
+							{
+								"name": "this_instance",
+								"type": "handle",
+								"type_alias": "",
+								"comment": "",
+								"tags": {},
+								"dimensions": 0
+							}
+						],
+						"return_values": []
+					},
+					"methods": [],
+					"fields": [
+						{
+							"name": "Name",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Name",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_MethodInfo_get_Name",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "name",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "IsStatic",
+							"type": "bool",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "IsStatic",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_MethodInfo_get_IsStatic",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "IsStatic",
+										"type": "bool",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Comment",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Comment",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_MethodInfo_get_Comment",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "Comment",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Parameters",
+							"type": "handle",
+							"type_alias": "ParameterInfo",
+							"comment": "",
+							"tags": {},
+							"dimensions": 1,
+							"getter": {
+								"name": "Parameters",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_MethodInfo_get_Parameters",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "Parameters",
+										"type": "handle",
+										"type_alias": "ParameterInfo",
+										"comment": "",
+										"tags": {},
+										"dimensions": 1
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "ReturnValue",
+							"type": "handle",
+							"type_alias": "ParameterInfo",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "ReturnValue",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_MethodInfo_get_ReturnValue",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "return_values",
+										"type": "handle",
+										"type_alias": "ParameterInfo",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						}
+					]
+				},
+				{
+					"name": "ClassInfo",
+					"comment": "",
+					"tags": {},
+					"constructors": [],
+					"function_path": { "package": "java_extractor" },
+					"release": {
+						"name": "ReleaseClassInfo",
+						"comment": "Releases object",
+						"tags": {},
+						"function_path": {
+							"entrypoint_class": "JavaExtractor_Entrypoints",
+							"entrypoint_function": "EntryPoint_ClassInfo_ReleaseClassInfo",
+							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+							"module": "JavaExtractor"
+						},
+						"parameters": [
+							{
+								"name": "this_instance",
+								"type": "handle",
+								"type_alias": "",
+								"comment": "",
+								"tags": {},
+								"dimensions": 0
+							}
+						],
+						"return_values": []
+					},
+					"methods": [],
+					"fields": [
+						{
+							"name": "Name",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Name",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ClassInfo_get_Name",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "name",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Comment",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Comment",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ClassInfo_get_Comment",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "Comment",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Package",
+							"type": "string8",
+							"type_alias": "",
+							"comment": "",
+							"tags": {},
+							"dimensions": 0,
+							"getter": {
+								"name": "Package",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ClassInfo_get_Package",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "Package",
+										"type": "string8",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Fields",
+							"type": "handle",
+							"type_alias": "VariableInfo",
+							"comment": "",
+							"tags": {},
+							"dimensions": 1,
+							"getter": {
+								"name": "Fields",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ClassInfo_get_Fields",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "fields",
+										"type": "handle",
+										"type_alias": "VariableInfo",
+										"comment": "",
+										"tags": {},
+										"dimensions": 1
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Methods",
+							"type": "handle",
+							"type_alias": "MethodInfo",
+							"comment": "",
+							"tags": {},
+							"dimensions": 1,
+							"getter": {
+								"name": "Methods",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ClassInfo_get_Methods",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "methods",
+										"type": "handle",
+										"type_alias": "MethodInfo",
+										"comment": "",
+										"tags": {},
+										"dimensions": 1
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						},
+						{
+							"name": "Constructors",
+							"type": "handle",
+							"type_alias": "MethodInfo",
+							"comment": "",
+							"tags": {},
+							"dimensions": 1,
+							"getter": {
+								"name": "Constructors",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_ClassInfo_get_Constructors",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "constructors",
+										"type": "handle",
+										"type_alias": "MethodInfo",
+										"comment": "",
+										"tags": {},
+										"dimensions": 1
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						}
+					]
+				},
+				{
+					"name": "JavaInfo",
+					"comment": "",
+					"tags": {},
+					"constructors": [],
+					"function_path": { "package": "java_extractor" },
+					"release": {
+						"name": "ReleaseJavaInfo",
+						"comment": "Releases object",
+						"tags": {},
+						"function_path": {
+							"entrypoint_class": "JavaExtractor_Entrypoints",
+							"entrypoint_function": "EntryPoint_JavaInfo_ReleaseJavaInfo",
+							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+							"module": "JavaExtractor"
+						},
+						"parameters": [
+							{
+								"name": "this_instance",
+								"type": "handle",
+								"type_alias": "",
+								"comment": "",
+								"tags": {},
+								"dimensions": 0
+							}
+						],
+						"return_values": []
+					},
+					"methods": [],
+					"fields": [
+						{
+							"name": "Classes",
+							"type": "handle",
+							"type_alias": "ClassInfo",
+							"comment": "",
+							"tags": {},
+							"dimensions": 1,
+							"getter": {
+								"name": "Classes",
+								"comment": "",
+								"tags": {},
+								"function_path": {
+									"entrypoint_class": "JavaExtractor_Entrypoints",
+									"entrypoint_function": "EntryPoint_JavaInfo_get_Classes",
+									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+									"module": "JavaExtractor"
+								},
+								"parameters": [
+									{
+										"name": "this_instance",
+										"type": "handle",
+										"type_alias": "",
+										"comment": "",
+										"tags": {},
+										"dimensions": 0
+									}
+								],
+								"return_values": [
+									{
+										"name": "classes",
+										"type": "handle",
+										"type_alias": "ClassInfo",
+										"comment": "",
+										"tags": {},
+										"dimensions": 1
+									}
+								],
+								"instance_required": true
+							},
+							"setter": null
+						}
+					]
+				},
+				{
+					"name": "JavaExtractor",
+					"comment": "",
+					"tags": {},
+					"function_path": { "package": "java_extractor" },
+					"constructors": [
+						{
+							"name": "JavaExtractor",
+							"comment": "",
+							"tags": {},
+							"function_path": {
+								"entrypoint_class": "JavaExtractor_Entrypoints",
+								"entrypoint_function": "EntryPoint_JavaExtractor_JavaExtractor",
+								"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+								"module": "JavaExtractor",
+								"package": "java_extractor"
+							},
+							"parameters": [
+								{
+									"name": "filename",
+									"type": "string8",
+									"type_alias": "",
+									"comment": "",
+									"tags": {},
+									"dimensions": 0
+								}
+							],
+							"return_values": [
+								{
+									"name": "new_instance",
+									"type": "handle",
+									"type_alias": "",
+									"comment": "",
+									"tags": {},
+									"dimensions": 0
+								}
+							]
+						}
+					],
+					"release": {
+						"name": "ReleaseJavaExtractor",
+						"comment": "Releases object",
+						"tags": {},
+						"function_path": {
+							"entrypoint_class": "JavaExtractor_Entrypoints",
+							"entrypoint_function": "EntryPoint_JavaExtractor_ReleaseJavaExtractor",
+							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+							"module": "JavaExtractor"
+						},
+						"parameters": [
+							{
+								"name": "this_instance",
+								"type": "handle",
+								"type_alias": "",
+								"comment": "",
+								"tags": {},
+								"dimensions": 0
+							}
+						],
+						"return_values": []
+					},
+					"methods": [
+						{
+							"name": "extract",
+							"comment": "",
+							"tags": {},
+							"function_path": {
+								"entrypoint_class": "JavaExtractor_Entrypoints",
+								"entrypoint_function": "EntryPoint_JavaExtractor_extract",
+								"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+								"module": "JavaExtractor"
+							},
+							"parameters": [
+								{
+									"name": "this_instance",
+									"type": "handle",
+									"type_alias": "",
+									"comment": "",
+									"tags": {},
+									"dimensions": 0
+								}
+							],
+							"return_values": [
+								{
+									"name": "info",
+									"type": "handle",
+									"type_alias": "JavaInfo",
+									"comment": "",
+									"tags": {},
+									"dimensions": 0
+								}
+							],
+							"instance_required": true
+						}
+					],
+					"fields": []
+				}
+			],
+			"globals": [],
+			"external_resources": ["$METAFFI_HOME/JavaExtractor.jar", "$METAFFI_HOME/javaparser-core-3.24.4.jar", "$METAFFI_HOME/asm-tree-9.6.jar", "$METAFFI_HOME/asm-9.6.jar","$METAFFI_HOME/JavaExtractor_MetaFFIGuest.jar"]
+		}
+	]
+}

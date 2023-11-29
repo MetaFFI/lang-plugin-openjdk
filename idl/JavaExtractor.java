@@ -26,24 +26,11 @@ import java.nio.file.Files;
 
 public class JavaExtractor
 {
-	public static void main(String[] args) throws Exception
-	{
-		JavaExtractor je = new JavaExtractor("C:\\src\\github.com\\MetaFFI\\Tests\\Hosts\\Go\\ToJava\\sanity_bytecode\\sanity\\TestMap.class");
-		JavaInfo ji = je.extract();
-
-		System.out.println(ji);
-	}
-
 	private final String filename;
 
 	public JavaExtractor(String filename) throws RuntimeException
 	{
 		filename = filename.replace("\\", "/");
-
-		File f = new File(filename);
-	    if(!f.exists()) {
-	        throw new RuntimeException("\""+filename + "\" to parse does not exist");
-	    }
 		this.filename = filename;
 	}
 
@@ -58,7 +45,7 @@ public class JavaExtractor
 		{
 			ext = new BytecodeExtractor();
 		}
-		else if(this.filename.toLowerCase().endsWith(".jar"))
+		else if(this.filename.toLowerCase().contains(".jar"))
 		{
 			ext = new JarExtractor();
 		}
