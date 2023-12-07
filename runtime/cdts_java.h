@@ -16,6 +16,8 @@
 #include <vector>
 #include "jvm.h"
 
+
+
 class
 #ifdef _MSC_VER
 	XLLR_OPENJDK_EXPORTS
@@ -36,7 +38,7 @@ public:
 	 */
 	jobjectArray parse();
 	
-	void build(jobjectArray parameters, metaffi_types_ptr parameters_types, int params_count, int starting_index);
+	void build(jobjectArray parameters, metaffi_types_with_alias_ptr parameters_types, int params_count, int starting_index);
 	
 	static jclass float_class;
 	static jmethodID float_constructor;
@@ -88,6 +90,8 @@ public:
 	static jclass metaffi_handle_class;
 	static jmethodID metaffi_handle_constructor;
 	static jmethodID metaffi_handle_get_value;
+	
+	
 	
 private:
 	static std::unordered_map<std::string, metaffi_types> java_to_metaffi_types;

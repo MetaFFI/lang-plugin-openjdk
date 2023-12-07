@@ -984,7 +984,7 @@ jobjectArray cdts_java::parse()
 	return array;
 }
 //--------------------------------------------------------------------
-void cdts_java::build(jobjectArray parameters, metaffi_types_ptr parameters_types, int params_count, int starting_index)
+void cdts_java::build(jobjectArray parameters, metaffi_types_with_alias_ptr parameters_types, int params_count, int starting_index)
 {
 	java_cdts_build_callbacks bc(env);
 	this->cdts.build(parameters_types, params_count, parameters, starting_index, bc);

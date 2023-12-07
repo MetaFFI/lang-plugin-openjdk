@@ -14,6 +14,7 @@
 #include <string>
 #include <functional>
 #include <runtime/cdt_structs.h>
+#include <stdexcept>
 
 #define check_and_throw_jvm_exception(jvm_instance, env, var) \
 if(env->ExceptionCheck() == JNI_TRUE)\

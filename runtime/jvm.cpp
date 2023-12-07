@@ -64,12 +64,12 @@ jvm::jvm()
 
 	// load jvm
 	
-	// FOR WINDOWS: due to bug in Go, in order to load JVM Go executable - lastcontinuehandler() in signal_windows.go
+	// FOR WINDOWS: due to bug in Go, in order to load JVM from Go executable - lastcontinuehandler() in signal_windows.go
 	// must return _EXCEPTION_CONTINUE_SEARCH
 	// https://github.com/golang/go/issues/58542
 
 	jint res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
-
+	
 	check_throw_error(res);
 	is_destroy = true;
 }
@@ -78,7 +78,11 @@ void jvm::fini()
 {
 	if(this->pjvm && is_destroy)
 	{
-		// this->pjvm->DestroyJavaVM(); // TODO: Check why it gets stuck !
+		jint res = this->pjvm->DestroyJavaVM(); // TODO: Check why it gets stuck !
+		if(res != JNI_OK){
+			printf("Failed to destroy JVM: %d\n", res);
+		}
+		
 		this->pjvm = nullptr;
 	}
 }
@@ -188,4 +192,3 @@ jvm::operator JavaVM*()
 {
 	return this->pjvm;
 }
-//--------------------------------------------------------------------
