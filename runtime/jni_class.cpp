@@ -1,6 +1,7 @@
 #include "jni_class.h"
 #include <sstream>
 #include <utils/scope_guard.hpp>
+#include "runtime_id.h"
 
 #define check_and_throw_jvm_exception(jvm_instance, env, var) \
 if(env->ExceptionCheck() == JNI_TRUE)\
@@ -397,9 +398,10 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 	int start_index = instance_required ? 1 : 0;
 	int params_length = params_wrapper.get_cdts_length() - start_index;
 	std::vector<jvalue> args(params_length);
-//	jvalue jv;
+	
 	for (int i = 0; i < params_length; ++i)
 	{
+		// if parameter expects a primitive in its object form - switch to object
 		if(params_wrapper[i+start_index]->type != metaffi_handle_type &&
 				(params_wrapper[i+start_index]->type & metaffi_array_type) == 0 &&
 					any_type_indices.contains(i+start_index))
@@ -407,30 +409,8 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 			params_wrapper.switch_to_object(pjvm, env, i+start_index);
 		}
 		
-//		jv = params_wrapper.to_jvalue(pjvm, env, i + start_index);
-//		if(params_wrapper.is_jobject(i + start_index))
-//		{
-//			jv.l = env->NewGlobalRef(jv.l);
-//			check_and_throw_jvm_exception(pjvm, env, true);
-//			args[i].l = jv.l;
-//		}
-//		else
-//		{
-			args[i] = params_wrapper.to_jvalue(pjvm, env, i + start_index);;
-//		}
+		args[i] = params_wrapper.to_jvalue(pjvm, env, i + start_index);
 	}
-//
-//	metaffi::utils::scope_guard sg([&]()
-//	{
-//		for (int i = 0; i < params_length; ++i)
-//		{
-//			if (params_wrapper.is_jobject(i + start_index))
-//			{
-//				env->DeleteGlobalRef(args[i].l);
-//			}
-//		}
-//	});
-//
 	
 	if(!instance_required)
 	{
@@ -506,6 +486,14 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 	}
 	else
 	{
+		if(params_wrapper[0]->type != metaffi_handle_type){
+			throw std::runtime_error("expected an object in index 0");
+		}
+		
+		if(params_wrapper[0]->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID){
+			throw std::runtime_error("expected Java object");
+		}
+		
 		jobject obj = params_wrapper.to_jvalue(pjvm, env, 0).l;
 		
 		jvalue result;

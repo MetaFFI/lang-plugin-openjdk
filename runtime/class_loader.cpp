@@ -19,6 +19,7 @@ jmethodID jni_class_loader::for_name_method = nullptr;
 jmethodID jni_class_loader::add_url = nullptr;
 jobject jni_class_loader::childURLClassLoader = nullptr;
 bool jni_class_loader::is_bridge_added = false;
+bool jni_class_loader::is_metaffi_handle_loaded = false;
 std::set<std::string> jni_class_loader::loaded_paths;
 std::unordered_map<std::string,jclass> jni_class_loader::loaded_classes;
 
@@ -246,6 +247,14 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 		check_and_throw_jvm_exception(env, true,);
 		
 		is_bridge_added = true;
+	}
+	
+	if(!is_metaffi_handle_loaded)
+	{
+		jobject targetClass = env->CallStaticObjectMethod(class_class, for_name_method, env->NewStringUTF("metaffi.MetaFFIHandle"), JNI_TRUE, childURLClassLoader);
+		check_and_throw_jvm_exception(env, targetClass,);
+		loaded_classes["metaffi/MetaFFIHandle"] = (jclass)targetClass;
+		is_metaffi_handle_loaded = true;
 	}
 	
 	std::string tmp;

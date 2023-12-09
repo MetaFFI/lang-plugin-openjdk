@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <runtime/cdts_wrapper.h>
 #include "cdts_java_wrapper.h"
+#include "runtime_id.h"
 
 // Next time use CATCH_GLOBAL_FIXTURE for setup
 
@@ -207,7 +208,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(3, 0);
 		cdts_java_wrapper wrapper(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper.set(0, testmap_instance);
+		wrapper.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
 		wrapper.set(1, std::string("key"));
 		wrapper.set(2, (int32_t)42);
 
@@ -238,7 +239,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(2, 1);
 		cdts_java_wrapper wrapper_contains_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_contains_params.set(0, testmap_instance);
+		wrapper_contains_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
 		wrapper_contains_params.set(1, std::string("key"));
 
 		long_err_len = 0;
@@ -274,6 +275,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		metaffi::runtime::cdts_wrapper wrapper_get_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len, false);
 		wrapper_get_params[0]->type = metaffi_handle_type;
 		wrapper_get_params[0]->cdt_val.metaffi_handle_val.val = testmap_instance;
+		wrapper_get_params[0]->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 		wrapper_get_params[1]->type = metaffi_string8_type;
 		wrapper_get_params[1]->cdt_val.metaffi_string8_val.val = (char*)"key";
 		wrapper_get_params[1]->cdt_val.metaffi_string8_val.length = strlen("key");
@@ -287,6 +289,149 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		REQUIRE(wrapper_get_ret[0]->type == metaffi_int32_type);
 		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_int32_val.val == 42);
 
+		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
+			free(cdts_param_ret);
+		}
+	}
+	
+	SECTION("runtime_test_target.testmap.set_get_contains_cpp_object")
+	{
+		// create new testmap
+		std::string function_path = "class=sanity.TestMap,callable=<init>";
+		metaffi_type_with_alias retvals_types[] = {{metaffi_handle_type, (char*)"sanity/TestMap", strlen("sanity/TestMap")}};
+		
+		void** pnew_testmap = load_function(module_path.string().c_str(), module_path.string().length(),
+		                                    function_path.c_str(), function_path.length(),
+		                                    nullptr, retvals_types,
+		                                    0, 1,
+		                                    &err, &err_len);
+		
+		if(err){ FAIL(err); }
+		REQUIRE(err_len == 0);
+		REQUIRE(pnew_testmap[0] != nullptr);
+		REQUIRE(pnew_testmap[1] != nullptr);
+		
+		cdts* cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(0, 1);
+		
+		uint64_t long_err_len = 0;
+		((void(*)(void*,cdts*,char**,uint64_t*))pnew_testmap[0])(pnew_testmap[1], (cdts*)cdts_param_ret, &err, &long_err_len);
+		if(err){ FAIL(err); }
+		REQUIRE(long_err_len == 0);
+		
+		metaffi::runtime::cdts_wrapper wrapper_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
+		REQUIRE(wrapper_ret[0]->type == metaffi_handle_type);
+		REQUIRE(wrapper_ret[0]->cdt_val.metaffi_handle_val.val != nullptr);
+		
+		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
+			free(cdts_param_ret);
+		}
+		
+		metaffi_handle testmap_instance = wrapper_ret[0]->cdt_val.metaffi_handle_val.val;
+		
+		// set
+		function_path = "class=sanity.TestMap,callable=set,instance_required";
+		metaffi_type_with_alias params_types[] = {{metaffi_handle_type}, {metaffi_string8_type}, {metaffi_any_type}};
+		
+		void** p_testmap_set = load_function(module_path.string().c_str(), module_path.string().length(),
+		                                     function_path.c_str(), function_path.length(),
+		                                     params_types, nullptr,
+		                                     3, 0,
+		                                     &err, &err_len);
+		
+		if(err){ FAIL(err); }
+		REQUIRE(err_len == 0);
+		REQUIRE(p_testmap_set[0] != nullptr);
+		REQUIRE(p_testmap_set[1] != nullptr);
+		
+		std::vector<int> vec_to_insert = {1,2,3};
+		
+		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(3, 0);
+		cdts_java_wrapper wrapper(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
+		wrapper.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
+		wrapper.set(1, std::string("key"));
+		wrapper.set(2, &vec_to_insert, 733);
+		
+		long_err_len = 0;
+		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_set[0])(p_testmap_set[1], (cdts*)cdts_param_ret, &err, &long_err_len);
+		if(err){ FAIL(err); }
+		REQUIRE(long_err_len == 0);
+		
+		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
+			free(cdts_param_ret);
+		}
+		
+		// contains
+		function_path = "class=sanity.TestMap,callable=contains,instance_required";
+		metaffi_type_with_alias params_contains_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
+		metaffi_type_with_alias retvals_contains_types[] = {{metaffi_bool_type}};
+		
+		void** p_testmap_contains = load_function(module_path.string().c_str(), module_path.string().length(),
+		                                          function_path.c_str(), function_path.length(),
+		                                          params_contains_types, retvals_contains_types,
+		                                          2, 1,
+		                                          &err, &err_len);
+		
+		if(err){ FAIL(err); }
+		REQUIRE(err_len == 0);
+		REQUIRE(p_testmap_contains[0] != nullptr);
+		REQUIRE(p_testmap_contains[1] != nullptr);
+		
+		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(2, 1);
+		cdts_java_wrapper wrapper_contains_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
+		wrapper_contains_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
+		wrapper_contains_params.set(1, std::string("key"));
+		
+		long_err_len = 0;
+		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_contains[0])(p_testmap_contains[1], (cdts*)cdts_param_ret, &err, &long_err_len);
+		if(err){ FAIL(err); }
+		REQUIRE(long_err_len == 0);
+		
+		metaffi::runtime::cdts_wrapper wrapper_contains_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
+		REQUIRE(wrapper_contains_ret[0]->type == metaffi_bool_type);
+		REQUIRE(wrapper_contains_ret[0]->cdt_val.metaffi_bool_val.val != 0);
+		
+		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
+			free(cdts_param_ret);
+		}
+		
+		// get
+		function_path = "class=sanity.TestMap,callable=get,instance_required";
+		metaffi_type_with_alias params_get_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
+		metaffi_type_with_alias retvals_get_types[] = {{metaffi_any_type}};
+		
+		void** p_testmap_get = load_function(module_path.string().c_str(), module_path.string().length(),
+		                                     function_path.c_str(), function_path.length(),
+		                                     params_get_types, retvals_get_types,
+		                                     2, 1,
+		                                     &err, &err_len);
+		
+		if(err){ FAIL(err); }
+		REQUIRE(err_len == 0);
+		REQUIRE(p_testmap_get[0] != nullptr);
+		REQUIRE(p_testmap_get[1] != nullptr);
+		
+		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(2, 1);
+		metaffi::runtime::cdts_wrapper wrapper_get_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len, false);
+		wrapper_get_params[0]->type = metaffi_handle_type;
+		wrapper_get_params[0]->cdt_val.metaffi_handle_val.val = testmap_instance;
+		wrapper_get_params[0]->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+		wrapper_get_params[1]->type = metaffi_string8_type;
+		wrapper_get_params[1]->cdt_val.metaffi_string8_val.val = (char*)"key";
+		wrapper_get_params[1]->cdt_val.metaffi_string8_val.length = strlen("key");
+		
+		long_err_len = 0;
+		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_get[0])(p_testmap_get[1], (cdts*)cdts_param_ret, &err, &long_err_len);
+		if(err){ FAIL(err); }
+		REQUIRE(long_err_len == 0);
+		
+		metaffi::runtime::cdts_wrapper wrapper_get_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
+		REQUIRE(wrapper_get_ret[0]->type == metaffi_handle_type);
+		std::vector<int>* vector_pulled = (std::vector<int>*)wrapper_get_ret[0]->cdt_val.metaffi_handle_val.val;
+		
+		REQUIRE((*vector_pulled)[0] == 1);
+		REQUIRE((*vector_pulled)[1] == 2);
+		REQUIRE((*vector_pulled)[2] == 3);
+		
 		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
 			free(cdts_param_ret);
 		}
@@ -363,7 +508,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		// get name
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(1, 1);
 		cdts_java_wrapper wrapper_name_getter_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_name_getter_params.set(0, testmap_instance);
+		wrapper_name_getter_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
 
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))pget_name[0])(pget_name[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -377,7 +522,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		// set name to "name is my name"
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(2, 0);
 		cdts_java_wrapper wrapper_set_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_set_params.set(0, testmap_instance);
+		wrapper_set_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
 		wrapper_set_params.set(1, std::string("name is my name"));
 		
 		long_err_len = 0;
@@ -388,7 +533,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		// get name again and make sure it is "name is my name"
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(1, 1);
 		cdts_java_wrapper wrapper_last_name_getter_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_name_getter_params.set(0, testmap_instance);
+		wrapper_name_getter_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
 		
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))pget_name[0])(pget_name[1], (cdts*)cdts_param_ret, &err, &long_err_len);

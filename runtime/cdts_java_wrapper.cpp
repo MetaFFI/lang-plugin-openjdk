@@ -1,7 +1,8 @@
 #include "cdts_java_wrapper.h"
 #include <algorithm>
 #include <utility>
-
+#include "runtime_id.h"
+#include "jni_metaffi_handle.h"
 
 //--------------------------------------------------------------------
 cdts_java_wrapper::cdts_java_wrapper(cdt *cdts, metaffi_size cdts_length):metaffi::runtime::cdts_wrapper(cdts, cdts_length, false)
@@ -37,7 +38,16 @@ jvalue cdts_java_wrapper::to_jvalue(std::shared_ptr<jvm> pjvm, JNIEnv* env, int 
 			jval.d = c->cdt_val.metaffi_float64_val.val;
 			break;
 		case metaffi_handle_type:
-			jval.l = static_cast<jobject>(c->cdt_val.metaffi_handle_val.val);
+			// if runtime_id is NOT openjdk, wrap in MetaFFIHandle
+			if(c->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID)
+			{
+				jni_metaffi_handle h(pjvm, env, c->cdt_val.metaffi_handle_val.val, c->cdt_val.metaffi_handle_val.runtime_id);
+				jval.l = h.new_jvm_object(env);
+			}
+			else
+			{
+				jval.l = static_cast<jobject>(c->cdt_val.metaffi_handle_val.val);
+			}
 			break;
 		case metaffi_string8_type:
 		{
@@ -196,8 +206,20 @@ void cdts_java_wrapper::from_jvalue(std::shared_ptr<jvm> pjvm, JNIEnv* env, jval
 			c->type = metaffi_float64_type;
 			break;
 		case metaffi_handle_type:
-			c->cdt_val.metaffi_handle_val.val = val.l;
-			c->type = metaffi_handle_type;
+			// if val.l is MetaFFIHandle - get its inner data
+			if(jni_metaffi_handle::is_metaffi_handle(pjvm, env, val.l))
+			{
+				jni_metaffi_handle h(pjvm, env, val.l);
+				c->cdt_val.metaffi_handle_val.val = h.get_handle();
+				c->cdt_val.metaffi_handle_val.runtime_id = h.get_runtime_id(); // mark as openjdk object
+				c->type = metaffi_handle_type;
+			}
+			else
+			{
+				c->cdt_val.metaffi_handle_val.val = val.l;
+				c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
+				c->type = metaffi_handle_type;
+			}
 			break;
 		case metaffi_bool_type:
 			c->cdt_val.metaffi_bool_val.val = val.z;
@@ -342,6 +364,24 @@ void cdts_java_wrapper::from_jvalue(std::shared_ptr<jvm> pjvm, JNIEnv* env, jval
 			c->cdt_val.metaffi_handle_val.val = val.l;
 			c->type = metaffi_handle_type;
 			switch_to_primitive(pjvm, env, index);
+			
+			if(c->type == metaffi_handle_type)
+			{
+				if(jni_metaffi_handle::is_metaffi_handle(pjvm, env, val.l))
+				{
+					jni_metaffi_handle h(pjvm, env, val.l);
+					c->cdt_val.metaffi_handle_val.val = h.get_handle();
+					c->cdt_val.metaffi_handle_val.runtime_id = h.get_runtime_id(); // mark as openjdk object
+					c->type = metaffi_handle_type;
+				}
+				else
+				{
+					c->cdt_val.metaffi_handle_val.val = val.l;
+					c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
+					c->type = metaffi_handle_type;
+				}
+			}
+			
 		}break;
 		default:
 			std::stringstream ss;
@@ -471,7 +511,6 @@ char cdts_java_wrapper::get_jni_signature(std::shared_ptr<jvm> pjvm, JNIEnv *env
 	}
 	
 	jobject obj = (jobject)((*this)[index]->cdt_val.metaffi_handle_val.val);
-	jclass cls = env->GetObjectClass(obj);
 	
 	// Check if the object is an instance of a primitive type
 	if (env->IsInstanceOf(obj, env->FindClass("java/lang/Integer"))) {
@@ -509,6 +548,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------
@@ -527,6 +567,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------
@@ -543,6 +584,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------
@@ -559,6 +601,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------
@@ -575,6 +618,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------
@@ -591,6 +635,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------
@@ -607,6 +652,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------
@@ -623,6 +669,7 @@ void cdts_java_wrapper::set_object(std::shared_ptr<jvm> pjvm, JNIEnv* env, int i
 	
 	cdt* c = (*this)[index];
 	c->cdt_val.metaffi_handle_val.val = obj;
+	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
 }
 //--------------------------------------------------------------------

@@ -17,6 +17,7 @@
 #include "class_loader.h"
 #include <utils/scope_guard.hpp>
 #include "cdts_java_wrapper.h"
+#include "runtime_id.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -141,7 +142,6 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 		{
 			cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
 			cdts_java_wrapper retvals_wrapper(params_ret[1].pcdt, params_ret[1].len);
-			
 			jni_class cls(pjvm, env, ctxt->cls);
 			cls.call(params_wrapper, retvals_wrapper, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}

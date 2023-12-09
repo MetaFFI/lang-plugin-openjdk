@@ -41,6 +41,7 @@ private:
 	static bool is_bridge_added;
 	static std::set<std::string> loaded_paths;
 	static std::unordered_map<std::string,jclass> loaded_classes;
+	static bool is_metaffi_handle_loaded;
 
 
 public:
