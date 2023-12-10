@@ -10,7 +10,6 @@
 #include <utils/foreign_function.h>
 #include <runtime/cdt_capi_loader.h>
 #include <map>
-#include "cdts_java.h"
 #include "utils/scope_guard.hpp"
 #include "utils/function_path_parser.h"
 #include "utils/library_loader.h"

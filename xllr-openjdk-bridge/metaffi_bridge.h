@@ -13,13 +13,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*
- * Class:     metaffi_MetaFFIBridge
- * Method:    init
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_init
-  (JNIEnv *, jclass);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -84,22 +77,6 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret
 		(JNIEnv *, jobject, jlong);
-
-/*
- * Class:     metaffi_MetaFFIBridge
- * Method:    java_to_cdts
- * Signature: (JB[Ljava/lang/Object;[J)J
- */
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts
-		(JNIEnv *, jobject, jlong, jobjectArray, jlongArray);
-
-/*
- * Class:     metaffi_MetaFFIBridge
- * Method:    cdts_to_java
- * Signature: (J[J)[Ljava/lang/Object;
- */
-JNIEXPORT jobjectArray JNICALL Java_metaffi_MetaFFIBridge_cdts_1to_1java
-  (JNIEnv *, jobject, jlong, jlong);
 
 
 /*

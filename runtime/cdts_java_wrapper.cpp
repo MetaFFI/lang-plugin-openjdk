@@ -119,7 +119,7 @@ jvalue cdts_java_wrapper::to_jvalue(std::shared_ptr<jvm> pjvm, JNIEnv* env, int 
 			check_and_throw_jvm_exception(pjvm, env, true);
 			for (int i = 0; i < c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0]; ++i)
 			{
-				env->SetObjectArrayElement(arr, i, reinterpret_cast<jobject>(c->cdt_val.metaffi_handle_array_val.vals[i]));
+				env->SetObjectArrayElement(arr, i, reinterpret_cast<jobject>(c->cdt_val.metaffi_handle_array_val.vals[i].val));
 				check_and_throw_jvm_exception(pjvm, env, true);
 			}
 			jval.l = arr;
@@ -351,10 +351,11 @@ void cdts_java_wrapper::from_jvalue(std::shared_ptr<jvm> pjvm, JNIEnv* env, jval
 			c->cdt_val.metaffi_handle_array_val.dimensions = 1;
 			c->cdt_val.metaffi_handle_array_val.dimensions_lengths = new metaffi_size[1];
 			c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0] = len;
-			c->cdt_val.metaffi_handle_array_val.vals = new metaffi_handle[len];
+			c->cdt_val.metaffi_handle_array_val.vals = new cdt_metaffi_handle[len];
 			for (int i = 0; i < len; ++i)
 			{
-				c->cdt_val.metaffi_handle_array_val.vals[i] = env->GetObjectArrayElement(arr, i);
+				c->cdt_val.metaffi_handle_array_val.vals[i].val = env->GetObjectArrayElement(arr, i);
+				c->cdt_val.metaffi_handle_array_val.vals[i].runtime_id = OPENJDK_RUNTIME_ID;
 			}
 		} break;
 		case metaffi_any_type:

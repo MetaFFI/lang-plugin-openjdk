@@ -323,7 +323,7 @@ void jni_class::write_cdts_to_field(int index, cdts_java_wrapper& wrapper, jobje
 			jobjectArray arr = env->NewObjectArray(c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0], cls, nullptr);
 			for (int i = 0; i < c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0]; ++i)
 			{
-				env->SetObjectArrayElement(arr, i, reinterpret_cast<jobject>(c->cdt_val.metaffi_handle_array_val.vals[i]));
+				env->SetObjectArrayElement(arr, i, reinterpret_cast<jobject>(c->cdt_val.metaffi_handle_array_val.vals[i].val));
 			}
 			if (is_static)
 			{
