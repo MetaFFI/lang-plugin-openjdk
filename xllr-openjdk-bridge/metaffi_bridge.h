@@ -33,10 +33,10 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin
 /*
  * Class:     metaffi_MetaFFIBridge
  * Method:    load_function
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;BB)Ljava/lang/Object;
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;
  */
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function
-		(JNIEnv *, jobject, jstring, jstring, jstring, jbyte, jbyte);
+		(JNIEnv *, jobject, jstring, jstring, jstring, jobjectArray, jobjectArray);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -110,6 +110,22 @@ JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object
 		(JNIEnv *, jobject, jlong);
+
+ /*
+  * Class:     metaffi_MetaFFIBridge
+  * Method:    java_to_cdts
+  * Signature: (JB[Ljava/lang/Object;[J)J
+  */
+ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts
+   (JNIEnv *, jobject, jlong, jobjectArray, jlongArray);
+
+ /*
+  * Class:     metaffi_MetaFFIBridge
+  * Method:    cdts_to_java
+  * Signature: (JJ)[Ljava/lang/Object;
+  */
+ JNIEXPORT jobjectArray JNICALL Java_metaffi_MetaFFIBridge_cdts_1to_1java
+   (JNIEnv *, jobject, jlong, jlong);
 
 
 #ifdef __cplusplus

@@ -5,6 +5,7 @@
 #include <utils/expand_env.h>
 #include <utils/function_path_parser.h>
 #include <utils/foreign_function.h>
+#include "exception_macro.h"
 
 #define EXCEPTION_ACCESS_VIOLATION 0xc0000005
 
@@ -158,10 +159,10 @@ void jvm::load_function_path(const std::string& function_path, jclass* cls, jmet
 	//*cls = this->load_class(fp[function_path_entry_metaffi_guest_lib],
     //                               std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]); // prepend entry point package name;
 	*cls = penv->FindClass((std::string("metaffi_guest/")+fp[function_path_entrypoint_class]).c_str());
-	check_and_throw_jvm_exception(this, penv, *cls);
+	check_and_throw_jvm_exception(penv, *cls);
 	
 	*meth = penv->GetStaticMethodID(*cls, (fp[function_path_entry_entrypoint_function]).c_str(), ("(J)V"));
-	check_and_throw_jvm_exception(this, penv, *meth);
+	check_and_throw_jvm_exception(penv, *meth);
 	
 }
 //--------------------------------------------------------------------
@@ -170,21 +171,26 @@ std::string jvm::get_exception_description(jthrowable throwable)
 	JNIEnv* penv;
 	auto release_env = this->get_environment(&penv);
 	scope_guard sg_env([&](){ release_env(); });
-	
+
+	return get_exception_description(penv, throwable);
+}
+//--------------------------------------------------------------------
+std::string jvm::get_exception_description(JNIEnv* penv, jthrowable throwable)
+{
 	penv->ExceptionClear();
-	
+
 	jclass throwable_class = penv->FindClass("java/lang/Throwable");
-	check_and_throw_jvm_exception(this, penv, throwable_class);
-	
+	check_and_throw_jvm_exception(penv, throwable_class);
+
 	jmethodID throwable_toString = penv->GetMethodID(throwable_class,"toString","()Ljava/lang/String;");
-	check_and_throw_jvm_exception(this, penv, throwable_toString);
-	
+	check_and_throw_jvm_exception(penv, throwable_toString);
+
 	jobject str = penv->CallObjectMethod(throwable, throwable_toString);
-	check_and_throw_jvm_exception(this, penv, str);
-	
+	check_and_throw_jvm_exception(penv, str);
+
 	scope_guard sg([&](){ penv->DeleteLocalRef(str); });
 	std::string res(penv->GetStringUTFChars((jstring)str, nullptr));
-	
+
 	return res;
 }
 //--------------------------------------------------------------------

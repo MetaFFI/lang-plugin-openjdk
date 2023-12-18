@@ -198,25 +198,25 @@ public class BytecodeExtractor implements Extractor
     private static String convertType(Type type)
     {
         switch (type.getSort()) {
-            case Type.BOOLEAN:
+            case Type.FieldType_BOOLEAN:
                 return "boolean";
-            case Type.CHAR:
+            case Type.FieldType_CHAR:
                 return "char";
-            case Type.BYTE:
+            case Type.FieldType_BYTE:
                 return "byte";
-            case Type.SHORT:
+            case Type.FieldType_SHORT:
                 return "short";
-            case Type.INT:
+            case Type.FieldType_INT:
                 return "int";
-            case Type.FLOAT:
+            case Type.FieldType_FLOAT:
                 return "float";
-            case Type.LONG:
+            case Type.FieldType_LONG:
                 return "long";
-            case Type.DOUBLE:
+            case Type.FieldType_DOUBLE:
                 return "double";
             case Type.ARRAY:
                 return convertType(type.getElementType()) + "[]";
-            case Type.OBJECT:
+            case Type.FieldType_OBJECT:
                 return type.getClassName().replace("java.lang.", "");
             case Type.VOID:
                 return "void";

@@ -27,7 +27,7 @@ public:
 	void free();
 	
 	void set(jobject obj);
-	void remove(jobject obj);
+	void remove(JNIEnv* env, jobject obj);
 	bool contains(jobject obj) const;
 	
 	size_t size() const;

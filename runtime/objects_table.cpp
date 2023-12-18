@@ -7,10 +7,7 @@ void openjdk_objects_table_impl::free()
 	std::unique_lock l(m);
 	
 	// TODO: Reference count handling
-//	for(auto it : this->objects)
-//	{
-//		Py_DecRef(it);
-//	}
+
 }
 //--------------------------------------------------------------------
 void openjdk_objects_table_impl::set(jobject obj)
@@ -21,12 +18,11 @@ void openjdk_objects_table_impl::set(jobject obj)
 	if(it != this->objects.end()){
 		return;
 	}
-	
-//	Py_IncRef(obj); // TODO: Reference count handling
+
 	this->objects.insert(obj);
 }
 //--------------------------------------------------------------------
-void openjdk_objects_table_impl::remove(jobject obj)
+void openjdk_objects_table_impl::remove(JNIEnv* env, jobject obj)
 {
 	std::unique_lock l(m);
 	
@@ -34,8 +30,12 @@ void openjdk_objects_table_impl::remove(jobject obj)
 	if(it == this->objects.end()){
 		return;
 	}
-	
-//	Py_DecRef(obj); // TODO: Reference count handling
+
+	if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+	{
+		env->DeleteGlobalRef(obj);
+	}
+
 	this->objects.erase(obj);
 }
 //--------------------------------------------------------------------
@@ -51,8 +51,8 @@ size_t openjdk_objects_table_impl::size() const
 	return this->objects.size();
 }
 //--------------------------------------------------------------------
-void openjdk_release_object(metaffi_handle h)
+void openjdk_release_object(JNIEnv* env, metaffi_handle h)
 {
-	openjdk_objects_table::instance().remove((jobject)h);
+	openjdk_objects_table::instance().remove(env, (jobject)h);
 }
 //--------------------------------------------------------------------

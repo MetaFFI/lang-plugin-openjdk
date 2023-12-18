@@ -45,7 +45,7 @@ private:
 
 
 public:
-	jni_class_loader(std::shared_ptr<jvm> pjvm, JNIEnv* env, std::string class_path);
+	jni_class_loader(JNIEnv* env, std::string class_path);
 	~jni_class_loader() = default;
 	
 	jni_class load_class(const std::string& class_name);

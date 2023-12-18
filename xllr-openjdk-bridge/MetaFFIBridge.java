@@ -4,10 +4,9 @@ import java.io.*;
 
 public class MetaFFIBridge
 {
-	private static native void init();
 	public native void load_runtime_plugin(String runtime_plugin);
 	public native void free_runtime_plugin(String runtime_plugin);
-	public native long load_function(String runtime_plugin, String module_path, String function_path, byte params_count, byte retval_count);
+	public native long load_function(String runtime_plugin, String module_path, String function_path, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
 	public native void free_function(String runtime_plugin, long function_id);
 	public native void xcall_params_ret(long function_id, long xcall_params);
 	public native long xcall_no_params_ret(long function_id, long xcall_params);
@@ -25,9 +24,10 @@ public class MetaFFIBridge
 		String xllrExtension = System.mapLibraryName("xllr.openjdk.jni.bridge");
 		xllrExtension = xllrExtension.substring(xllrExtension.lastIndexOf("."));
 		String metaffiHome = System.getenv("METAFFI_HOME");
-		System.load(metaffiHome+"/xllr.openjdk.jni.bridge"+xllrExtension);
 
-		MetaFFIBridge.init();
+		System.out.println(metaffiHome+"/xllr.openjdk.jni.bridge"+xllrExtension);
+
+		System.load(metaffiHome+"/xllr.openjdk.jni.bridge"+xllrExtension);
 	}
 
 	//--------------------------------------------------------------------

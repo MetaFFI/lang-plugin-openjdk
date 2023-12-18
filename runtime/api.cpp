@@ -98,7 +98,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 			{
 				if (!ctxt->instance_required)
 				{
-					jni_class cls(pjvm, env, ctxt->cls);
+					jni_class cls(env, ctxt->cls);
 					cdts_java_wrapper wrapper(params_ret[1].pcdt, params_ret[1].len);
 					cls.write_field_to_cdts(0, wrapper, nullptr, ctxt->field, ctxt->field_or_return_type);
 				}
@@ -113,7 +113,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 					
 					jobject thisobj = (jobject) params_wrapper[0]->cdt_val.metaffi_handle_val.val;
 					
-					jni_class cls(pjvm, env, ctxt->cls);
+					jni_class cls(env, ctxt->cls);
 					cdts_java_wrapper retval_wrapper(params_ret[1].pcdt, params_ret[1].len);
 					cls.write_field_to_cdts(0, retval_wrapper, thisobj, ctxt->field, ctxt->field_or_return_type);
 				}
@@ -124,7 +124,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 				{
 					cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
 					
-					jni_class cls(pjvm, env, ctxt->cls);
+					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(0, params_wrapper, nullptr, ctxt->field);
 				}
 				else
@@ -132,7 +132,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 					cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
 					jobject thisobj = (jobject) params_wrapper.get_metaffi_handle(0);
 					
-					jni_class cls(pjvm, env, ctxt->cls);
+					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);
 				}
 			}
@@ -141,7 +141,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 		{
 			cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
 			cdts_java_wrapper retvals_wrapper(params_ret[1].pcdt, params_ret[1].len);
-			jni_class cls(pjvm, env, ctxt->cls);
+			jni_class cls(env, ctxt->cls);
 			cls.call(params_wrapper, retvals_wrapper, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
 	}
@@ -176,7 +176,7 @@ void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err, uint
 				{
 					cdts_java_wrapper params_wrapper(parameters[0].pcdt, parameters[0].len);
 					
-					jni_class cls(pjvm, env, ctxt->cls);
+					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(0, params_wrapper, nullptr, ctxt->field);
 				}
 				else
@@ -189,7 +189,7 @@ void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err, uint
 					
 					jobject thisobj = (jobject)params_wrapper[0]->cdt_val.metaffi_handle_val.val;
 					
-					jni_class cls(pjvm, env, ctxt->cls);
+					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);
 				}
 			}
@@ -199,7 +199,7 @@ void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err, uint
 			cdts_java_wrapper params_wrapper(parameters[0].pcdt, parameters[0].len);
 			cdts_java_wrapper dummy(parameters[1].pcdt, parameters[1].len);
 			
-			jni_class cls(pjvm, env, ctxt->cls);
+			jni_class cls(env, ctxt->cls);
 			cls.call(params_wrapper, dummy, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
 	}
@@ -229,7 +229,7 @@ void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err, u
 			{
 				if (!ctxt->instance_required)
 				{
-					jni_class cls(pjvm, env, ctxt->cls);
+					jni_class cls(env, ctxt->cls);
 					cdts_java_wrapper wrapper(return_values[1].pcdt, return_values[1].len);
 					cls.write_field_to_cdts(0, wrapper, nullptr, ctxt->field, ctxt->field_or_return_type);
 				}
@@ -248,7 +248,7 @@ void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err, u
 			cdts_java_wrapper dummy(return_values[0].pcdt, return_values[0].len);
 			cdts_java_wrapper retvals_wrapper(return_values[1].pcdt, return_values[1].len);
 			
-			jni_class cls(pjvm, env, ctxt->cls);
+			jni_class cls(env, ctxt->cls);
 			cls.call(dummy, retvals_wrapper, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
 	}
@@ -288,7 +288,7 @@ void xcall_no_params_no_ret(void* context, char** out_err, uint64_t* out_err_len
 		{
 			cdts_java_wrapper dummy(nullptr, 0);
 			
-			jni_class cls(pjvm, env, ctxt->cls);
+			jni_class cls(env, ctxt->cls);
 			cls.call(dummy, dummy, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
 	}
@@ -319,7 +319,7 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 		
 		std::string classToLoad = fp["class"];
 		
-		jni_class_loader cloader(pjvm, env, std::string(module_path, module_path_len));
+		jni_class_loader cloader(env, std::string(module_path, module_path_len));
 		
 		openjdk_context* ctxt = new openjdk_context();
 		

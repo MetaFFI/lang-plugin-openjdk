@@ -13,13 +13,13 @@ private:
 	static jmethodID get_runtime_id_id;
 	static jmethodID metaffi_handle_constructor;
 	
-	jni_metaffi_handle(std::shared_ptr<jvm> pjvm, JNIEnv* env);
+	jni_metaffi_handle(JNIEnv* env);
 	
 public:
-	static bool is_metaffi_handle(const std::shared_ptr<jvm>& pjvm, JNIEnv* env, jobject o);
+	static bool is_metaffi_handle_wrapper_object(JNIEnv* env, jobject o);
 	
-	jni_metaffi_handle(std::shared_ptr<jvm> pjvm, JNIEnv* env, metaffi_handle v, uint64_t runtime_id);
-	jni_metaffi_handle(std::shared_ptr<jvm> pjvm, JNIEnv* env, jobject obj);
+	jni_metaffi_handle(JNIEnv* env, metaffi_handle v, uint64_t runtime_id);
+	jni_metaffi_handle(JNIEnv* env, jobject obj);
 	
 	metaffi_handle get_handle();
 	uint64_t get_runtime_id();

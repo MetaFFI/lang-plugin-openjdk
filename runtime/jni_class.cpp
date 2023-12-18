@@ -2,21 +2,11 @@
 #include <sstream>
 #include <utils/scope_guard.hpp>
 #include "runtime_id.h"
-
-#define check_and_throw_jvm_exception(jvm_instance, env, var) \
-if(env->ExceptionCheck() == JNI_TRUE)\
-{\
-std::string err_msg = jvm_instance->get_exception_description(env->ExceptionOccurred());\
-throw std::runtime_error(err_msg);\
-}\
-else if(!var)\
-{\
-throw std::runtime_error("Failed to get " #var);\
-}
+#include "exception_macro.h"
 
 
 //--------------------------------------------------------------------
-jni_class::jni_class(std::shared_ptr<jvm> pjvm, JNIEnv* env, jclass cls):pjvm(pjvm), env(env),cls(cls){}
+jni_class::jni_class(JNIEnv* env, jclass cls):env(env),cls(cls){}
 
 //--------------------------------------------------------------------
 jmethodID jni_class::load_method(const std::string& method_name, const argument_definition& return_type, const std::vector<argument_definition>& parameters_types, bool instance_required)
@@ -41,7 +31,7 @@ jmethodID jni_class::load_method(const std::string& method_name, const argument_
 		id = env->GetMethodID(cls, method_name.c_str(), sig.c_str());
 	}
 	
-	check_and_throw_jvm_exception(pjvm, env, id);
+	check_and_throw_jvm_exception(env, id);
 	return id;
 }
 //--------------------------------------------------------------------
@@ -50,7 +40,7 @@ jfieldID jni_class::load_field(const std::string& field_name, const argument_def
 	jfieldID id = !instance_required ? env->GetStaticFieldID(cls, field_name.c_str(), field_type.to_jni_signature_type().c_str()) :
 	              env->GetFieldID(cls, field_name.c_str(), field_type.to_jni_signature_type().c_str());
 	
-	check_and_throw_jvm_exception(pjvm, env, id);
+	check_and_throw_jvm_exception(env, id);
 	return id;
 }
 //--------------------------------------------------------------------
@@ -62,43 +52,43 @@ void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobje
 	{
 		case metaffi_bool_type:
 			val.z = is_static? env->GetStaticBooleanField(cls, field_id) : env->GetBooleanField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int8_type:
 			val.b = is_static? env->GetStaticByteField(cls, field_id) : env->GetByteField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_uint16_type:
 			val.c = is_static? env->GetStaticCharField(cls, field_id) : env->GetCharField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int16_type:
 			val.s = is_static? env->GetStaticShortField(cls, field_id) : env->GetShortField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int32_type:
 			val.i = is_static? env->GetStaticIntField(cls, field_id) : env->GetIntField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int64_type:
 			val.j = is_static? env->GetStaticLongField(cls, field_id) : env->GetLongField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_float32_type:
 			val.f = is_static? env->GetStaticFloatField(cls, field_id) : env->GetFloatField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_float64_type:
 			val.d = is_static? env->GetStaticDoubleField(cls, field_id) : env->GetDoubleField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int8_array_type:
 		case metaffi_bool_array_type:
@@ -116,9 +106,9 @@ void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobje
 		case metaffi_string16_array_type:
 		case metaffi_any_type:
 			val.l = is_static? env->GetStaticObjectField(cls, field_id) : env->GetObjectField(obj, field_id);
-			check_and_throw_jvm_exception(pjvm, env, true);
-			wrapper.from_jvalue(pjvm, env, val, t, index);
-			wrapper.switch_to_primitive(pjvm, env, index);
+			check_and_throw_jvm_exception(env, true);
+			wrapper.from_jvalue(env, val, t, index);
+			wrapper.switch_to_primitive(env, index);
 			break;
 		
 		default:
@@ -390,7 +380,7 @@ void jni_class::write_cdts_to_field(int index, cdts_java_wrapper& wrapper, jobje
 			
 	}
 	
-	check_and_throw_jvm_exception(pjvm, env, true);
+	check_and_throw_jvm_exception(env, true);
 }
 //--------------------------------------------------------------------
 void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wrapper& retval_wrapper, metaffi_type retval_type, bool instance_required, bool is_constructor, const std::set<uint8_t>& any_type_indices, jmethodID method)
@@ -406,10 +396,10 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				(params_wrapper[i+start_index]->type & metaffi_array_type) == 0 &&
 					any_type_indices.contains(i+start_index))
 		{
-			params_wrapper.switch_to_object(pjvm, env, i+start_index);
+			params_wrapper.switch_to_object(env, i+start_index);
 		}
 		
-		args[i] = params_wrapper.to_jvalue(pjvm, env, i + start_index);
+		args[i] = params_wrapper.to_jvalue(env, i + start_index);
 	}
 	
 	if(!instance_required)
@@ -419,48 +409,48 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 		{
 			case metaffi_int32_type:
 				result.i = env->CallStaticIntMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_int64_type:
 				result.j = env->CallStaticLongMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_int16_type:
 				result.s = env->CallStaticShortMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_int8_type:
 				result.b = env->CallStaticByteMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_float32_type:
 				result.f = env->CallStaticFloatMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_float64_type:
 				result.d = env->CallStaticDoubleMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_handle_type:
 				result.l = is_constructor ? env->NewObject(cls, method, args.data()) : env->CallStaticObjectMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
-				retval_wrapper.switch_to_primitive(pjvm, env, 0); // switch to metaffi primitive, if possible
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
+				retval_wrapper.switch_to_primitive(env, 0); // switch to metaffi primitive, if possible
 				break;
 			case metaffi_null_type:
 				env->CallStaticVoidMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
+				check_and_throw_jvm_exception(env, true);
 				break;
 			case metaffi_string8_type:
 				result.l = env->CallStaticObjectMethodA(cls, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_int8_array_type:
 			case metaffi_int16_array_type:
@@ -474,8 +464,8 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 			case metaffi_string16_array_type:
 			{
 				result.l = static_cast<jobjectArray>(env->CallStaticObjectMethodA(cls, method, args.data()));
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				env->DeleteLocalRef(result.l);
 			} break;
 			default:
@@ -494,52 +484,52 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 			throw std::runtime_error("expected Java object");
 		}
 		
-		jobject obj = params_wrapper.to_jvalue(pjvm, env, 0).l;
+		jobject obj = params_wrapper.to_jvalue(env, 0).l;
 		
 		jvalue result;
 		switch (retval_type)
 		{
 			case metaffi_int32_type:
 				result.i = env->CallIntMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_int64_type:
 				result.j = env->CallLongMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_int16_type:
 				result.s = env->CallShortMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_int8_type:
 				result.b = env->CallByteMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_float32_type:
 				result.f = env->CallFloatMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_float64_type:
 				result.d = env->CallDoubleMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_any_type:
 			case metaffi_handle_type:
 				result.l = env->CallObjectMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_bool_type:
 			{
 				result.z = env->CallBooleanMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 			}	break;
 			case metaffi_int8_array_type:
 			case metaffi_int16_array_type:
@@ -553,13 +543,13 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 			case metaffi_string16_array_type:
 			{
 				result.l = static_cast<jobject>(env->CallObjectMethodA(obj, method, args.data()));
-				check_and_throw_jvm_exception(pjvm, env, true);
-				retval_wrapper.from_jvalue(pjvm, env, result, retval_type, 0);
+				check_and_throw_jvm_exception(env, true);
+				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				env->DeleteLocalRef(result.l);
 			} break;
 			case metaffi_null_type:
 				env->CallVoidMethodA(obj, method, args.data());
-				check_and_throw_jvm_exception(pjvm, env, true);
+				check_and_throw_jvm_exception(env, true);
 				break;
 			default:
 				std::stringstream ss;
@@ -586,40 +576,40 @@ std::string jni_class::get_method_name(JNIEnv *env, jclass cls, jmethodID mid) c
 {
 	// Get the Class class
 	jclass classClass = env->FindClass("java/lang/Class");
-	check_and_throw_jvm_exception(pjvm, env, true);
+	check_and_throw_jvm_exception(env, true);
 	
 	// Get the getDeclaredMethods method ID
 	jmethodID midGetDeclaredMethods = env->GetMethodID(classClass, "getDeclaredMethods", "()[Ljava/lang/reflect/Method;");
-	check_and_throw_jvm_exception(pjvm, env, true);
+	check_and_throw_jvm_exception(env, true);
 	
 	// Call getDeclaredMethods
 	jobjectArray methods = (jobjectArray)env->CallObjectMethod(cls, midGetDeclaredMethods);
-	check_and_throw_jvm_exception(pjvm, env, true);
+	check_and_throw_jvm_exception(env, true);
 	
 	// Get the Method class
 	jclass classMethod = env->FindClass("java/lang/reflect/Method");
-	check_and_throw_jvm_exception(pjvm, env, true);
+	check_and_throw_jvm_exception(env, true);
 	
 	// Get the getName method ID
 	jmethodID midGetName = env->GetMethodID(classMethod, "getName", "()Ljava/lang/String;");
-	check_and_throw_jvm_exception(pjvm, env, true);
+	check_and_throw_jvm_exception(env, true);
 	
 	jsize methodCount = env->GetArrayLength(methods);
-	check_and_throw_jvm_exception(pjvm, env, true);
+	check_and_throw_jvm_exception(env, true);
 	
 	for (int i = 0; i < methodCount; i++)
 	{
 		jobject method = env->GetObjectArrayElement(methods, i);
-		check_and_throw_jvm_exception(pjvm, env, true);
+		check_and_throw_jvm_exception(env, true);
 		
 		// If the method IDs match, return the name
 		if (env->FromReflectedMethod(method) == mid)
 		{
 			jstring name = (jstring)env->CallObjectMethod(method, midGetName);
-			check_and_throw_jvm_exception(pjvm, env, true);
+			check_and_throw_jvm_exception(env, true);
 			
 			const char* nameStr = env->GetStringUTFChars(name, nullptr);
-			check_and_throw_jvm_exception(pjvm, env, true);
+			check_and_throw_jvm_exception(env, true);
 			
 			std::string methodName(nameStr);  // Convert to std::string
 			env->ReleaseStringUTFChars(name, nameStr);  // Release the C string

@@ -3,7 +3,6 @@
 
 #include "argument_definition.h"
 #include <vector>
-#include <memory>
 #include <runtime/cdts_wrapper.h>
 #include "cdts_java_wrapper.h"
 
@@ -13,10 +12,9 @@ class jni_class
 private:
 	JNIEnv* env;
 	jclass cls;
-	std::shared_ptr<jvm> pjvm;
 
 public:
-	jni_class(std::shared_ptr<jvm> pjvm, JNIEnv* env, jclass cls);
+	jni_class(JNIEnv* env, jclass cls);
 	~jni_class() = default;
 	
 	jmethodID load_method(const std::string& method_name, const argument_definition& return_type, const std::vector<argument_definition>& parameters_types, bool is_static);

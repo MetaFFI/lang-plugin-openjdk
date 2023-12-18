@@ -135,7 +135,7 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	return res;
 }
 //--------------------------------------------------------------------
-jni_class_loader::jni_class_loader(std::shared_ptr<jvm> pjvm, JNIEnv* env, std::string class_path):pjvm(std::move(pjvm)),env(env),class_path(std::move(class_path))
+jni_class_loader::jni_class_loader(JNIEnv* env, std::string class_path):env(env),class_path(std::move(class_path))
 {}
 //--------------------------------------------------------------------
 jni_class jni_class_loader::load_class(const std::string& class_name)
@@ -148,7 +148,7 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	if(auto it = loaded_classes.find(class_name); it != loaded_classes.end())
 	{
 		//printf("+++ already loaded %s\n", class_name);
-		return jni_class(pjvm, env, it->second);
+		return jni_class(env, it->second);
 	}
 	
 	// get class loader
@@ -156,6 +156,7 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	{
 		class_loader_class = env->FindClass("java/lang/ClassLoader");
 		check_and_throw_jvm_exception(env, class_loader_class,);
+		class_loader_class = (jclass)env->NewGlobalRef(class_loader_class);
 	}
 	
 	if(!get_system_class_loader_method)
@@ -168,6 +169,7 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	{
 		url_class_loader = env->FindClass("java/net/URLClassLoader");
 		check_and_throw_jvm_exception(env, url_class_loader,);
+		url_class_loader = (jclass)env->NewGlobalRef(url_class_loader);
 	}
 	
 	if(!url_class_loader_constructor)
@@ -194,6 +196,8 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 		// new URL[]{ urlInstance }
 		url_class = env->FindClass("java/net/URL");
 		check_and_throw_jvm_exception(env, url_class,);
+
+		url_class = (jclass)env->NewGlobalRef(url_class);
 	}
 	
 	if(!url_class_constructor)
@@ -207,6 +211,8 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 		// Class targetClass = Class.forName(class_name, true, child);
 		class_class = env->FindClass("java/lang/Class");
 		check_and_throw_jvm_exception(env, class_class,);
+
+		class_class = (jclass)env->NewGlobalRef(class_class);
 	}
 	
 	if(!for_name_method)
@@ -251,10 +257,15 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	
 	if(!is_metaffi_handle_loaded)
 	{
-		jobject targetClass = env->CallStaticObjectMethod(class_class, for_name_method, env->NewStringUTF("metaffi.MetaFFIHandle"), JNI_TRUE, childURLClassLoader);
+		jobject targetClass = env->FindClass("metaffi/MetaFFIHandle");
 		check_and_throw_jvm_exception(env, targetClass,);
-		loaded_classes["metaffi/MetaFFIHandle"] = (jclass)targetClass;
+		loaded_classes["metaffi/MetaFFIHandle"] = (jclass)env->NewGlobalRef(targetClass);
 		is_metaffi_handle_loaded = true;
+
+		if(class_name == "metaffi/MetaFFIHandle")
+		{
+			return {env, (jclass)targetClass};
+		}
 	}
 	
 	std::string tmp;
@@ -297,7 +308,7 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	check_and_throw_jvm_exception(env, targetClass,);
 	loaded_classes[class_name] = (jclass)targetClass;
 	
-	return {pjvm, env, (jclass)targetClass};
+	return {env, (jclass)targetClass};
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
