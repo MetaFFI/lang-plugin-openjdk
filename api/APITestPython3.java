@@ -3,9 +3,11 @@ import metaffi.*;
 import org.junit.*;
 import org.junit.Assert.*;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 public class APITestPython3
 {
@@ -137,5 +139,21 @@ public class APITestPython3
 		testMapSetName.call(testMap, "NewName");
 
 		org.junit.Assert.assertEquals("NewName", ((Object[])testMapGetName.call(testMap))[0]);
+	}
+
+	@Test
+	public void testCallback() throws NoSuchMethodException
+	{
+		MetaFFIRuntime runtime = new MetaFFIRuntime("openjdk");
+		runtime.loadRuntimePlugin();
+		Method m = APITestPython3.class.getDeclaredMethod("add", int.class, int.class);
+		api.Caller c = api.MetaFFIRuntime.makeMetaFFICallable(m);
+		var r = c.call(1, 2);
+		org.junit.Assert.assertEquals(3, r[0]);
+	}
+
+	public static int add(int x, int y)
+	{
+		return x+y;
 	}
 }

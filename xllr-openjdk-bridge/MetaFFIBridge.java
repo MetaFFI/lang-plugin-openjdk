@@ -7,6 +7,7 @@ public class MetaFFIBridge
 	public native void load_runtime_plugin(String runtime_plugin);
 	public native void free_runtime_plugin(String runtime_plugin);
 	public native long load_function(String runtime_plugin, String module_path, String function_path, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
+	public native long load_callable(String runtime_plugin, Object method, String jni_signature, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
 	public native void free_function(String runtime_plugin, long function_id);
 	public native void xcall_params_ret(long function_id, long xcall_params);
 	public native long xcall_no_params_ret(long function_id, long xcall_params);

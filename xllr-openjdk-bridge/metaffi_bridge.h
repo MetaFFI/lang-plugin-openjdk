@@ -38,6 +38,14 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function
 		(JNIEnv *, jobject, jstring, jstring, jstring, jobjectArray, jobjectArray);
 
+ /*
+  * Class:     metaffi_MetaFFIBridge
+  * Method:    load_callable
+  */
+ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable
+   (JNIEnv *, jobject, jstring, jobject, jstring, jobjectArray, jobjectArray);
+
+
 /*
  * Class:     metaffi_MetaFFIBridge
  * Method:    free_function

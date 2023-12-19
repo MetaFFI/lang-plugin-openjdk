@@ -69,4 +69,73 @@ public class MetaFFITypeWithAlias
 		this.value = metaffiType.value;
 		this.alias = alias;
 	}
+
+	public MetaFFITypeWithAlias(String jniCharType)
+    {
+        this(jniCharType, null);
+    }
+
+	public MetaFFITypeWithAlias(String jniCharType, String alias)
+    {
+        this.alias = alias;
+
+		switch(jniCharType.toUpperCase())
+		{
+			case "Z":
+				this.type = MetaFFITypes.MetaFFIBool;
+				break;
+            case "B":
+                this.type = MetaFFITypes.MetaFFIInt8;
+                break;
+            case "C":
+                this.type = MetaFFITypes.MetaFFIUInt16;
+                break;
+            case "S":
+                this.type = MetaFFITypes.MetaFFIInt16;
+                break;
+            case "I":
+                this.type = MetaFFITypes.MetaFFIInt32;
+                break;
+            case "J":
+                this.type = MetaFFITypes.MetaFFIInt64;
+                break;
+            case "F":
+                this.type = MetaFFITypes.MetaFFIFloat32;
+                break;
+            case "D":
+                this.type = MetaFFITypes.MetaFFIFloat64;
+                break;
+            case "[Z":
+                this.type = MetaFFITypes.MetaFFIBoolArray;
+                break;
+            case "[B":
+                this.type = MetaFFITypes.MetaFFIInt8Array;
+                break;
+            case "[C":
+                this.type = MetaFFITypes.MetaFFIUInt16Array;
+                break;
+            case "[S":
+                this.type = MetaFFITypes.MetaFFIInt16Array;
+                break;
+            case "[I":
+                this.type = MetaFFITypes.MetaFFIInt32Array;
+                break;
+            case "[J":
+                this.type = MetaFFITypes.MetaFFIInt64Array;
+                break;
+            case "[F":
+                this.type = MetaFFITypes.MetaFFIFloat32Array;
+                break;
+            case "[D":
+                this.type = MetaFFITypes.MetaFFIFloat64Array;
+                break;
+            default:
+                if(jniCharType.contains("java/lang/Object"))
+                    this.type = MetaFFITypes.MetaFFIAny;
+                else
+                    this.type = MetaFFITypes.MetaFFIHandle;
+		}
+
+        this.value = this.type.value;
+    }
 }

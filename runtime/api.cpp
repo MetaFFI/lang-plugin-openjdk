@@ -17,6 +17,7 @@
 #include <utils/scope_guard.hpp>
 #include "cdts_java_wrapper.h"
 #include "runtime_id.h"
+#include "contexts.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -50,17 +51,6 @@ catch(...)\
 	*err_len = len;\
 }
 
-struct openjdk_context
-{
-	jclass cls = nullptr;
-	jmethodID method = nullptr;
-	jfieldID field = nullptr;
-	bool instance_required = false;
-	bool is_getter = false;
-	bool constructor = false;
-	metaffi_type field_or_return_type = metaffi_null_type;
-	std::set<uint8_t> any_type_indices;
-};
 
 //--------------------------------------------------------------------
 void load_runtime(char** /*err*/, uint32_t* /*err_len*/)
@@ -413,6 +403,62 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 	}
 	catch_and_fill(err, err_len);
 	
+	return res;
+}
+//--------------------------------------------------------------------
+void** load_callable(void* load_callable_context, metaffi_types_with_alias_ptr params_types, metaffi_types_with_alias_ptr retvals_types, uint8_t params_count, uint8_t retval_count, char** err, uint32_t* err_len)
+{
+	void** res = nullptr;
+	try
+	{
+		openjdk_context* ctxt = (openjdk_context*)load_callable_context;
+
+		void* entrypoint = nullptr;
+
+		// set in context and parameters indices of "any_type"
+		for(uint8_t i=0 ; i<params_count ; i++)
+		{
+			if(params_types[i].type == metaffi_any_type){
+				ctxt->any_type_indices.insert(i);
+			}
+		}
+
+
+		if(retval_count > 1){
+			throw std::runtime_error("Java does not support multiple return values");
+		}
+
+		std::vector<argument_definition> parameters;
+		if(params_count > 0)
+		{
+			int i = ctxt->instance_required ? 1 : 0; // if instance required, skip "this"
+			for(; i<params_count ; i++){
+				parameters.emplace_back(params_types[i]);
+			}
+		}
+
+		ctxt->field_or_return_type = retval_count == 0 ? metaffi_null_type : retvals_types[0].type;
+
+		entrypoint = (params_count == 0 && retval_count == 0) ? (void*)xcall_no_params_no_ret  :
+		             (params_count > 0 && retval_count == 0) ? (void*)xcall_params_no_ret :
+		             (params_count == 0 && retval_count > 0) ? (void*)xcall_no_params_ret :
+		             (params_count > 0 && retval_count > 0) ? (void*)xcall_params_ret :
+					 nullptr;
+
+		if(!entrypoint)
+		{
+			std::stringstream ss;
+			ss << "Failed to detect suitable entrypoint. Params count: " << params_count << ". Retvals count: " << retval_count;
+			throw std::runtime_error(ss.str().c_str());
+		}
+
+		res = (void**)malloc(sizeof(void*)*2);
+
+		res[0] = (void*)entrypoint;
+		res[1] = ctxt;
+	}
+	catch_and_fill(err, err_len);
+
 	return res;
 }
 //--------------------------------------------------------------------

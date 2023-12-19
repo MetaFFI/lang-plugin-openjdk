@@ -11,6 +11,7 @@
 #include "../runtime/objects_table.h"
 #include "../runtime/cdts_java_wrapper.h"
 #include "../runtime/exception_macro.h"
+#include "../runtime/contexts.h"
 
 // JNI to call XLLR from java
 
@@ -162,6 +163,135 @@ metaffi_types_with_alias_ptr convert_MetaFFITypeWithAlias_array_to_metaffi_type_
 
 	// Return the output array as a jlong (this is actually a pointer)
 	return reinterpret_cast<metaffi_types_with_alias_ptr>(outputArray);
+}
+//--------------------------------------------------------------------
+jmethodID get_method_id_from_Method(JNIEnv* env, jclass methodClass, jobject methodObject, jstring jniSignature, jboolean& isStatic)
+{
+	// Get Method and Modifier classes and method IDs we're going to need
+	jclass classMethod = env->FindClass("java/lang/reflect/Method");
+	jclass classModifier = env->FindClass("java/lang/reflect/Modifier");
+	jmethodID midGetDeclaringClass = env->GetMethodID(classMethod, "getDeclaringClass", "()Ljava/lang/Class;");
+	jmethodID midGetName = env->GetMethodID(classMethod, "getName", "()Ljava/lang/String;");
+	jmethodID midGetModifiers = env->GetMethodID(classMethod, "getModifiers", "()I");
+	jmethodID midIsStatic = env->GetStaticMethodID(classModifier, "isStatic", "(I)Z");
+
+	// Call getDeclaringClass, getName, getModifiers methods
+	jobject declaringClassObject = env->CallObjectMethod(methodObject, midGetDeclaringClass);
+	jstring nameObject = (jstring)env->CallObjectMethod(methodObject, midGetName);
+	jint modifiers = env->CallIntMethod(methodObject, midGetModifiers);
+
+	// Call Modifier.isStatic method
+	isStatic = env->CallStaticBooleanMethod(classModifier, midIsStatic, modifiers);
+
+	// Get the declaring class
+	jclass declaringClass = (jclass)env->NewLocalRef(declaringClassObject);
+
+	// Get the method name
+	const char* name = env->GetStringUTFChars(nameObject, 0);
+
+	// Get the JNI signature
+	const char* signature = env->GetStringUTFChars(jniSignature, 0);
+
+	// Get the method ID
+	jmethodID mid;
+	if (isStatic == JNI_TRUE) {
+		mid = env->GetStaticMethodID(declaringClass, name, signature);
+	} else {
+		mid = env->GetMethodID(declaringClass, name, signature);
+	}
+
+	// Clean up local references and release the strings
+	env->DeleteLocalRef(declaringClass);
+	env->ReleaseStringUTFChars(nameObject, name);
+	env->ReleaseStringUTFChars(jniSignature, signature);
+
+	return mid;
+}
+//--------------------------------------------------------------------
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, jobject obj, jstring runtime_plugin, jobject method, jstring method_jni_signature, jobjectArray parameters_types, jobjectArray retval_types)
+{
+	try
+	{
+		const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
+		check_and_throw_jvm_exception(env, str_runtime_plugin);
+
+		jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
+		check_and_throw_jvm_exception(env, str_runtime_plugin_len);
+
+		jclass cls = env->GetObjectClass(method);
+		check_and_throw_jvm_exception(env, true);
+
+		jboolean out_is_static = JNI_FALSE;
+		jmethodID method_id = get_method_id_from_Method(env, cls, method, method_jni_signature, out_is_static);
+
+
+		jsize params_count = parameters_types == nullptr ? 0 : env->GetArrayLength(parameters_types);
+		check_and_throw_jvm_exception(env, true);
+
+		jsize retval_count = retval_types == nullptr ? 0 : env->GetArrayLength(retval_types);
+		check_and_throw_jvm_exception(env, true);
+
+		metaffi_types_with_alias_ptr pparams_types = parameters_types == nullptr ?
+													nullptr :
+													convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(env, parameters_types);
+
+		metaffi_types_with_alias_ptr pretval_types = retval_types == nullptr ?
+		                                             nullptr :
+		                                             convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(env, retval_types);
+
+		char* out_err_buf = nullptr;
+		uint32_t out_err_len = 0;
+
+		openjdk_context* pctxt = new openjdk_context();
+		pctxt->cls = cls;
+		pctxt->method = method_id;
+		pctxt->instance_required = out_is_static == JNI_FALSE;
+		pctxt->constructor = false;
+
+		void* xcall_and_context = xllr->load_callable(str_runtime_plugin, str_runtime_plugin_len, (void*)pctxt,
+										pparams_types, pretval_types,
+										(uint8_t)params_count, (uint8_t)retval_count, &out_err_buf, &out_err_len);
+
+		env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);
+
+		if(params_count > 0)
+		{
+			for(int i=0 ; i<params_count ; i++)
+			{
+				if(pparams_types[i].alias_length > 0)
+				{
+					free(pparams_types[i].alias);
+				}
+			}
+			delete[] pparams_types;
+		}
+
+		if(retval_count > 0)
+		{
+			for(int i=0 ; i<retval_count ; i++)
+			{
+				if(pretval_types[i].alias_length > 0)
+				{
+					free(pretval_types[i].alias);
+				}
+			}
+			delete[] pretval_types;
+		}
+
+		// set to out_err
+		if(!xcall_and_context)
+		{
+			throwMetaFFIException(env, out_err_buf);
+			return -1;
+		}
+
+		return (jlong)xcall_and_context;
+	}
+	catch(std::exception& err)
+	{
+		throwMetaFFIException(env, err.what());
+		return 0;
+	}
 }
 //--------------------------------------------------------------------
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jstring module_path, jstring function_path, jobjectArray parameters_types, jobjectArray retval_types)
