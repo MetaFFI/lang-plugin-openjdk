@@ -5,6 +5,7 @@
 #include "jni_metaffi_handle.h"
 #include "exception_macro.h"
 #include "utils/tracer.h"
+#include "jni_caller.h"
 
 //--------------------------------------------------------------------
 cdts_java_wrapper::cdts_java_wrapper(cdt *cdts, metaffi_size cdts_length):metaffi::runtime::cdts_wrapper(cdts, cdts_length, false)
@@ -168,6 +169,44 @@ jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 			
 			jval.l = arr;
 		}break;
+
+		case metaffi_callable_type:
+		{
+			// return LoadCallable.CallableWithArgs instance by calling LoadCallable.load()
+
+			jclass load_callable_cls = env->FindClass("metaffi/Caller");
+			check_and_throw_jvm_exception(env, true);
+
+			jmethodID create_caller = env->GetStaticMethodID(load_callable_cls, "createCaller", "(J[J[J)Lmetaffi/Caller;");
+			check_and_throw_jvm_exception(env, true);
+
+			// Convert parameters_types to Java long[]
+			jlongArray jParametersTypesArray = env->NewLongArray(c->cdt_val.metaffi_callable_val.params_types_length);
+			env->SetLongArrayRegion(jParametersTypesArray, 0, c->cdt_val.metaffi_callable_val.params_types_length, (const jlong*)c->cdt_val.metaffi_callable_val.parameters_types);
+
+			// Convert retval_types to Java long[]
+			jlongArray jRetvalsTypesArray = env->NewLongArray(c->cdt_val.metaffi_callable_val.retval_types_length);
+			env->SetLongArrayRegion(jRetvalsTypesArray, 0, c->cdt_val.metaffi_callable_val.retval_types_length, (const jlong*)c->cdt_val.metaffi_callable_val.retval_types);
+
+
+			jval.l = env->CallStaticObjectMethod(load_callable_cls, create_caller,
+												c->cdt_val.metaffi_callable_val.val,
+												jParametersTypesArray,
+												jRetvalsTypesArray);
+			check_and_throw_jvm_exception(env, true);
+
+			if(env->GetObjectRefType(jParametersTypesArray) == JNILocalRefType)
+			{
+				env->DeleteLocalRef(jParametersTypesArray);
+			}
+
+			if(env->GetObjectRefType(jRetvalsTypesArray) == JNILocalRefType)
+			{
+				env->DeleteLocalRef(jRetvalsTypesArray);
+			}
+
+		}break;
+
 		default:
 			std::stringstream ss;
 			ss << "Unsupported type to convert to Java: " << c->type;
@@ -222,6 +261,17 @@ void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, metaffi_type type, 
 				c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
 				c->type = metaffi_handle_type;
 			}
+			break;
+		case metaffi_callable_type:
+			// get from val.l should be Caller class
+			if(!is_caller_class(env, val.l))
+			{
+				throw std::runtime_error("caller_type expects metaffi.Caller object");
+			}
+			fill_callable_cdt(env, val.l, c->cdt_val.metaffi_callable_val.val,
+								c->cdt_val.metaffi_callable_val.parameters_types, c->cdt_val.metaffi_callable_val.params_types_length,
+								c->cdt_val.metaffi_callable_val.retval_types, c->cdt_val.metaffi_callable_val.retval_types_length);
+			c->type = metaffi_callable_type;
 			break;
 		case metaffi_bool_type:
 			c->cdt_val.metaffi_bool_val.val = val.z;
@@ -376,7 +426,7 @@ void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, metaffi_type type, 
 			// returned type is an object, we need to *try* and switch it to primitive if it
 			// can be converted to primitive
 			c->cdt_val.metaffi_handle_val.val = val.l;
-			c->cdt_val.metaffi_handle_val.runtime_id = 0;
+			c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 			c->type = metaffi_handle_type;
 
 			switch_to_primitive(env, index);
@@ -490,7 +540,12 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (metaffi_int32)this->get_object_as_int32(env, i));
-			env->DeleteGlobalRef(obj);
+
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
+
 		}
 		break;
 		
@@ -504,7 +559,10 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (metaffi_int64)this->get_object_as_int64(env, i));
-			env->DeleteGlobalRef(obj);
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
 		}break;
 
 		case 'S':
@@ -518,7 +576,10 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (metaffi_int16)this->get_object_as_int16(env, i));
-			env->DeleteGlobalRef(obj);
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
 		}
 		break;
 		
@@ -533,7 +594,10 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (metaffi_int8)this->get_object_as_int8(env, i));
-			env->DeleteGlobalRef(obj);
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
 		}
 		break;
 		
@@ -547,7 +611,10 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (metaffi_uint16)this->get_object_as_uint16(env, i));
-			env->DeleteGlobalRef(obj);
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
 		}
 		break;
 		
@@ -561,7 +628,10 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (metaffi_float32)this->get_object_as_float32(env, i));
-			env->DeleteGlobalRef(obj);
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
 		}
 		break;
 		
@@ -575,7 +645,10 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (metaffi_float64)this->get_object_as_float64(env, i));
-			env->DeleteGlobalRef(obj);
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
 		}
 		break;
 		
@@ -589,7 +662,10 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
 			this->set(i, (bool)this->get_object_as_bool(env, i));
-			env->DeleteGlobalRef(obj);
+			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
+			{
+				env->DeleteGlobalRef(obj);
+			}
 		}
 		break;
 	}

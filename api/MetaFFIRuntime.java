@@ -12,7 +12,6 @@ import java.util.function.Function;
 public class MetaFFIRuntime
 {
 	public final String runtimePlugin;
-	public static metaffi.MetaFFIBridge metaffiBridge = new metaffi.MetaFFIBridge();
 
 	public MetaFFIRuntime(String runtimePlugin)
 	{
@@ -21,12 +20,12 @@ public class MetaFFIRuntime
 
 	public void loadRuntimePlugin()
 	{
-		metaffiBridge.load_runtime_plugin("xllr."+this.runtimePlugin);
+		metaffi.MetaFFIBridge.load_runtime_plugin("xllr."+this.runtimePlugin);
 	}
 
 	public void releaseRuntimePlugin()
 	{
-		metaffiBridge.free_runtime_plugin("xllr."+this.runtimePlugin);
+		metaffi.MetaFFIBridge.free_runtime_plugin("xllr."+this.runtimePlugin);
 	}
 
 	public api.MetaFFIModule loadModule(String modulePath)
@@ -34,7 +33,7 @@ public class MetaFFIRuntime
 		return new api.MetaFFIModule(this, modulePath);
 	}
 
-	public static api.Caller makeMetaFFICallable(Method m) throws NoSuchMethodException
+	public static metaffi.Caller makeMetaFFICallable(Method m) throws NoSuchMethodException
 	{
 		ArrayList<MetaFFITypeWithAlias> outParameters = new ArrayList<>();
 		ArrayList<MetaFFITypeWithAlias> outRetvals = new ArrayList<>();
@@ -42,9 +41,9 @@ public class MetaFFIRuntime
 
 		var params = outParameters.toArray(new MetaFFITypeWithAlias[]{});
 		var retvals = outRetvals.toArray(new MetaFFITypeWithAlias[]{});
-		long xcall_and_context = metaffiBridge.load_callable("xllr.openjdk", m, jniSignature, params, retvals);
+		long xcall_and_context = metaffi.MetaFFIBridge.load_callable("xllr.openjdk", m, jniSignature, params, retvals);
 
-		return api.Caller.createCaller(xcall_and_context, params, (byte)retvals.length);
+		return metaffi.Caller.createCaller(xcall_and_context, params, retvals.length > 0 ? retvals[0] : null);
 	}
 
 	private static String getJNISignature(Method method, List<MetaFFITypeWithAlias> outParameters, List<MetaFFITypeWithAlias> outRetvals) throws NoSuchMethodException

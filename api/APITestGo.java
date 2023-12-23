@@ -31,7 +31,7 @@ public class APITestGo
 	public void testHelloWorld()
 	{
 		// Load helloworld
-		api.Caller pff = module.load("callable=HelloWorld", null, null);
+		metaffi.Caller pff = module.load("callable=HelloWorld", null, null);
 		pff.call();
 	}
 
@@ -39,7 +39,7 @@ public class APITestGo
 	public void testReturnsAnError()
 	{
 		// Load helloworld
-		api.Caller pff = module.load("callable=ReturnsAnError", null, null);
+		metaffi.Caller pff = module.load("callable=ReturnsAnError", null, null);
 
 		try
 		{
@@ -56,7 +56,7 @@ public class APITestGo
 	public void testDivIntegers()
 	{
 		// Load helloworld
-		api.Caller pff = module.load("callable=DivIntegers",
+		metaffi.Caller pff = module.load("callable=DivIntegers",
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64) },
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIFloat32) });
 
@@ -68,7 +68,7 @@ public class APITestGo
 	@Test
 	public void testJoinStrings()
 	{
-		api.Caller pff = module.load("callable=JoinStrings",
+		metaffi.Caller pff = module.load("callable=JoinStrings",
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8Array) },
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8) });
 
@@ -80,19 +80,19 @@ public class APITestGo
 	@Test
 	public void testMapSetGetContains()
 	{
-		api.Caller newTestMap = module.load("callable=NewTestMap",
+		metaffi.Caller newTestMap = module.load("callable=NewTestMap",
 				null,
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle) });
 
-		api.Caller testMapSet = module.load("callable=TestMap.Set,instance_required",
+		metaffi.Caller testMapSet = module.load("callable=TestMap.Set,instance_required",
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny) },
 				null);
 
-		api.Caller testMapContains = module.load("callable=TestMap.Contains,instance_required",
+		metaffi.Caller testMapContains = module.load("callable=TestMap.Contains,instance_required",
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8) },
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIBool) });
 
-		api.Caller testMapGet = module.load("callable=TestMap.Get,instance_required",
+		metaffi.Caller testMapGet = module.load("callable=TestMap.Get,instance_required",
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8) },
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny) });
 
@@ -118,15 +118,15 @@ public class APITestGo
 	@Test
 	public void testMapName()
 	{
-		api.Caller newTestMap = module.load("callable=NewTestMap",
+		metaffi.Caller newTestMap = module.load("callable=NewTestMap",
 				null,
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle) });
 
-		api.Caller testMapSetName = module.load("field=TestMap.Name,instance_required,setter",
+		metaffi.Caller testMapSetName = module.load("field=TestMap.Name,instance_required,setter",
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
 				null);
 
-		api.Caller testMapGetName = module.load("field=TestMap.Name,instance_required,getter",
+		metaffi.Caller testMapGetName = module.load("field=TestMap.Name,instance_required,getter",
 				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
 				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)});
 

@@ -17,15 +17,15 @@ public class MetaFFIModule
 
 
 
-	public api.Caller load(String functionPath, metaffi.MetaFFITypeWithAlias[] parametersTypes, metaffi.MetaFFITypeWithAlias[] retvalsTypes)
+	public metaffi.Caller load(String functionPath, metaffi.MetaFFITypeWithAlias[] parametersTypes, metaffi.MetaFFITypeWithAlias[] retvalsTypes)
 	{
 
-		var xcallAndContext = api.MetaFFIRuntime.metaffiBridge.load_function(
-																"xllr."+this.runtime.runtimePlugin,
-																this.modulePath,
-																functionPath,
-																parametersTypes,
-																retvalsTypes);
+		var xcallAndContext = metaffi.MetaFFIBridge.load_function(
+															"xllr."+this.runtime.runtimePlugin,
+															this.modulePath,
+															functionPath,
+															parametersTypes,
+															retvalsTypes);
 
 		// Return a Caller object that wraps a lambda that calls the foreign object
 		byte paramsCount = parametersTypes != null ? (byte)parametersTypes.length : 0;
@@ -35,6 +35,6 @@ public class MetaFFIModule
 		// parametersArray - Object[] with parameters
 		// return value is an Object of the expected type
 		// or null if calling function is void.
-		return api.Caller.createCaller(xcallAndContext, parametersTypes, retvalsCount);
+		return metaffi.Caller.createCaller(xcallAndContext, parametersTypes, (retvalsTypes != null && retvalsTypes.length > 0) ? retvalsTypes[0] : null);
 	}
 }

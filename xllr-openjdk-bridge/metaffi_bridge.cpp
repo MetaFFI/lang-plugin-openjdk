@@ -39,20 +39,20 @@ bool throwMetaFFIException( JNIEnv* env,  const char* message )
 	return res == 0;
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_load_1runtime_1plugin(JNIEnv* env, jobject obj, jstring runtime_plugin)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_load_1runtime_1plugin(JNIEnv* env, jclass , jstring runtime_plugin)
 {
 	try
 	{
 		const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
 		jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
-		
+
 		char* out_err_buf = nullptr;
 		uint32_t out_err_len = 0;
 		xllr->load_runtime_plugin(str_runtime_plugin, str_runtime_plugin_len, &out_err_buf, &out_err_len);
-		
+
 		// release runtime_plugin
 		env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);
-		
+
 		// set to out_err
 		if(out_err_buf)
 		{
@@ -67,20 +67,20 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_load_1runtime_1plugin(JNIEnv* 
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* env, jobject obj, jstring runtime_plugin)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* env, jclass , jstring runtime_plugin)
 {
 	try
 	{
 		const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
 		jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
-		
+
 		char* out_err_buf = nullptr;
 		uint32_t out_err_len = 0;
 		xllr->free_runtime_plugin(str_runtime_plugin, str_runtime_plugin_len, &out_err_buf, &out_err_len);
-		
+
 		// release runtime_plugin
 		env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);
-		
+
 		// set to out_err
 		if(out_err_buf)
 		{
@@ -208,7 +208,7 @@ jmethodID get_method_id_from_Method(JNIEnv* env, jclass methodClass, jobject met
 	return mid;
 }
 //--------------------------------------------------------------------
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, jobject obj, jstring runtime_plugin, jobject method, jstring method_jni_signature, jobjectArray parameters_types, jobjectArray retval_types)
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, jclass , jstring runtime_plugin, jobject method, jstring method_jni_signature, jobjectArray parameters_types, jobjectArray retval_types)
 {
 	try
 	{
@@ -248,7 +248,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 		pctxt->instance_required = out_is_static == JNI_FALSE;
 		pctxt->constructor = false;
 
-		void* xcall_and_context = xllr->load_callable(str_runtime_plugin, str_runtime_plugin_len, (void*)pctxt,
+		void* xcall_and_context = xllr->make_callable(str_runtime_plugin, str_runtime_plugin_len, (void*)pctxt,
 										pparams_types, pretval_types,
 										(uint8_t)params_count, (uint8_t)retval_count, &out_err_buf, &out_err_len);
 
@@ -294,7 +294,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jstring module_path, jstring function_path, jobjectArray parameters_types, jobjectArray retval_types)
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, jclass , jstring runtime_plugin, jstring module_path, jstring function_path, jobjectArray parameters_types, jobjectArray retval_types)
 {
 	try
 	{
@@ -329,7 +329,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 		metaffi_types_with_alias_ptr pretval_types = retval_types == nullptr ?
 		                                             nullptr :
 		                                             convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(env, retval_types);
-		
+
 		char* out_err_buf = nullptr;
 		uint32_t out_err_len = 0;
 
@@ -383,51 +383,28 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1function(JNIEnv* env, jobject obj, jstring runtime_plugin, jlong function_id)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1function(JNIEnv* env, jclass , jstring runtime_plugin, jlong function_id)
 {
-	try
-	{
-		const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
-		jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
-		
-		char* out_err_buf = nullptr;
-		uint32_t out_err_len = 0;
-		xllr->free_function(str_runtime_plugin, str_runtime_plugin_len, (void*) obj, &out_err_buf, &out_err_len);
-		
-		// release runtime_plugin
-		env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);
-		
-		// set to out_err
-		if (out_err_buf)
-		{
-			throwMetaFFIException(env, out_err_buf);
-			//free(out_err_buf);
-			return;
-		}
-	}
-	catch(std::exception& err)
-	{
-		throwMetaFFIException(env, err.what());
-	}
+
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1ret(JNIEnv* env, jobject obj, jlong pff, jlong xcall_params)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1ret(JNIEnv* env, jclass , jlong pff, jlong xcall_params)
 {
 	try
 	{
 		char* out_err_buf = nullptr;
 		uint64_t out_err_len = 0;
-		
+
 		if(!pff)
 		{
 			throwMetaFFIException(env, "internal error. pff is null");
 			return;
 		}
-		
+
 		void** ppff = (void**)pff;
-		
+
 		((pforeign_function_entrypoint_signature_params_ret) ppff[0])(ppff[1], (cdts*) xcall_params, &out_err_buf, &out_err_len);
-		
+
 		if (out_err_len) // throw an exception in the JVM
 		{
 			throwMetaFFIException(env, out_err_buf);
@@ -439,23 +416,23 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1ret(JNIEnv* env
 	{
 		throwMetaFFIException(env, err.what());
 	}
-	
+
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1ret(JNIEnv* env, jobject obj, jlong pff, jlong xcall_params)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1ret(JNIEnv* env, jclass , jlong pff, jlong xcall_params)
 {
 	char* out_err_buf = nullptr;
 	uint64_t out_err_len = 0;
-	
+
 	if(!pff)
 	{
 		throwMetaFFIException(env, "internal error. pff is null");
 		return;
 	}
-	
+
 	void** ppff = (void**)pff;
 	((pforeign_function_entrypoint_signature_no_params_ret)ppff[0])(ppff[1], (cdts*)xcall_params, &out_err_buf, &out_err_len);
-	
+
 	if(out_err_len) // throw an exception in the JVM
 	{
 		throwMetaFFIException(env, out_err_buf);
@@ -464,22 +441,22 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1ret(JNIEnv*
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret(JNIEnv* env, jobject obj, jlong pff, jlong xcall_params)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret(JNIEnv* env, jclass , jlong pff, jlong xcall_params)
 {
 	try
 	{
 		char* out_err_buf = nullptr;
 		uint64_t out_err_len = 0;
-		
+
 		if(!pff)
 		{
 			throwMetaFFIException(env, "internal error. pff is null");
 			return;
 		}
-		
+
 		void** ppff = (void**)pff;
 		((pforeign_function_entrypoint_signature_params_no_ret) ppff[0])(ppff[1], (cdts*) xcall_params, &out_err_buf, &out_err_len);
-		
+
 		if (out_err_len) // throw an exception in the JVM
 		{
 			throwMetaFFIException(env, out_err_buf);
@@ -493,28 +470,28 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret(JNIEnv*
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret(JNIEnv* env, jobject obj, jlong pff)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret(JNIEnv* env, jclass , jlong pff)
 {
 	try
 	{
 		char* out_err_buf = nullptr;
 		uint64_t out_err_len = 0;
-		
+
 		if(!pff)
 		{
 			throwMetaFFIException(env, "internal error. pff is null");
 			return;
 		}
-		
+
 		void** ppff = (void**)pff;
 		((pforeign_function_entrypoint_signature_no_params_no_ret) ppff[0])(ppff[1], &out_err_buf, &out_err_len);
-		
+
 		if (out_err_len) // throw an exception in the JVM
 		{
 			throwMetaFFIException(env, out_err_buf);
-			
+
 			//free(out_err_buf);
-			
+
 			return;
 		}
 	}
@@ -524,7 +501,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret(JNI
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_alloc_1cdts(JNIEnv* env, jobject, jbyte params_count, jbyte retval_count)
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_alloc_1cdts(JNIEnv* env, jclass, jbyte params_count, jbyte retval_count)
 {
 	try
 	{
@@ -537,7 +514,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_alloc_1cdts(JNIEnv* env, jobj
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt(JNIEnv* env, jobject, jlong pcdts, jbyte index)
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt(JNIEnv* env, jclass, jlong pcdts, jbyte index)
 {
 	try
 	{
@@ -550,7 +527,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt(JNIEnv* env, jobjec
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jobject, jlong phandle)
+JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jclass, jlong phandle)
 {
 	if(openjdk_objects_table::instance().contains((jobject)phandle)){
 		throwMetaFFIException(env, "Object is not found in Objects Table");
@@ -559,12 +536,12 @@ JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jo
 	return (jobject)phandle;
 }
 //--------------------------------------------------------------------
-JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object (JNIEnv* env, jobject, jlong phandle)
+JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object (JNIEnv* env, jclass, jlong phandle)
 {
 	openjdk_objects_table::instance().remove(env, (jobject)phandle);
 }
 //--------------------------------------------------------------------
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, jobject, jlong pcdts, jobjectArray parameters, jlongArray types)
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, jclass, jlong pcdts, jobjectArray parameters, jlongArray types)
 {
 	try
 	{
@@ -581,7 +558,9 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 			jvalue cur_object;
 			cur_object.l = env->GetObjectArrayElement(parameters, i);
 			check_and_throw_jvm_exception(env, true);
-			metaffi_type type_to_expect = (types_elements[i] & metaffi_array_type) == 0 ? metaffi_handle_type : types_elements[i];
+			metaffi_type type_to_expect = (types_elements[i] & metaffi_array_type) == 0 ?
+												(types_elements[i] == metaffi_callable_type ? metaffi_callable_type : metaffi_handle_type) :
+												types_elements[i];
 			wrapper.from_jvalue(env, cur_object, type_to_expect, i);
 			wrapper.switch_to_primitive(env, i, types_elements[i]);
 		}
@@ -596,7 +575,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jobjectArray JNICALL Java_metaffi_MetaFFIBridge_cdts_1to_1java(JNIEnv* env, jobject, jlong pcdts, jlong length)
+JNIEXPORT jobjectArray JNICALL Java_metaffi_MetaFFIBridge_cdts_1to_1java(JNIEnv* env, jclass, jlong pcdts, jlong length)
 {
 	try
 	{

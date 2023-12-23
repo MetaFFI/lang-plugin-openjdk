@@ -37,6 +37,7 @@ std::string argument_definition::to_jni_signature_type() const
 	else if (tmp == metaffi_string8_type) ss << "Ljava/lang/String;";
 	else if (tmp == metaffi_any_type) ss << "Ljava/lang/Object;";
 	else if (tmp == metaffi_handle_type) ss << "Ljava/lang/Object;";
-	
+	else if (tmp == metaffi_callable_type) ss << "Lmetaffi/Caller;";
+
 	return ss.str();
 }

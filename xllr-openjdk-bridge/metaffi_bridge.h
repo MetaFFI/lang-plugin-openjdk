@@ -20,7 +20,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_load_1runtime_1plugin
-		(JNIEnv *, jobject, jstring);
+		(JNIEnv *, jclass, jstring);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -28,7 +28,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_load_1runtime_1plugin
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin
-		(JNIEnv *, jobject, jstring);
+		(JNIEnv *, jclass, jstring);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -36,14 +36,14 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin
  * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;
  */
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function
-		(JNIEnv *, jobject, jstring, jstring, jstring, jobjectArray, jobjectArray);
+		(JNIEnv *, jclass, jstring, jstring, jstring, jobjectArray, jobjectArray);
 
  /*
   * Class:     metaffi_MetaFFIBridge
-  * Method:    load_callable
+  * Method:    make_callable
   */
  JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable
-   (JNIEnv *, jobject, jstring, jobject, jstring, jobjectArray, jobjectArray);
+   (JNIEnv *, jclass, jstring, jobject, jstring, jobjectArray, jobjectArray);
 
 
 /*
@@ -52,7 +52,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function
  * Signature: (Ljava/lang/String;J)Ljava/lang/String;
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1function
-		(JNIEnv *, jobject, jstring, jlong);
+		(JNIEnv *, jclass, jstring, jlong);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -60,7 +60,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1function
  * Signature: (JLjava/lang/Long;)Ljava/lang/String;
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1ret
-		(JNIEnv *, jobject, jlong, jlong);
+		(JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -68,7 +68,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1ret
  * Signature: (JLjava/lang/Long;)Ljava/lang/String;
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1ret
-		(JNIEnv *, jobject, jlong, jlong);
+		(JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -76,7 +76,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1ret
  * Signature: (JJ)Ljava/lang/String;
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret
-		(JNIEnv *, jobject, jlong, jlong);
+		(JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -84,7 +84,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1params_1no_1ret
  * Signature: (J)Ljava/lang/String;
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret
-		(JNIEnv *, jobject, jlong);
+		(JNIEnv *, jclass, jlong);
 
 
 /*
@@ -93,7 +93,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_xcall_1no_1params_1no_1ret
  * Signature: (BB)J
  */
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_alloc_1cdts
-		(JNIEnv *, jobject, jbyte, jbyte);
+		(JNIEnv *, jclass, jbyte, jbyte);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -101,7 +101,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_alloc_1cdts
  * Signature: (JB)J
  */
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt
-		(JNIEnv *, jobject, jlong, jbyte);
+		(JNIEnv *, jclass, jlong, jbyte);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -109,7 +109,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt
  * Signature: (J)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object
-		(JNIEnv *, jobject, jlong);
+		(JNIEnv *, jclass, jlong);
 
 /*
  * Class:     metaffi_MetaFFIBridge
@@ -117,7 +117,7 @@ JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object
-		(JNIEnv *, jobject, jlong);
+		(JNIEnv *, jclass, jlong);
 
  /*
   * Class:     metaffi_MetaFFIBridge
@@ -125,7 +125,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object
   * Signature: (JB[Ljava/lang/Object;[J)J
   */
  JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts
-   (JNIEnv *, jobject, jlong, jobjectArray, jlongArray);
+   (JNIEnv *, jclass, jlong, jobjectArray, jlongArray);
 
  /*
   * Class:     metaffi_MetaFFIBridge
@@ -133,7 +133,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object
   * Signature: (JJ)[Ljava/lang/Object;
   */
  JNIEXPORT jobjectArray JNICALL Java_metaffi_MetaFFIBridge_cdts_1to_1java
-   (JNIEnv *, jobject, jlong, jlong);
+   (JNIEnv *, jclass, jlong, jlong);
 
 
 #ifdef __cplusplus

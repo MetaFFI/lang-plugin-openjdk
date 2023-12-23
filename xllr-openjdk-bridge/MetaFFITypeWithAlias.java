@@ -26,6 +26,7 @@ public class MetaFFITypeWithAlias
 		MetaFFISize(262144),
 		MetaFFIAny(4194304),
 		MetaFFINull(8388608),
+		MetaFFICallable(16777216),
 		MetaFFIFloat64Array(MetaFFIFloat64.value | MetaFFIArray.value),
 		MetaFFIFloat32Array(MetaFFIFloat32.value | MetaFFIArray.value),
 		MetaFFIInt8Array(MetaFFIInt8.value | MetaFFIArray.value),

@@ -4,21 +4,21 @@ import java.io.*;
 
 public class MetaFFIBridge
 {
-	public native void load_runtime_plugin(String runtime_plugin);
-	public native void free_runtime_plugin(String runtime_plugin);
-	public native long load_function(String runtime_plugin, String module_path, String function_path, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
-	public native long load_callable(String runtime_plugin, Object method, String jni_signature, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
-	public native void free_function(String runtime_plugin, long function_id);
-	public native void xcall_params_ret(long function_id, long xcall_params);
-	public native long xcall_no_params_ret(long function_id, long xcall_params);
-	public native long xcall_params_no_ret(long function_id, long xcall_params);
-	public native long xcall_no_params_no_ret(long function_id);
-	public native long java_to_cdts(long pcdt, Object[] params, long[] parameterTypes);
-	public native Object[] cdts_to_java(long pcdt, long length);
-	public native long alloc_cdts(byte params_count, byte retval_count);
-	public native long get_pcdt(long pcdts, byte index);
-	public native Object get_object(long phandle);
-	public native void remove_object(long phandle);
+	public static native void load_runtime_plugin(String runtime_plugin);
+	public static native void free_runtime_plugin(String runtime_plugin);
+	public static native long load_function(String runtime_plugin, String module_path, String function_path, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
+	public static native long load_callable(String runtime_plugin, Object method, String jni_signature, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
+	public static native void free_function(String runtime_plugin, long function_id);
+	public static native void xcall_params_ret(long pxcallAndContext, long xcall_params);
+	public static native long xcall_no_params_ret(long pxcallAndContext, long xcall_params);
+	public static native long xcall_params_no_ret(long pxcallAndContext, long xcall_params);
+	public static native long xcall_no_params_no_ret(long pxcallAndContext);
+	public static native long java_to_cdts(long pcdt, Object[] params, long[] parameterTypes);
+	public static native Object[] cdts_to_java(long pcdt, long length);
+	public static native long alloc_cdts(byte params_count, byte retval_count);
+	public static native long get_pcdt(long pcdts, byte index);
+	public static native Object get_object(long phandle);
+	public static native void remove_object(long phandle);
 
 	static
 	{
@@ -32,7 +32,7 @@ public class MetaFFIBridge
 	}
 
 	//--------------------------------------------------------------------
-	public MetaFFIBridge() {}
+	private MetaFFIBridge() {}
 	//--------------------------------------------------------------------
 	public static long getMetaFFIType(Object o)
 	{

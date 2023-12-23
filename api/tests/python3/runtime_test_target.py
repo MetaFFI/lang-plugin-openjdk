@@ -39,3 +39,13 @@ class testmap:
 
 	def contains(self, k:str):
 		return k in self.curdict
+
+
+
+def call_callback_add(add_function):
+	res = add_function(1, 2)
+	res = res[0]
+	if res != 3:
+		raise Exception('expected 3, got: {}'.format(res))
+	
+	
