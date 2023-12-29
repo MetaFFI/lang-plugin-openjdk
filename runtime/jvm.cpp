@@ -61,7 +61,7 @@ jvm::jvm()
 	vm_args.options[0].optionString = (char*)cp_option.c_str();
 	vm_args.ignoreUnrecognized = JNI_FALSE;
 
-	printf("JVM classpath: %s\n", vm_args.options[0].optionString);
+	//printf("JVM classpath: %s\n", vm_args.options[0].optionString);
 
 	// load jvm
 	

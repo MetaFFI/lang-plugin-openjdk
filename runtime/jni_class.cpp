@@ -401,7 +401,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 		
 		args[i] = params_wrapper.to_jvalue(env, i + start_index);
 	}
-	
+
 	if(!instance_required)
 	{
 		jvalue result;
@@ -483,9 +483,9 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 		if(params_wrapper[0]->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID){
 			throw std::runtime_error("expected Java object");
 		}
-		
+
 		jobject obj = params_wrapper.to_jvalue(env, 0).l;
-		
+
 		jvalue result;
 		switch (retval_type)
 		{

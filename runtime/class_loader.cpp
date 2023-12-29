@@ -147,7 +147,6 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	// if class already loaded - return jclass
 	if(auto it = loaded_classes.find(class_name); it != loaded_classes.end())
 	{
-		//printf("+++ already loaded %s\n", class_name);
 		return jni_class(env, it->second);
 	}
 	
