@@ -1,8 +1,7 @@
 #include "jni_caller.h"
-
 #include <utils/scope_guard.hpp>
-
 #include "exception_macro.h"
+#include <cstring>
 
 jclass callercls = nullptr;
 

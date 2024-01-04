@@ -28,7 +28,7 @@ jvm::jvm()
 		return;
 	}
 	// create new JVM
-	
+
 //	std::stringstream ss;
 //	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
 //	printf("JVM classpath: %s\n", ss.str().c_str());
@@ -70,7 +70,7 @@ jvm::jvm()
 	// https://github.com/golang/go/issues/58542
 
 	jint res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
-	
+
 	check_throw_error(res);
 	is_destroy = true;
 }

@@ -41,9 +41,12 @@ set_target_properties( ${target_name}
 
 # unitests
 add_executable(openjdk_api_test "openjdk_api_test.cpp" ${utils_srcs} ${runtime_srcs})
-target_link_libraries(openjdk_api_test PRIVATE Catch2::Catch2 ${target_name} Boost::filesystem)
+target_link_libraries(openjdk_api_test PRIVATE Catch2::Catch2 ${target_name} Boost::filesystem ${JNI_LIBRARIES})
+add_test(NAME "OpenJDK Runtime API" COMMAND openjdk_api_test)
 target_include_directories(openjdk_api_test PRIVATE ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
-add_test(NAME "OpenJDK Runtime API" COMMAND expand_env_test)
+if(NOT WIN32)
+	add_custom_command(TARGET openjdk_api_test POST_BUILD COMMAND patchelf --set-rpath "$ORIGIN:$ORIGIN/lib:$ENV{METAFFI_HOME}:${Boost_LIBRARY_DIRS}:$ENV{JAVA_HOME}/lib/server/:$ENV{JAVA_HOME}/lib/:$ENV{JAVA_HOME}" $<TARGET_FILE:openjdk_api_test>)
+endif()
 
 
 # install

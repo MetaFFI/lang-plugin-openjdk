@@ -13,14 +13,16 @@
 TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 {
 	REQUIRE(std::getenv("METAFFI_HOME") != nullptr);
-	
+	REQUIRE(std::getenv("JAVA_HOME") != nullptr);
+
+
 	std::filesystem::path module_path(__FILE__);
 	module_path = module_path.parent_path();
 	module_path.append("test");
 	module_path.append("TestRuntime.class");
 	char* err = nullptr;
 	uint32_t err_len = 0;
-	
+
 	SECTION("Load Runtime")
 	{
 		load_runtime(&err, &err_len);
