@@ -19,6 +19,7 @@
 #include "runtime_id.h"
 #include "contexts.h"
 
+
 #define TRUE 1
 #define FALSE 0
 
@@ -377,12 +378,28 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 
 			ctxt->constructor = fp["callable"] == "<init>";
 			ctxt->field_or_return_type = retval_count == 0 ? metaffi_null_type : retvals_types[0].type;
-			
-			entrypoint = (params_count == 0 && retval_count == 0) ? (void*)xcall_no_params_no_ret  :
-			             (params_count > 0 && retval_count == 0) ? (void*)xcall_params_no_ret :
-			             (params_count == 0 && retval_count > 0) ? (void*)xcall_no_params_ret :
-			             (params_count > 0 && retval_count > 0) ? (void*)xcall_params_ret :
-						 nullptr;
+
+			if (params_count == 0 && retval_count == 0)
+			{
+				entrypoint = (void*)xcall_no_params_no_ret;
+			}
+			else if (params_count > 0 && retval_count == 0)
+			{
+				entrypoint = (void*)xcall_params_no_ret;
+			}
+			else if (params_count == 0 && retval_count > 0)
+			{
+				entrypoint = (void*)xcall_no_params_ret;
+			}
+			else if (params_count > 0 && retval_count > 0)
+			{
+				entrypoint = (void*)xcall_params_ret;
+			}
+			else
+			{
+				entrypoint = nullptr;
+			}
+
 
 		}
 		else

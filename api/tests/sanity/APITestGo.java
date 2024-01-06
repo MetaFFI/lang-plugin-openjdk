@@ -13,12 +13,24 @@ public class APITestGo
 	private static MetaFFIRuntime runtime = null;
 	private static api.MetaFFIModule module = null;
 
+	public static String getDynamicLibraryExtension() {
+
+	    String osName = System.getProperty("os.name");
+
+	    if (osName.startsWith("Windows"))
+	        return ".dll";
+	    else if (osName.startsWith("Linux"))
+	        return ".so";
+	    else
+	        return "";
+	}
+
 	@BeforeClass
 	public static void init()
 	{
 		runtime = new MetaFFIRuntime("go");
 		runtime.loadRuntimePlugin();
-		module = runtime.loadModule("./go/TestRuntime_MetaFFIGuest.dll");
+		module = runtime.loadModule("./go/TestRuntime_MetaFFIGuest"+getDynamicLibraryExtension());
 	}
 
 	@AfterClass

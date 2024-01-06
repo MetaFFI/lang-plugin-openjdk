@@ -16,7 +16,7 @@ get_sdk_runtime_sources(runtime_srcs)
 
 add_library(${target_name} SHARED ${${target_name}_sources} ${utils_srcs} ${runtime_srcs})
 target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
-set_target_properties(${target_name} PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
+set_target_properties(${target_name} PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON LINK_FLAGS "-Wl,-Bsymbolic")
 target_link_libraries(${target_name} PRIVATE Boost::filesystem ${JNI_LIBRARIES})
 link_to_dl_for_non_windows(${target_name})
 
