@@ -1,4 +1,6 @@
 #include "class_loader.h"
+
+#include <filesystem>
 #include <set>
 #include <unordered_map>
 #include <functional>
@@ -270,8 +272,9 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	std::string tmp;
 	std::stringstream ss(class_path);
 	std::vector<std::string> classpath_vec;
-	while(std::getline(ss, tmp, ';')){
-		classpath_vec.push_back(tmp);
+	while(std::getline(ss, tmp, ';'))
+	{
+		classpath_vec.push_back(std::filesystem::absolute(tmp).generic_string());
 	}
 	
 	// every URL that is NOT loaded - add URL

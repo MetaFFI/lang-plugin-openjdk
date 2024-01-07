@@ -1,4 +1,6 @@
 #include "argument_definition.h"
+
+#include <algorithm>
 #include <sstream>
 
 argument_definition::argument_definition(metaffi_type_with_alias type_alias)
@@ -15,7 +17,9 @@ std::string argument_definition::to_jni_signature_type() const
 	
 	if(!alias.empty())
 	{
-		ss << "L"  << alias << ";";
+		std::string tmp = alias;
+		std::replace(tmp.begin(), tmp.end(), '.', '/');
+		ss << "L"  << tmp << ";";
 		return ss.str();
 	}
 	
