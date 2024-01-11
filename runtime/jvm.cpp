@@ -55,7 +55,7 @@ jvm::jvm()
 
 	// set initialization args
 	JavaVMInitArgs vm_args = {0};
-	vm_args.version = JNI_VERSION_10;
+	vm_args.version = JNI_VERSION_1_4;
 	vm_args.nOptions = 1;
 	vm_args.options = new JavaVMOption[1];
 	vm_args.options[0].optionString = (char*)cp_option.c_str();
@@ -94,7 +94,7 @@ std::function<void()> jvm::get_environment(JNIEnv** env)
 	bool did_attach_thread = false;
 	// Check if th
 	// e current thread is attached to the VM
-	auto get_env_result = pjvm->GetEnv((void**)env, JNI_VERSION_10);
+	auto get_env_result = pjvm->GetEnv((void**)env, JNI_VERSION_1_4);
 	if (get_env_result == JNI_EDETACHED)
 	{
 		if(pjvm->AttachCurrentThread((void**)*env, nullptr) == JNI_OK)
