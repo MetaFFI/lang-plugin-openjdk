@@ -30,7 +30,7 @@ int call_guest_test()
 		return -1;
 	}
 
-	return ((int (*) (const char*, const char*))res)("xllr.python3", "package=GuestCode,function=f1,metaffi_guest_lib=test_MetaFFIGuest,entrypoint_function=EntryPoint_f1");
+	return ((int (*) (const char*, const char*))res)("xllr.python311", "package=GuestCode,function=f1,metaffi_guest_lib=test_MetaFFIGuest,entrypoint_function=EntryPoint_f1");
 }
 #else
 #include <Windows.h>
@@ -54,7 +54,7 @@ int call_guest_test()
 		return -1;
 	}
 
-	return ((int (*) (const char*, const char*))res)("xllr.python3", "package=GuestCode,function=f1,metaffi_guest_lib=test_MetaFFIGuest,entrypoint_function=EntryPoint_f1");
+	return ((int (*) (const char*, const char*))res)("xllr.python311", "package=GuestCode,function=f1,metaffi_guest_lib=test_MetaFFIGuest,entrypoint_function=EntryPoint_f1");
 }
 #endif
 */

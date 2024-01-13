@@ -8,13 +8,13 @@
 #include "jni_caller.h"
 
 #define copy_jni_array(name_of_java_class_type, jni_sig, name_of_getter, cdt_type_struct, jni_primitive_type) \
-	if(env->IsInstanceOf(val.l, env->FindClass("[Ljava/lang/"name_of_java_class_type";")) != JNI_TRUE) \
+	if(env->IsInstanceOf(val.l, env->FindClass("[Ljava/lang/" #name_of_java_class_type ";")) != JNI_TRUE) \
 	{\
-		throw std::runtime_error("Given argument is not "name_of_java_class_type"[]");\
+		throw std::runtime_error("Given argument is not " #name_of_java_class_type "[]");\
 	}\
 \
-	jclass cls = env->FindClass("Ljava/lang/"name_of_java_class_type";");\
-	jmethodID methID = env->GetMethodID(cls, name_of_getter, "()"jni_sig);\
+	jclass cls = env->FindClass("Ljava/lang/" #name_of_java_class_type ";");\
+	jmethodID methID = env->GetMethodID(cls, name_of_getter, "()" #jni_sig);\
 	int len = env->GetArrayLength((jobjectArray)val.l);\
 	check_and_throw_jvm_exception(env, true);\
 	cdt_type_struct.dimensions = 1;\

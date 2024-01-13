@@ -570,7 +570,7 @@ public class ComplexPrimitivesTest
 	@BeforeClass
 	public static void init()
 	{
-		runtime = new MetaFFIRuntime("python3");
+		runtime = new MetaFFIRuntime("python311");
 		runtime.loadRuntimePlugin();
 
 		extendedTest = new ExtendedTest(runtime);
