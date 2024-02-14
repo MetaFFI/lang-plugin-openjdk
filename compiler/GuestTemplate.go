@@ -16,7 +16,7 @@ import metaffi.*;
 `
 
 const GuestFunctionXLLRTemplate = `
-{{$idlFilename := .IDLFilename}}
+{{$IDLSource := .IDLSource}}
 {{range $mindex, $m := .Modules}}
 
 

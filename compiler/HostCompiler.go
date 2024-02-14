@@ -453,7 +453,7 @@ func (this *HostCompiler) buildDynamicLibrary(codefiles map[string]string) ([]by
 	// jar all class files
 	args = make([]string, 0)
 	args = append(args, "cf")
-	args = append(args, this.def.IDLFilename+".jar")
+	args = append(args, this.def.IDLSource+".jar")
 	args = append(args, classFiles...)
 	buildCmd = exec.Command("jar", args...)
 	buildCmd.Dir = dir
@@ -465,9 +465,9 @@ func (this *HostCompiler) buildDynamicLibrary(codefiles map[string]string) ([]by
 
 	// read jar file and return
 	var result []byte
-	result, err = ioutil.ReadFile(dir + this.def.IDLFilename + ".jar")
+	result, err = ioutil.ReadFile(dir + this.def.IDLSource + ".jar")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLFilename+"_MetaFFIHost.jar", err)
+		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker at: %v. Error: %v", this.def.IDLSource+"_MetaFFIHost.jar", err)
 	}
 
 	// delete generated class files

@@ -69,7 +69,7 @@ func (this *GuestCompiler) replaceIllegalCharacters() {
 func (this *GuestCompiler) Compile(definition *IDL.IDLDefinition, outputDir string, outputFilename string, guestOptions map[string]string) (err error) {
 
 	if outputFilename == "" {
-		outputFilename = definition.IDLFilename
+		outputFilename = definition.IDLSource
 	}
 
 	this.def = definition
@@ -267,7 +267,7 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	// compile generated java code
 	args := make([]string, 0)
 	args = append(args, "-o")
-	args = append(args, dir+this.def.IDLFilename+getDynamicLibSuffix())
+	args = append(args, dir+this.def.IDLSource+getDynamicLibSuffix())
 	args = append(args, "-I")
 	args = append(args, mffiHome+"/include")
 	args = append(args, "-I")
@@ -292,9 +292,9 @@ func (this *GuestCompiler) buildDynamicLibrary(code string) ([]byte, error) {
 	}
 
 	// read jar file and return
-	result, err := ioutil.ReadFile(dir + this.def.IDLFilename + getDynamicLibSuffix())
+	result, err := ioutil.ReadFile(dir + this.def.IDLSource + getDynamicLibSuffix())
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read dynamic library entrypoints for OpenJDK guest %v. Error: %v", this.def.IDLFilename, err)
+		return nil, fmt.Errorf("Failed to read dynamic library entrypoints for OpenJDK guest %v. Error: %v", this.def.IDLSource, err)
 	}
 
 	return result, nil
@@ -369,7 +369,7 @@ func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, 
 	// jar all class files
 	args = make([]string, 0)
 	args = append(args, "cf")
-	args = append(args, this.def.IDLFilename+".jar")
+	args = append(args, this.def.IDLSource+".jar")
 	args = append(args, classFiles...)
 	buildCmd = exec.Command("jar", args...)
 	buildCmd.Dir = dir
@@ -380,9 +380,9 @@ func (this *GuestCompiler) buildJar(code string, definition *IDL.IDLDefinition, 
 	}
 
 	// read jar file and return
-	result, err := ioutil.ReadFile(dir + this.def.IDLFilename + ".jar")
+	result, err := ioutil.ReadFile(dir + this.def.IDLSource + ".jar")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker %v. Error: %v", this.def.IDLFilename, err)
+		return nil, fmt.Errorf("Failed to read host OpenJDK runtime linker %v. Error: %v", this.def.IDLSource, err)
 	}
 
 	return result, nil

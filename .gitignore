@@ -64,3 +64,4 @@ go.sum
 # Dependency directories (remove the comment below to include it)
 vendor/
 idl/JavaExtractor_MetaFFIGuest.jar
+/idl/out/

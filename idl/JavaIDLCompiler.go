@@ -53,7 +53,7 @@ func (this *JavaIDLCompiler) ParseIDL(sourceCode string, filePath string) (*IDL.
 
 	this.idl = IDL.NewIDLDefinition(this.sourceCodeFilePath, "openjdk")
 
-	module := IDL.NewModuleDefinition(this.idl.IDLFilename)
+	module := IDL.NewModuleDefinition(this.idl.IDLSource)
 
 	for _, c := range classes {
 		module.AddClass(c)
