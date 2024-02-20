@@ -40,7 +40,15 @@ jfieldID jni_class::load_field(const std::string& field_name, const argument_def
 	jfieldID id = !instance_required ? env->GetStaticFieldID(cls, field_name.c_str(), field_type.to_jni_signature_type().c_str()) :
 	              env->GetFieldID(cls, field_name.c_str(), field_type.to_jni_signature_type().c_str());
 	
-	check_and_throw_jvm_exception(env, id);
+	if(id == nullptr)
+	{
+		if(env->ExceptionCheck() == JNI_TRUE)
+		{
+			std::string err_msg = "failed getting field id: " + field_name + " of type: " + field_type.to_jni_signature_type()+"\n";
+			err_msg += jvm::get_exception_description(env, env->ExceptionOccurred());
+			throw std::runtime_error(err_msg);
+		}
+	}
 	return id;
 }
 //--------------------------------------------------------------------

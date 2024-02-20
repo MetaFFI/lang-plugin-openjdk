@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	JavaExtractor "github.com/MetaFFI/lang-plugin-openjdk/idl/javaextractor"
-	"github.com/MetaFFI/plugin-sdk/compiler/go"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"os"
 	"path"
@@ -22,16 +20,15 @@ type JavaIDLCompiler struct {
 func NewJavaIDLCompiler() *JavaIDLCompiler {
 
 	p := os.Getenv("METAFFI_HOME")
-	ext := compiler.GetDynamicLibSuffix()
 
-	JavaExtractor.MetaFFILoad(fmt.Sprintf("%v/JavaExtractor_MetaFFIGuest%v;%v/JavaExtractor.jar;%v/asm-9.6.jar;%v/asm-tree-9.6.jar;%v/javaparser-core-3.24.4.jar;%v/JavaExtractor_MetaFFIGuest.jar", p, ext, p, p, p, p, p))
+	BindModuleToCode(fmt.Sprintf("%v/JavaExtractor.jar;%v/asm-9.6.jar;%v/asm-tree-9.6.jar;%v/javaparser-core-3.24.4.jar;%v/JavaExtractor_MetaFFIGuest.jar", p, p, p, p, p))
 	return &JavaIDLCompiler{}
 }
 
 // --------------------------------------------------------------------
 func (this *JavaIDLCompiler) ParseIDL(sourceCode string, filePath string) (*IDL.IDLDefinition, bool, error) {
 
-	javafile, err := JavaExtractor.NewJavaExtractor(filePath)
+	javafile, err := NewJavaExtractor(filePath)
 	if err != nil {
 		return nil, true, err
 	}

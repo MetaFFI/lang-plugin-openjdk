@@ -3,7 +3,7 @@
 	"idl_extension": ".json",
 	"idl_filename_with_extension": "JavaExtractor.json",
 	"idl_full_path": "JavaExtractor.json",
-	"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
+	"metaffi_guest_lib": "JavaExtractor.jar",
 	"target_language": "openjdk",
 	"modules": [
 		{
@@ -17,30 +17,7 @@
 					"comment": "",
 					"tags": {},
 					"constructors": [],
-					"function_path": { "package": "java_extractor" },
-					"release": {
-						"name": "ReleaseVariableInfo",
-						"comment": "Releases object",
-						"tags": {},
-						"function_path": {
-							"entrypoint_class": "JavaExtractor_Entrypoints",
-							"entrypoint_function": "EntryPoint_VariableInfo_ReleaseVariableInfo",
-							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-							"module": "JavaExtractor",
-							"package": "java_extractor"
-						},
-						"parameters": [
-							{
-								"name": "this_instance",
-								"type": "handle",
-								"type_alias": "",
-								"comment": "",
-								"tags": {},
-								"dimensions": 0
-							}
-						],
-						"return_values": []
-					},
+					"function_path": {  },
 					"methods": [],
 					"fields": [
 						{
@@ -55,10 +32,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_VariableInfo_get_Name",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.VariableInfo",
+									"field": "Name",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -96,10 +73,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_VariableInfo_get_Type",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.VariableInfo",
+									"field": "Type",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -137,10 +114,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_VariableInfo_get_IsStatic",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.VariableInfo",
+									"field": "IsStatic",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -178,10 +155,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_VariableInfo_get_IsFinal",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.VariableInfo",
+									"field": "IsFinal",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -214,29 +191,7 @@
 					"comment": "",
 					"tags": {},
 					"constructors": [],
-					"function_path": { "package": "java_extractor" },
-					"release": {
-						"name": "ReleaseParameterInfo",
-						"comment": "Releases object",
-						"tags": {},
-						"function_path": {
-							"entrypoint_class": "JavaExtractor_Entrypoints",
-							"entrypoint_function": "EntryPoint_ParameterInfo_ReleaseParameterInfo",
-							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-							"module": "JavaExtractor"
-						},
-						"parameters": [
-							{
-								"name": "this_instance",
-								"type": "handle",
-								"type_alias": "",
-								"comment": "",
-								"tags": {},
-								"dimensions": 0
-							}
-						],
-						"return_values": []
-					},
+					"function_path": { },
 					"methods": [],
 					"fields": [
 						{
@@ -251,10 +206,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ParameterInfo_get_Name",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ParameterInfo",
+									"field": "Name",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -292,10 +247,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ParameterInfo_get_Type",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ParameterInfo",
+									"field": "Type",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -328,29 +283,7 @@
 					"comment": "",
 					"tags": {},
 					"constructors": [],
-					"function_path": { "package": "java_extractor" },
-					"release": {
-						"name": "ReleaseMethodInfo",
-						"comment": "Releases object",
-						"tags": {},
-						"function_path": {
-							"entrypoint_class": "JavaExtractor_Entrypoints",
-							"entrypoint_function": "EntryPoint_MethodInfo_ReleaseMethodInfo",
-							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-							"module": "JavaExtractor"
-						},
-						"parameters": [
-							{
-								"name": "this_instance",
-								"type": "handle",
-								"type_alias": "",
-								"comment": "",
-								"tags": {},
-								"dimensions": 0
-							}
-						],
-						"return_values": []
-					},
+					"function_path": {  },
 					"methods": [],
 					"fields": [
 						{
@@ -365,10 +298,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_MethodInfo_get_Name",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.MethodInfo",
+									"field": "Name",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -406,10 +339,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_MethodInfo_get_IsStatic",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.MethodInfo",
+									"field": "IsStatic",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -447,10 +380,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_MethodInfo_get_Comment",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.MethodInfo",
+									"field": "Comment",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -488,10 +421,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_MethodInfo_get_Parameters",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.MethodInfo",
+									"field": "Parameters",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -529,10 +462,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_MethodInfo_get_ReturnValue",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.MethodInfo",
+									"field": "ReturnValue",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -565,29 +498,7 @@
 					"comment": "",
 					"tags": {},
 					"constructors": [],
-					"function_path": { "package": "java_extractor" },
-					"release": {
-						"name": "ReleaseClassInfo",
-						"comment": "Releases object",
-						"tags": {},
-						"function_path": {
-							"entrypoint_class": "JavaExtractor_Entrypoints",
-							"entrypoint_function": "EntryPoint_ClassInfo_ReleaseClassInfo",
-							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-							"module": "JavaExtractor"
-						},
-						"parameters": [
-							{
-								"name": "this_instance",
-								"type": "handle",
-								"type_alias": "",
-								"comment": "",
-								"tags": {},
-								"dimensions": 0
-							}
-						],
-						"return_values": []
-					},
+					"function_path": {  },
 					"methods": [],
 					"fields": [
 						{
@@ -602,10 +513,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ClassInfo_get_Name",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ClassInfo",
+									"field": "Name",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -643,10 +554,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ClassInfo_get_Comment",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ClassInfo",
+									"field": "Comment",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -684,10 +595,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ClassInfo_get_Package",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ClassInfo",
+									"field": "Package",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -725,10 +636,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ClassInfo_get_Fields",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ClassInfo",
+									"field": "Fields",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -766,10 +677,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ClassInfo_get_Methods",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ClassInfo",
+									"field": "Methods",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -807,10 +718,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_ClassInfo_get_Constructors",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.ClassInfo",
+									"field": "Constructors",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -843,29 +754,7 @@
 					"comment": "",
 					"tags": {},
 					"constructors": [],
-					"function_path": { "package": "java_extractor" },
-					"release": {
-						"name": "ReleaseJavaInfo",
-						"comment": "Releases object",
-						"tags": {},
-						"function_path": {
-							"entrypoint_class": "JavaExtractor_Entrypoints",
-							"entrypoint_function": "EntryPoint_JavaInfo_ReleaseJavaInfo",
-							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-							"module": "JavaExtractor"
-						},
-						"parameters": [
-							{
-								"name": "this_instance",
-								"type": "handle",
-								"type_alias": "",
-								"comment": "",
-								"tags": {},
-								"dimensions": 0
-							}
-						],
-						"return_values": []
-					},
+					"function_path": {  },
 					"methods": [],
 					"fields": [
 						{
@@ -880,10 +769,10 @@
 								"comment": "",
 								"tags": {},
 								"function_path": {
-									"entrypoint_class": "JavaExtractor_Entrypoints",
-									"entrypoint_function": "EntryPoint_JavaInfo_get_Classes",
-									"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-									"module": "JavaExtractor"
+									"class": "java_extractor.JavaInfo",
+									"field": "Classes",
+									"getter": "true",
+									"instance_required": "true"
 								},
 								"parameters": [
 									{
@@ -915,18 +804,16 @@
 					"name": "JavaExtractor",
 					"comment": "",
 					"tags": {},
-					"function_path": { "package": "java_extractor" },
+					"function_path": {  },
 					"constructors": [
 						{
 							"name": "JavaExtractor",
 							"comment": "",
 							"tags": {},
 							"function_path": {
-								"entrypoint_class": "JavaExtractor_Entrypoints",
-								"entrypoint_function": "EntryPoint_JavaExtractor_JavaExtractor",
-								"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-								"module": "JavaExtractor",
-								"package": "java_extractor"
+								"class": "java_extractor.JavaExtractor",
+								"callable": "<init>",
+								"instance_required": "true"
 							},
 							"parameters": [
 								{
@@ -950,38 +837,15 @@
 							]
 						}
 					],
-					"release": {
-						"name": "ReleaseJavaExtractor",
-						"comment": "Releases object",
-						"tags": {},
-						"function_path": {
-							"entrypoint_class": "JavaExtractor_Entrypoints",
-							"entrypoint_function": "EntryPoint_JavaExtractor_ReleaseJavaExtractor",
-							"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-							"module": "JavaExtractor"
-						},
-						"parameters": [
-							{
-								"name": "this_instance",
-								"type": "handle",
-								"type_alias": "",
-								"comment": "",
-								"tags": {},
-								"dimensions": 0
-							}
-						],
-						"return_values": []
-					},
 					"methods": [
 						{
 							"name": "extract",
 							"comment": "",
 							"tags": {},
 							"function_path": {
-								"entrypoint_class": "JavaExtractor_Entrypoints",
-								"entrypoint_function": "EntryPoint_JavaExtractor_extract",
-								"metaffi_guest_lib": "JavaExtractor_MetaFFIGuest",
-								"module": "JavaExtractor"
+								"class": "java_extractor.JavaInfo",
+								"callable": "extract",
+								"instance_required": "true"
 							},
 							"parameters": [
 								{

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	. "github.com/MetaFFI/lang-plugin-openjdk/idl/javaextractor"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"strings"
 )
@@ -14,20 +13,20 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 
 	classes = make(map[string]*IDL.ClassDefinition)
 
-	javaclses, err := javainfo.Classes_MetaFFIGetter()
+	javaclses, err := javainfo.Classes_Getter()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, c := range javaclses {
-		clsName, err := c.Name_MetaFFIGetter()
+		clsName, err := c.Name_Getter()
 		if err != nil {
 			return nil, err
 		}
 
 		javacls := IDL.NewClassDefinition(clsName)
 
-		packageName, err := c.Package_MetaFFIGetter()
+		packageName, err := c.Package_Getter()
 		if err != nil {
 			return nil, err
 		}
@@ -36,35 +35,35 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 		//	javacls.SetFunctionPath("package", packageName)
 		//}
 
-		comment, err := c.Comment_MetaFFIGetter()
+		comment, err := c.Comment_Getter()
 		if err != nil {
 			return nil, err
 		}
 		javacls.Comment = comment
 
-		fields, err := c.Fields_MetaFFIGetter()
+		fields, err := c.Fields_Getter()
 		if err != nil {
 			return nil, err
 		}
 
 		// Fields
 		for _, f := range fields {
-			name, err := f.Name_MetaFFIGetter()
+			name, err := f.Name_Getter()
 			if err != nil {
 				return nil, err
 			}
 
-			typy, err := f.Type_MetaFFIGetter()
+			typy, err := f.Type_Getter()
 			if err != nil {
 				return nil, err
 			}
 
-			isStatic, err := f.IsStatic_MetaFFIGetter()
+			isStatic, err := f.IsStatic_Getter()
 			if err != nil {
 				return nil, err
 			}
 
-			isFinal, err := f.IsFinal_MetaFFIGetter()
+			isFinal, err := f.IsFinal_Getter()
 			if err != nil {
 				return nil, err
 			}
@@ -88,7 +87,7 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 			javacls.AddField(fdecl)
 		}
 
-		javaconstructors, err := c.Constructors_MetaFFIGetter()
+		javaconstructors, err := c.Constructors_Getter()
 		if err != nil {
 			return nil, err
 		}
@@ -103,25 +102,25 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 				javaconst.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javaconst.Name))
 			}
 
-			comment, err := f.Comment_MetaFFIGetter()
+			comment, err := f.Comment_Getter()
 			if err != nil {
 				return nil, err
 			}
 			javaconst.Comment = comment
 
-			params, err := f.Parameters_MetaFFIGetter()
+			params, err := f.Parameters_Getter()
 			if err != nil {
 				return nil, err
 			}
 
 			for _, p := range params {
 
-				name, err := p.Name_MetaFFIGetter()
+				name, err := p.Name_Getter()
 				if err != nil {
 					return nil, err
 				}
 
-				javaType, err := p.Type_MetaFFIGetter()
+				javaType, err := p.Type_Getter()
 				if err != nil {
 					return nil, err
 				}
@@ -145,14 +144,14 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 			javacls.AddConstructor(IDL.NewConstructorDefinitionFromFunctionDefinition(javaconst))
 		}
 
-		javamethods, err := c.Methods_MetaFFIGetter()
+		javamethods, err := c.Methods_Getter()
 		if err != nil {
 			return nil, err
 		}
 
 		overloadMap := make(map[string]int)
 		for _, f := range javamethods {
-			name, err := f.Name_MetaFFIGetter()
+			name, err := f.Name_Getter()
 			if err != nil {
 				return nil, err
 			}
@@ -172,30 +171,30 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 				javameth.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javameth.Name))
 			}
 
-			comment, err := f.Comment_MetaFFIGetter()
+			comment, err := f.Comment_Getter()
 			if err != nil {
 				return nil, err
 			}
 			javameth.Comment = comment
 
-			isStatic, err := f.IsStatic_MetaFFIGetter()
+			isStatic, err := f.IsStatic_Getter()
 			if err != nil {
 				return nil, err
 			}
 
-			params, err := f.Parameters_MetaFFIGetter()
+			params, err := f.Parameters_Getter()
 			if err != nil {
 				return nil, err
 			}
 
 			for _, p := range params {
 
-				name, err := p.Name_MetaFFIGetter()
+				name, err := p.Name_Getter()
 				if err != nil {
 					return nil, err
 				}
 
-				javaType, err := p.Type_MetaFFIGetter()
+				javaType, err := p.Type_Getter()
 				if err != nil {
 					return nil, err
 				}
@@ -214,17 +213,17 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 				javameth.AddParameter(IDL.NewArgArrayDefinitionWithAlias(name, mffiType, dims, talias))
 			}
 
-			retval, err := f.ReturnValue_MetaFFIGetter()
+			retval, err := f.ReturnValue_Getter()
 			if err != nil {
 				return nil, err
 			}
 
-			retval_name, err := retval.Name_MetaFFIGetter()
+			retval_name, err := retval.Name_Getter()
 			if err != nil {
 				return nil, err
 			}
 
-			typename, err := retval.Type_MetaFFIGetter()
+			typename, err := retval.Type_Getter()
 			if err != nil {
 				return nil, err
 			}

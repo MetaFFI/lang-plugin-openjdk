@@ -194,34 +194,4 @@ public class BytecodeExtractor implements Extractor
 
         return javaInfo;
     }
-
-    private static String convertType(Type type)
-    {
-        switch (type.getSort()) {
-            case Type.FieldType_BOOLEAN:
-                return "boolean";
-            case Type.FieldType_CHAR:
-                return "char";
-            case Type.FieldType_BYTE:
-                return "byte";
-            case Type.FieldType_SHORT:
-                return "short";
-            case Type.FieldType_INT:
-                return "int";
-            case Type.FieldType_FLOAT:
-                return "float";
-            case Type.FieldType_LONG:
-                return "long";
-            case Type.FieldType_DOUBLE:
-                return "double";
-            case Type.ARRAY:
-                return convertType(type.getElementType()) + "[]";
-            case Type.FieldType_OBJECT:
-                return type.getClassName().replace("java.lang.", "");
-            case Type.VOID:
-                return "void";
-            default:
-                return "unknown";
-        }
-    }
 }

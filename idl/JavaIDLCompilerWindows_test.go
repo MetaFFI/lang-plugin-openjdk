@@ -67,7 +67,7 @@ func TestGoIDLCompiler_Compile(t *testing.T) {
 
 	comp := NewJavaIDLCompiler()
 
-	idl, _, err := comp.ParseIDL(src, "C:\\src\\github.com\\MetaFFI\\Tests\\Hosts\\Python3\\ToJava\\libraries\\pdfbox\\pdfbox-app-3.0.0.jar")
+	idl, _, err := comp.ParseIDL(src, "")
 	if err != nil {
 		t.Fatal(err)
 	}

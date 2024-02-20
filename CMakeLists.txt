@@ -63,22 +63,3 @@ file(WRITE ${PROJECT_BINARY_DIR}/notes.txt ${INSTALL_NOTES})
 
 #-----------------------------------------------------------------------------------------------
 
-install(CODE "set(CMAKE_SCRIPTS_DIR ${CMAKE_CURRENT_LIST_DIR}/plugin-sdk/cmake)")
-install(CODE "set(PACKAGE_ROOT ${PROJECT_BINARY_DIR})")
-install(CODE "set(dylib_ext ${CMAKE_SHARED_LIBRARY_SUFFIX})")
-install(CODE
-		[[
-		include(${CMAKE_SCRIPTS_DIR}/MetaFFI.cmake)
-
-		list(APPEND package_files notes.txt)
-		list(APPEND package_files metaffi.idl.java${dylib_ext})
-		list(APPEND package_files JavaExtractor_MetaFFIGuest${dylib_ext})
-		list(APPEND package_files JavaExtractor_MetaFFIGuest.jar)
-		list(APPEND package_files xllr.openjdk.bridge.jar)
-		list(APPEND package_files xllr.openjdk.jni.bridge${dylib_ext})
-		list(APPEND package_files javaparser-core-3.24.4.jar)
-		#list(APPEND package_files JavaExtractor.jar)
-		list(APPEND package_files metaffi.compiler.openjdk${dylib_ext})
-		list(APPEND package_files xllr.openjdk${dylib_ext})
-		metaffi_pack(${PACKAGE_ROOT} "${package_files}")
-]])

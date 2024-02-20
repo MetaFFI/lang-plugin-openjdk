@@ -3,12 +3,11 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
-	"fmt"
 )
-
 
 var src string = `
 package sanity;
@@ -66,13 +65,16 @@ public class TestClass
 }
 `
 
-func panicHandler(t *testing.T){
-	if rec := recover(); rec != nil{
+func panicHandler(t *testing.T) {
+	if rec := recover(); rec != nil {
 		msg := "Panic in Go function. Panic Data: "
-		switch recType := rec.(type){
-			case error: msg += (rec.(error)).Error()
-			case string: msg += rec.(string)
-			default: msg += fmt.Sprintf("Panic with type: %v - %v", recType, rec)
+		switch recType := rec.(type) {
+		case error:
+			msg += (rec.(error)).Error()
+		case string:
+			msg += rec.(string)
+		default:
+			msg += fmt.Sprintf("Panic with type: %v - %v", recType, rec)
 		}
 
 		t.Log(msg)
@@ -80,8 +82,6 @@ func panicHandler(t *testing.T){
 }
 
 func TestGoIDLCompiler_Compile(t *testing.T) {
-
-	defer panicHandler(t)
 
 	ioutil.WriteFile("TestClass.java", []byte(src), 0600)
 	defer os.Remove("TestClass.java")

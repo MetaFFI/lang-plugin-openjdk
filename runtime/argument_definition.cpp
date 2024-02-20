@@ -19,7 +19,17 @@ std::string argument_definition::to_jni_signature_type() const
 	{
 		std::string tmp = alias;
 		std::replace(tmp.begin(), tmp.end(), '.', '/');
+		
+		// if alias is array.
+		size_t pos = std::string::npos;
+		while((pos = tmp.find("[]")) != std::string::npos)
+		{
+			tmp.replace(pos, 2, "");
+			ss << "[";
+		}
+		
 		ss << "L"  << tmp << ";";
+		
 		return ss.str();
 	}
 	

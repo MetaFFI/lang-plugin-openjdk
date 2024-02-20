@@ -1,5 +1,13 @@
 package sanity;
 
+class SomeClass
+{
+	public void print()
+	{
+		System.out.println("Hello from inner class");
+	}
+}
+
 public class TestRuntime
 {
 	private TestRuntime(){}
@@ -25,7 +33,7 @@ public class TestRuntime
 
 	public static String joinStrings(String[] arr)
 	{
-		system.out.println("joining strings");
+		System.out.println("joining strings");
 		return String.join(",", arr);
 	}
 
@@ -34,5 +42,32 @@ public class TestRuntime
 	{
 		System.out.printf("Sleeping for %d seconds\n", seconds);
 		Thread.sleep(seconds * 1000);
+	}
+
+	public static SomeClass[] getSomeClasses()
+	{
+		return new SomeClass[]{new SomeClass(), new SomeClass(), new SomeClass()};
+	}
+
+	public static void expectThreeSomeClasses(SomeClass[] arr)
+	{
+		if(arr.length != 3)
+			throw new IllegalArgumentException("Array length is not 3");
+	}
+
+	public static void expectThreeBuffers(byte[][] buffers)
+	{
+		if(buffers.length != 3)
+			throw new IllegalArgumentException("Buffers length is not 3");
+	}
+
+	public static byte[][] getThreeBuffers()
+	{
+		byte[][] buffers = new byte[3][];
+		for(int i = 0; i < 3; i++)
+		{
+			buffers[i] = new byte[]{1, 2, 3};
+		}
+		return buffers;
 	}
 }

@@ -305,7 +305,7 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 			throw std::runtime_error("Missing class in function path");
 		}
 
-	JNIEnv* env;
+		JNIEnv* env;
 		auto release_environment = pjvm->get_environment(&env);
 		metaffi::utils::scope_guard sg([&]{ release_environment(); });
 		
