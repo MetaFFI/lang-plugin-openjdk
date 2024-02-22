@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.io.File;
 
 public class APITestGo
 {
@@ -26,10 +27,15 @@ public class APITestGo
 	}
 
 	@BeforeClass
-	public static void init()
+	public static void init() throws Exception
 	{
 		runtime = new MetaFFIRuntime("go");
 		runtime.loadRuntimePlugin();
+
+		File f = new File("./go/TestRuntime_MetaFFIGuest"+getDynamicLibraryExtension());
+		if(!f.exists())
+			throw new Exception("./go/TestRuntime_MetaFFIGuest"+getDynamicLibraryExtension()+" not found");
+
 		module = runtime.loadModule("./go/TestRuntime_MetaFFIGuest"+getDynamicLibraryExtension());
 	}
 

@@ -65,3 +65,5 @@ go.sum
 vendor/
 idl/JavaExtractor_MetaFFIGuest.jar
 /idl/out/
+
+api/out/
