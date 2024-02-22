@@ -18,20 +18,20 @@ class PyDict
 	public PyDict(api.MetaFFIRuntime runtime)
 	{
 		mod = runtime.loadModule("builtins");
-		metaffi.Caller pconstructor = mod.load("callable=dict", null, new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+		metaffi.Caller pconstructor = mod.load("callable=dict", null, new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 		this.instance = (metaffi.MetaFFIHandle)pconstructor.call()[0];
 
 		this.pset = mod.load("callable=dict.__setitem__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)},
 				null);
 
 		this.pget = mod.load("callable=dict.__getitem__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)});
 
 		this.plen = mod.load("callable=dict.__len__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)});
 	}
 
 	public PyDict(api.MetaFFIRuntime runtime, metaffi.MetaFFIHandle h)
@@ -40,16 +40,16 @@ class PyDict
 		this.instance = h;
 
 		this.pset = mod.load("callable=dict.__setitem__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)},
 				null);
 
 		this.pget = mod.load("callable=dict.__getitem__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)});
 
 		this.plen = mod.load("callable=dict.__len__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)});
 	}
 
 	public MetaFFIHandle getHandle()
@@ -86,20 +86,20 @@ class PyList
 	public PyList(api.MetaFFIRuntime runtime)
 	{
 		mod = runtime.loadModule("builtins");
-		metaffi.Caller pconstructor = mod.load("callable=list", null, new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+		metaffi.Caller pconstructor = mod.load("callable=list", null, new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 		this.instance = (metaffi.MetaFFIHandle)pconstructor.call()[0];
 
 		this.pappend = mod.load("callable=list.append,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)},
 				null);
 
 		this.pget = mod.load("callable=list.__getitem__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)});
 
 		this.plen = mod.load("callable=list.__len__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)});
 	}
 
 	public PyList(api.MetaFFIRuntime runtime, metaffi.MetaFFIHandle h)
@@ -108,18 +108,18 @@ class PyList
 		this.instance = h;
 
 		this.pappend = mod.load("callable=list.append,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)},
 				null);
 
 		this.pget = mod.load("callable=list.__getitem__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-											new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+											new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)});
 
 		this.plen = mod.load("callable=list.__len__,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)});
 	}
 
 	public MetaFFIHandle getHandle()
@@ -177,108 +177,108 @@ class ExtendedTest
 		// create instance
 		metaffi.Caller newExtendedTest = module.load("callable=extended_test",
                         				null,
-                        				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle) });
+                        				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle) });
 
         this.instance = (MetaFFIHandle)((Object[])newExtendedTest.call())[0];
         org.junit.Assert.assertNotNull(instance);
 
         // load all methods
 		this.psetX = module.load("callable=extended_test.x.fset,instance_required",
-                    new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)},
+                    new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)},
                     null);
 
         this.pgetX = module.load("callable=extended_test.x.fget,instance_required",
-                    new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-                    new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)});
+                    new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+                    new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)});
 
 		this.ppositional_or_named = module.load("callable=extended_test.positional_or_named,instance_required",
-                    new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-                                                new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-                    new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)});
+                    new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+                                                new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+                    new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)});
 
 		this.ppositional_or_named_as_named = module.load("callable=extended_test.positional_or_named,instance_required,named_args",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)});
 
 		this.plist_args = module.load("callable=extended_test.list_args,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.plist_args_without_default = module.load("callable=extended_test.list_args,instance_required",
-					new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-							new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-					new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+					new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+							new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+					new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
         this.plist_args_without_default_and_varargs = module.load("callable=extended_test.list_args,instance_required,varargs",
-	                new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-	                                            new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8),
-	                                            new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-	                new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+	                new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+	                                            new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
+	                                            new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+	                new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.pdict_args = module.load("callable=extended_test.dict_args,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.pdict_args_without_default = module.load("callable=extended_test.dict_args,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 	    this.pdict_args_without_default_and_kwargs = module.load("callable=extended_test.dict_args,instance_required,named_args",
-                    new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-                                                new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8),
-                                                new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-                    new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+                    new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+                                                new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
+                                                new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+                    new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.pnamed_only = module.load("callable=extended_test.named_only,instance_required,named_args",
-                  new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-                                              new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-                  new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)});
+                  new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+                                              new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+                  new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)});
 
 		this.ppositional_only_with_default = module.load("callable=extended_test.positional_only,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)});
 
         this.ppositional_only = module.load("callable=extended_test.positional_only,instance_required",
-                  new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-                                              new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8),
-                                              new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-                  new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny)});
+                  new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+                                              new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
+                                              new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+                  new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)});
 
 		this.parg_positional_arg_named = module.load("callable=extended_test.arg_positional_arg_named,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.parg_positional_arg_named_with_kwargs = module.load("callable=extended_test.arg_positional_arg_named,instance_required,named_args",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.parg_positional_arg_named_without_default = module.load("callable=extended_test.arg_positional_arg_named,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.parg_positional_arg_named_without_default_with_kwargs = module.load("callable=extended_test.arg_positional_arg_named,instance_required,named_args",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.parg_positional_arg_named_without_default_with_varargs = module.load("callable=extended_test.arg_positional_arg_named,instance_required,varargs",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8),
-						new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.parg_positional_arg_named_without_default_with_varargs_and_kwargs = module.load("callable=extended_test.arg_positional_arg_named,instance_required,varargs,named_args",
-                 new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-                                             new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8),
-                                             new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-                                             new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-                 new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+                 new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+                                             new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
+                                             new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+                                             new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+                 new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 	}
 
 	public long getX()

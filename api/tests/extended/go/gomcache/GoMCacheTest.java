@@ -2,7 +2,7 @@ import api.MetaFFIModule;
 import api.MetaFFIRuntime;
 import metaffi.MetaFFIException;
 import metaffi.MetaFFIHandle;
-import metaffi.MetaFFITypeWithAlias;
+import metaffi.MetaFFITypeInfo;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -38,28 +38,28 @@ class GoMCache
 
 		this.pinfinity = mcache.load("global=TTL_FOREVER,getter",
 				null,
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)});
 
 		var newMCache = mcache.load("callable=New",
 				null,
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.plen = mcache.load("callable=CacheDriver.Len,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)});
 
 		this.pset = mcache.load("callable=CacheDriver.Set,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-											new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8),
-											new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny),
-											new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+											new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
+											new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny),
+											new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.pget = mcache.load("callable=CacheDriver.Get,instance_required",
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-											new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle),
-											new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIBool)});
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+											new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+											new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIBool)});
 
 		// call constructor
 		this.instance = (MetaFFIHandle)newMCache.call()[0];

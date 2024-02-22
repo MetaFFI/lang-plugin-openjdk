@@ -17,7 +17,7 @@ public class MetaFFIModule
 
 
 
-	public metaffi.Caller load(String functionPath, metaffi.MetaFFITypeWithAlias[] parametersTypes, metaffi.MetaFFITypeWithAlias[] retvalsTypes)
+	public metaffi.Caller load(String functionPath, metaffi.MetaFFITypeInfo[] parametersTypes, metaffi.MetaFFITypeInfo[] retvalsTypes)
 	{
 
 		var xcallAndContext = metaffi.MetaFFIBridge.load_function(

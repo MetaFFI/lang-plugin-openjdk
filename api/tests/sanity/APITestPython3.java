@@ -66,8 +66,8 @@ public class APITestPython3
 	{
 		// Load helloworld
 		metaffi.Caller pff = module.load("callable=div_integers",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIInt64) },
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIFloat32) });
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIFloat32) });
 
 		Object res = pff.call(10L, 2L);
 
@@ -78,8 +78,8 @@ public class APITestPython3
 	public void testJoinStrings()
 	{
 		metaffi.Caller pff = module.load("callable=join_strings",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8Array) },
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8) });
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8Array) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8) });
 
 		Object res = pff.call((Object)new String[]{"one", "two", "three"});
 
@@ -91,19 +91,19 @@ public class APITestPython3
 	{
 		metaffi.Caller newTestMap = module.load("callable=testmap",
 				null,
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle) });
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle) });
 
 		metaffi.Caller testMapSet = module.load("callable=testmap.set,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny) },
 				null);
 
 		metaffi.Caller testMapContains = module.load("callable=testmap.contains,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8) },
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIBool) });
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIBool) });
 
 		metaffi.Caller testMapGet = module.load("callable=testmap.get,instance_required",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8) },
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIAny) });
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny) });
 
 		var testMap = ((Object[])newTestMap.call())[0];
 		org.junit.Assert.assertNotNull(testMap);
@@ -129,15 +129,15 @@ public class APITestPython3
 	{
 		metaffi.Caller newTestMap = module.load("callable=testmap",
 				null,
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle) });
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle) });
 
 		metaffi.Caller testMapSetName = module.load("attribute=name,instance_required,setter",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle), new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)},
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle), new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)},
 				null);
 
 		metaffi.Caller testMapGetName = module.load("attribute=name,instance_required,getter",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIHandle)},
-				new MetaFFITypeWithAlias[]{new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFIString8)});
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)});
 
 		var testMap = ((Object[])newTestMap.call())[0];
 		org.junit.Assert.assertNotNull(testMap);
@@ -160,7 +160,7 @@ public class APITestPython3
 
 		// load the python "call_callback_add" function
 		metaffi.Caller callCallback = module.load("callable=call_callback_add",
-				new MetaFFITypeWithAlias[]{ new MetaFFITypeWithAlias(MetaFFITypeWithAlias.MetaFFITypes.MetaFFICallable) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFICallable) },
 				null);
 
 		// call python

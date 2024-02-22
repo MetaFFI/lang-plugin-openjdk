@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <sstream>
 
-argument_definition::argument_definition(metaffi_type_with_alias type_alias)
+argument_definition::argument_definition(metaffi_type_info type_alias)
 {
 	type = type_alias.type;
 	if(type_alias.alias != nullptr){

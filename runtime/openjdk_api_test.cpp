@@ -74,8 +74,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	SECTION("runtime_test_target.div_integers")
 	{
 		std::string function_path = "class=sanity.TestRuntime,callable=divIntegers";
-		metaffi_type_with_alias params_types[] = {{metaffi_int32_type}, {metaffi_int32_type}};
-		metaffi_type_with_alias retvals_types[] = {{metaffi_float32_type}};
+		metaffi_type_info params_types[] = {{metaffi_int32_type}, {metaffi_int32_type}};
+		metaffi_type_info retvals_types[] = {{metaffi_float32_type}};
 		
 		uint8_t params_count = 2;
 		uint8_t retvals_count = 1;
@@ -116,8 +116,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	SECTION("runtime_test_target.join_strings")
 	{
 		std::string function_path = "class=sanity.TestRuntime,callable=joinStrings";
-		metaffi_type_with_alias params_types[] = {{metaffi_string8_array_type}};
-		metaffi_type_with_alias retvals_types[] = {{metaffi_string8_type}};
+		metaffi_type_info params_types[] = {{metaffi_string8_array_type}};
+		metaffi_type_info retvals_types[] = {{metaffi_string8_type}};
 
 		void** join_strings = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                     function_path.c_str(), function_path.length(),
@@ -163,7 +163,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	{
 		// create new testmap
 		std::string function_path = "class=sanity.TestMap,callable=<init>";
-		metaffi_type_with_alias retvals_types[] = {{metaffi_handle_type, (char*)"sanity/TestMap", strlen("sanity/TestMap")}};
+		metaffi_type_info retvals_types[] = {{metaffi_handle_type, (char*)"sanity/TestMap", strlen("sanity/TestMap")}};
 		
 		void** pnew_testmap = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                    function_path.c_str(), function_path.length(),
@@ -195,7 +195,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		// set
 		function_path = "class=sanity.TestMap,callable=set,instance_required";
-		metaffi_type_with_alias params_types[] = {{metaffi_handle_type}, {metaffi_string8_type}, {metaffi_any_type}};
+		metaffi_type_info params_types[] = {{metaffi_handle_type}, {metaffi_string8_type}, {metaffi_any_type}};
 
 		void** p_testmap_set = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                    function_path.c_str(), function_path.length(),
@@ -225,8 +225,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		// contains
 		function_path = "class=sanity.TestMap,callable=contains,instance_required";
-		metaffi_type_with_alias params_contains_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
-		metaffi_type_with_alias retvals_contains_types[] = {{metaffi_bool_type}};
+		metaffi_type_info params_contains_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
+		metaffi_type_info retvals_contains_types[] = {{metaffi_bool_type}};
 
 		void** p_testmap_contains = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                     function_path.c_str(), function_path.length(),
@@ -259,8 +259,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		// get
 		function_path = "class=sanity.TestMap,callable=get,instance_required";
-		metaffi_type_with_alias params_get_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
-		metaffi_type_with_alias retvals_get_types[] = {{metaffi_any_type}};
+		metaffi_type_info params_get_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
+		metaffi_type_info retvals_get_types[] = {{metaffi_any_type}};
 
 		void** p_testmap_get = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                          function_path.c_str(), function_path.length(),
@@ -300,7 +300,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	{
 		// create new testmap
 		std::string function_path = "class=sanity.TestMap,callable=<init>";
-		metaffi_type_with_alias retvals_types[] = {{metaffi_handle_type, (char*)"sanity/TestMap", strlen("sanity/TestMap")}};
+		metaffi_type_info retvals_types[] = {{metaffi_handle_type, (char*)"sanity/TestMap", strlen("sanity/TestMap")}};
 		
 		void** pnew_testmap = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                    function_path.c_str(), function_path.length(),
@@ -332,7 +332,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		// set
 		function_path = "class=sanity.TestMap,callable=set,instance_required";
-		metaffi_type_with_alias params_types[] = {{metaffi_handle_type}, {metaffi_string8_type}, {metaffi_any_type}};
+		metaffi_type_info params_types[] = {{metaffi_handle_type}, {metaffi_string8_type}, {metaffi_any_type}};
 		
 		void** p_testmap_set = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                     function_path.c_str(), function_path.length(),
@@ -364,8 +364,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		// contains
 		function_path = "class=sanity.TestMap,callable=contains,instance_required";
-		metaffi_type_with_alias params_contains_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
-		metaffi_type_with_alias retvals_contains_types[] = {{metaffi_bool_type}};
+		metaffi_type_info params_contains_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
+		metaffi_type_info retvals_contains_types[] = {{metaffi_bool_type}};
 		
 		void** p_testmap_contains = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                          function_path.c_str(), function_path.length(),
@@ -398,8 +398,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		// get
 		function_path = "class=sanity.TestMap,callable=get,instance_required";
-		metaffi_type_with_alias params_get_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
-		metaffi_type_with_alias retvals_get_types[] = {{metaffi_any_type}};
+		metaffi_type_info params_get_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
+		metaffi_type_info retvals_get_types[] = {{metaffi_any_type}};
 		
 		void** p_testmap_get = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                     function_path.c_str(), function_path.length(),
@@ -443,7 +443,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	{
 		// create new testmap
 		std::string function_path = "class=sanity.TestMap,callable=<init>";
-		metaffi_type_with_alias retvals_types[] = {{metaffi_handle_type, (char*)"sanity/TestMap", strlen("sanity/TestMap")}};
+		metaffi_type_info retvals_types[] = {{metaffi_handle_type, (char*)"sanity/TestMap", strlen("sanity/TestMap")}};
 		
 		void** pnew_testmap = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                    function_path.c_str(), function_path.length(),
@@ -476,8 +476,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		// load getter
 		function_path = "class=sanity.TestMap,field=name,instance_required,getter";
-		metaffi_type_with_alias params_name_getter_types[] = {{metaffi_handle_type}};
-		metaffi_type_with_alias retvals_name_getter_types[] = {{metaffi_string8_type}};
+		metaffi_type_info params_name_getter_types[] = {{metaffi_handle_type}};
+		metaffi_type_info retvals_name_getter_types[] = {{metaffi_string8_type}};
 		
 		
 		void** pget_name = load_function(module_path.string().c_str(), module_path.string().length(),
@@ -493,7 +493,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		// load setter
 		function_path = "class=sanity.TestMap,field=name,instance_required,setter";
-		metaffi_type_with_alias params_name_setter_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
+		metaffi_type_info params_name_setter_types[] = {{metaffi_handle_type}, {metaffi_string8_type}};
 
 		void** pset_name = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                 function_path.c_str(), function_path.length(),
@@ -551,7 +551,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	{
 		// get five_seconds global
 		std::string function_path = "class=sanity.TestRuntime,field=fiveSeconds,getter";
-		metaffi_type_with_alias retvals_fiveSeconds_getter_types[] = {{metaffi_int32_type}};
+		metaffi_type_info retvals_fiveSeconds_getter_types[] = {{metaffi_int32_type}};
 		
 		
 		void** pfive_seconds_getter = load_function(module_path.string().c_str(), module_path.string().length(),
@@ -579,7 +579,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		// call wait_a_bit
 		function_path = "class=sanity.TestRuntime,callable=waitABit";
-		metaffi_type_with_alias params_waitABit_types[] = {{metaffi_int32_type}};
+		metaffi_type_info params_waitABit_types[] = {{metaffi_int32_type}};
 
 		void** pwait_a_bit = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                   function_path.c_str(), function_path.length(),
@@ -610,7 +610,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	SECTION("runtime_test_target.testmap.getSomeClasses")
 	{
 		std::string function_path = "class=sanity.TestRuntime,callable=getSomeClasses";
-		metaffi_type_with_alias retvals_getSomeClasses_types[] = {{metaffi_handle_type, (char*)"sanity.SomeClass[]", strlen("sanity.SomeClass[]")}};
+		metaffi_type_info retvals_getSomeClasses_types[] = {{metaffi_handle_type, (char*)"sanity.SomeClass[]", strlen("sanity.SomeClass[]")}};
 		
 		void** pgetSomeClasses = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                            function_path.c_str(), function_path.length(),
@@ -624,7 +624,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		REQUIRE(pgetSomeClasses[1] != nullptr);
 		
 		function_path = "class=sanity.TestRuntime,callable=expectThreeSomeClasses";
-		metaffi_type_with_alias params_expectThreeSomeClasses_types[] = {{metaffi_handle_type, (char*)"sanity.SomeClass[]", strlen("sanity.SomeClass[]")}};
+		metaffi_type_info params_expectThreeSomeClasses_types[] = {{metaffi_handle_type, (char*)"sanity.SomeClass[]", strlen("sanity.SomeClass[]")}};
 		
 		void** pexpectThreeSomeClasses = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                       function_path.c_str(), function_path.length(),
@@ -663,7 +663,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 	SECTION("runtime_test_target.testmap.ThreeBuffers")
 	{
 		std::string function_path = "class=sanity.TestRuntime,callable=expectThreeBuffers";
-		metaffi_type_with_alias params_expectThreeBuffers_types[] = {{metaffi_uint8_array_type}};
+		metaffi_type_info params_expectThreeBuffers_types[] = {{metaffi_uint8_array_type}};
 		
 		void** pexpectThreeBuffers = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                       function_path.c_str(), function_path.length(),
@@ -677,7 +677,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		REQUIRE(pexpectThreeBuffers[1] != nullptr);
 		
 		function_path = "class=sanity.TestRuntime,callable=getThreeBuffers";
-		metaffi_type_with_alias retval_getThreeBuffers_types[] = {{metaffi_uint8_array_type}};
+		metaffi_type_info retval_getThreeBuffers_types[] = {{metaffi_uint8_array_type}};
 		
 		void** pgetThreeBuffers = load_function(module_path.string().c_str(), module_path.string().length(),
 		                                               function_path.c_str(), function_path.length(),

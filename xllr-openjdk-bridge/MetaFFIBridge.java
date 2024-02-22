@@ -6,8 +6,8 @@ public class MetaFFIBridge
 {
 	public static native void load_runtime_plugin(String runtime_plugin);
 	public static native void free_runtime_plugin(String runtime_plugin);
-	public static native long load_function(String runtime_plugin, String module_path, String function_path, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
-	public static native long load_callable(String runtime_plugin, Object method, String jni_signature, MetaFFITypeWithAlias[] params_types, MetaFFITypeWithAlias[] retval_types);
+	public static native long load_function(String runtime_plugin, String module_path, String function_path, MetaFFITypeInfo[] params_types, MetaFFITypeInfo[] retval_types);
+	public static native long load_callable(String runtime_plugin, Object method, String jni_signature, MetaFFITypeInfo[] params_types, MetaFFITypeInfo[] retval_types);
 	public static native void free_function(String runtime_plugin, long function_id);
 	public static native void xcall_params_ret(long pxcallAndContext, long xcall_params);
 	public static native long xcall_no_params_ret(long pxcallAndContext, long xcall_params);

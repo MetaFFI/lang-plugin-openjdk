@@ -20,10 +20,10 @@ public class Caller
 		return this.f.apply(parameters);
 	}
 
-	public static Caller createCaller(long xcallAndContext, metaffi.MetaFFITypeWithAlias[] params, metaffi.MetaFFITypeWithAlias retval)
+	public static Caller createCaller(long xcallAndContext, metaffi.MetaFFITypeInfo[] params, metaffi.MetaFFITypeInfo retval)
 	{
     	long[] parametersTypesArray = (params != null && params.length > 0) ? convertToLongArray(params) : new long[]{};
-    	long[] retvalTypeArray = (retval != null) ? convertToLongArray(new metaffi.MetaFFITypeWithAlias[]{retval}) : new long[]{};
+    	long[] retvalTypeArray = (retval != null) ? convertToLongArray(new metaffi.MetaFFITypeInfo[]{retval}) : new long[]{};
 		return createCaller(xcallAndContext, parametersTypesArray, retvalTypeArray);
 	}
 
@@ -83,7 +83,7 @@ public class Caller
 		return caller;
 	}
 
-	public static long[] convertToLongArray(metaffi.MetaFFITypeWithAlias[] metaFFITypesArray)
+	public static long[] convertToLongArray(metaffi.MetaFFITypeInfo[] metaFFITypesArray)
 	{
 		long[] longArray = new long[metaFFITypesArray.length];
 		for (int i = 0; i < metaFFITypesArray.length; i++) {

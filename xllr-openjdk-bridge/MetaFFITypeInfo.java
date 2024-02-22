@@ -1,6 +1,6 @@
 package metaffi;
 
-public class MetaFFITypeWithAlias
+public class MetaFFITypeInfo
 {
 	public enum MetaFFITypes
 	{
@@ -56,29 +56,54 @@ public class MetaFFITypeWithAlias
 	public final MetaFFITypes type;
 	public final String alias;
 	public final long value;
+	public final int dimensions;
 
-	public MetaFFITypeWithAlias(MetaFFITypes metaffiType)
+	public MetaFFITypeInfo(MetaFFITypes metaffiType)
 	{
 		this.type = metaffiType;
 		this.value = metaffiType.value;
 		this.alias = null;
+		this.dimensions = 0;
 	}
 
-	public MetaFFITypeWithAlias(MetaFFITypes metaffiType, String alias)
+	public MetaFFITypeInfo(MetaFFITypes metaffiType, int dims)
+    {
+        this.type = metaffiType;
+        this.value = metaffiType.value;
+        this.alias = null;
+        this.dimensions = dims;
+    }
+
+	public MetaFFITypeInfo(MetaFFITypes metaffiType, String alias)
 	{
 		this.type = metaffiType;
 		this.value = metaffiType.value;
 		this.alias = alias;
+		this.dimensions = 0;
 	}
 
-	public MetaFFITypeWithAlias(String jniCharType)
+	public MetaFFITypeInfo(MetaFFITypes metaffiType, String alias, int dims)
     {
-        this(jniCharType, null);
+        this.type = metaffiType;
+        this.value = metaffiType.value;
+        this.alias = null;
+        this.dimensions = dims;
     }
 
-	public MetaFFITypeWithAlias(String jniCharType, String alias)
+	public MetaFFITypeInfo(String jniCharType)
+    {
+        this(jniCharType, null, 0);
+    }
+
+    public MetaFFITypeInfo(String jniCharType, int dims)
+    {
+        this(jniCharType, null, dims);
+    }
+
+	public MetaFFITypeInfo(String jniCharType, String alias, int dims)
     {
         this.alias = alias;
+        this.dimensions = dims;
 
 		switch(jniCharType.toUpperCase())
 		{

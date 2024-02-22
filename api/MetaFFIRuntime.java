@@ -1,6 +1,6 @@
 package api;
 
-import metaffi.MetaFFITypeWithAlias;
+import metaffi.MetaFFITypeInfo;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -35,18 +35,18 @@ public class MetaFFIRuntime
 
 	public static metaffi.Caller makeMetaFFICallable(Method m) throws NoSuchMethodException
 	{
-		ArrayList<MetaFFITypeWithAlias> outParameters = new ArrayList<>();
-		ArrayList<MetaFFITypeWithAlias> outRetvals = new ArrayList<>();
+		ArrayList<MetaFFITypeInfo> outParameters = new ArrayList<>();
+		ArrayList<MetaFFITypeInfo> outRetvals = new ArrayList<>();
 		String jniSignature = MetaFFIRuntime.getJNISignature(m, outParameters, outRetvals);
 
-		var params = outParameters.toArray(new MetaFFITypeWithAlias[]{});
-		var retvals = outRetvals.toArray(new MetaFFITypeWithAlias[]{});
+		var params = outParameters.toArray(new MetaFFITypeInfo[]{});
+		var retvals = outRetvals.toArray(new MetaFFITypeInfo[]{});
 		long xcall_and_context = metaffi.MetaFFIBridge.load_callable("xllr.openjdk", m, jniSignature, params, retvals);
 
 		return metaffi.Caller.createCaller(xcall_and_context, params, retvals.length > 0 ? retvals[0] : null);
 	}
 
-	private static String getJNISignature(Method method, List<MetaFFITypeWithAlias> outParameters, List<MetaFFITypeWithAlias> outRetvals) throws NoSuchMethodException
+	private static String getJNISignature(Method method, List<MetaFFITypeInfo> outParameters, List<MetaFFITypeInfo> outRetvals) throws NoSuchMethodException
 	{
 		// Get the parameter types
 		Type[] paramTypes = method.getGenericParameterTypes();
@@ -59,13 +59,13 @@ public class MetaFFIRuntime
 		for (Type paramType : paramTypes)
 		{
 			String jniSig = getJNISignature(paramType);
-			outParameters.add(new MetaFFITypeWithAlias(jniSig));
+			outParameters.add(new MetaFFITypeInfo(jniSig));
 			signature.append(jniSig);
 		}
 		signature.append(")");
 
 		String jniSig = getJNISignature(returnType);
-		outRetvals.add(new MetaFFITypeWithAlias(jniSig));
+		outRetvals.add(new MetaFFITypeInfo(jniSig));
 		signature.append(jniSig);
 
 		return signature.toString();

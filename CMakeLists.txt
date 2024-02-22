@@ -42,7 +42,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/compiler/)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/runtime/)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/xllr-openjdk-bridge/)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/api/)
-#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/idl/)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/idl/)
 
 # cmake install (not cpack)
 set(CMAKE_INSTALL_PREFIX [[$ENV{METAFFI_HOME}]])

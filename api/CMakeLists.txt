@@ -7,7 +7,7 @@ set(target_jar_name "metaffi.api")
 
 add_jar(${target_jar_name}
 		SOURCES MetaFFIModule.java MetaFFIRuntime.java
-		INCLUDE_JARS $ENV{METAFFI_HOME}/xllr.openjdk.bridge.jar
+		INCLUDE_JARS ${PROJECT_BINARY_DIR}/xllr.openjdk.bridge.jar
 		OUTPUT_DIR ${PROJECT_BINARY_DIR})
 
 # Copy to metaffi directory

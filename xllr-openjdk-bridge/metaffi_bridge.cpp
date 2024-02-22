@@ -94,48 +94,48 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* 
 	}
 }
 //--------------------------------------------------------------------
-jclass metaFFITypeWithAliasClass = nullptr;
+jclass MetaFFITypeInfoClass = nullptr;
 jfieldID typeFieldID = nullptr;
 jfieldID aliasFieldID = nullptr;
-metaffi_types_with_alias_ptr convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(JNIEnv* env, jobjectArray inputArray)
+metaffi_type_infos_ptr convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(JNIEnv* env, jobjectArray inputArray)
 {
 	// Get the length of the input array
 	jsize length = env->GetArrayLength(inputArray);
 	check_and_throw_jvm_exception(env, true);
 	// Allocate the output array
-	metaffi_types_with_alias_ptr outputArray = new metaffi_type_with_alias[length];
+	metaffi_type_infos_ptr outputArray = new metaffi_type_info[length];
 
-	// Get the MetaFFITypeWithAlias class
-	if(!metaFFITypeWithAliasClass)
+	// Get the MetaFFITypeInfo class
+	if(!MetaFFITypeInfoClass)
 	{
-		metaFFITypeWithAliasClass = env->FindClass("metaffi/MetaFFITypeWithAlias");
+		MetaFFITypeInfoClass = env->FindClass("metaffi/MetaFFITypeInfo");
 		check_and_throw_jvm_exception(env, true);
 	}
 
 	// Get the field IDs
 	if(!typeFieldID)
 	{
-		typeFieldID = env->GetFieldID(metaFFITypeWithAliasClass, "value", "J"); // long
+		typeFieldID = env->GetFieldID(MetaFFITypeInfoClass, "value", "J"); // long
 		check_and_throw_jvm_exception(env, true);
 	}
 
 	if(!aliasFieldID)
 	{
-		aliasFieldID = env->GetFieldID(metaFFITypeWithAliasClass, "alias", "Ljava/lang/String;"); // String
+		aliasFieldID = env->GetFieldID(MetaFFITypeInfoClass, "alias", "Ljava/lang/String;"); // String
 		check_and_throw_jvm_exception(env, true);
 	}
 
 	// Iterate over the input array
 	for (jsize i = 0; i < length; i++)
 	{
-		// Get the current MetaFFITypeWithAlias object
-		jobject metaFFITypeWithAliasObject = env->GetObjectArrayElement(inputArray, i);
+		// Get the current MetaFFITypeInfo object
+		jobject MetaFFITypeInfoObject = env->GetObjectArrayElement(inputArray, i);
 		check_and_throw_jvm_exception(env, true);
 
 		// Get the type and alias
-		jlong type = env->GetLongField(metaFFITypeWithAliasObject, typeFieldID);
+		jlong type = env->GetLongField(MetaFFITypeInfoObject, typeFieldID);
 		check_and_throw_jvm_exception(env, true);
-		jstring aliasJString = (jstring)env->GetObjectField(metaFFITypeWithAliasObject, aliasFieldID);
+		jstring aliasJString = (jstring)env->GetObjectField(MetaFFITypeInfoObject, aliasFieldID);
 		check_and_throw_jvm_exception(env, true);
 
 		if(aliasJString)
@@ -162,7 +162,7 @@ metaffi_types_with_alias_ptr convert_MetaFFITypeWithAlias_array_to_metaffi_type_
 	}
 
 	// Return the output array as a jlong (this is actually a pointer)
-	return reinterpret_cast<metaffi_types_with_alias_ptr>(outputArray);
+	return reinterpret_cast<metaffi_type_infos_ptr>(outputArray);
 }
 //--------------------------------------------------------------------
 jmethodID get_method_id_from_Method(JNIEnv* env, jclass methodClass, jobject methodObject, jstring jniSignature, jboolean& isStatic)
@@ -231,13 +231,13 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 		jsize retval_count = retval_types == nullptr ? 0 : env->GetArrayLength(retval_types);
 		check_and_throw_jvm_exception(env, true);
 
-		metaffi_types_with_alias_ptr pparams_types = parameters_types == nullptr ?
+		metaffi_type_infos_ptr pparams_types = parameters_types == nullptr ?
 													nullptr :
-													convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(env, parameters_types);
+													convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, parameters_types);
 
-		metaffi_types_with_alias_ptr pretval_types = retval_types == nullptr ?
+		metaffi_type_infos_ptr pretval_types = retval_types == nullptr ?
 		                                             nullptr :
-		                                             convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(env, retval_types);
+		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, retval_types);
 
 		char* out_err_buf = nullptr;
 		uint32_t out_err_len = 0;
@@ -322,13 +322,13 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 		jsize retval_count = retval_types == nullptr ? 0 : env->GetArrayLength(retval_types);
 		check_and_throw_jvm_exception(env, true);
 
-		metaffi_types_with_alias_ptr pparams_types = parameters_types == nullptr ?
+		metaffi_type_infos_ptr pparams_types = parameters_types == nullptr ?
 													nullptr :
-													convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(env, parameters_types);
+													convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, parameters_types);
 
-		metaffi_types_with_alias_ptr pretval_types = retval_types == nullptr ?
+		metaffi_type_infos_ptr pretval_types = retval_types == nullptr ?
 		                                             nullptr :
-		                                             convert_MetaFFITypeWithAlias_array_to_metaffi_type_with_alias(env, retval_types);
+		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, retval_types);
 
 		char* out_err_buf = nullptr;
 		uint32_t out_err_len = 0;
