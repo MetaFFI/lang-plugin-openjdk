@@ -541,6 +541,29 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object (JNIEnv* env, j
 	openjdk_objects_table::instance().remove(env, (jobject)phandle);
 }
 //--------------------------------------------------------------------
+int get_array_dimensions(JNIEnv *env, jobjectArray arr)
+{
+	jclass cls = env->GetObjectClass(arr);
+	jmethodID mid = env->GetMethodID(cls, "getClass", "()Ljava/lang/Class;");
+	jobject clsObj = env->CallObjectMethod(arr, mid);
+	cls = env->GetObjectClass(clsObj);
+	mid = env->GetMethodID(cls, "getName", "()Ljava/lang/String;");
+	jstring name = (jstring)env->CallObjectMethod(clsObj, mid);
+	const char* nameStr = env->GetStringUTFChars(name, nullptr);
+	
+	int dimensions = 0;
+	for (const char* c = nameStr; *c != '\0'; c++)
+	{
+		if (*c == '[') {
+			dimensions++;
+		}
+	}
+	
+	env->ReleaseStringUTFChars(name, nameStr);
+	
+	return dimensions;
+}
+//--------------------------------------------------------------------
 JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, jclass, jlong pcdts, jobjectArray parameters, jlongArray types)
 {
 	try
@@ -558,9 +581,9 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 			jvalue cur_object;
 			cur_object.l = env->GetObjectArrayElement(parameters, i);
 			check_and_throw_jvm_exception(env, true);
-			metaffi_type type_to_expect = (types_elements[i] & metaffi_array_type) == 0 ?
-												(types_elements[i] == metaffi_callable_type ? metaffi_callable_type : metaffi_handle_type) :
-												types_elements[i];
+			metaffi_type_info type_to_expect = (types_elements[i] & metaffi_array_type) == 0 ?
+												(types_elements[i] == metaffi_callable_type ? metaffi_type_info{metaffi_callable_type} : metaffi_type_info{metaffi_handle_type}) :
+                                               metaffi_type_info{(uint64_t)types_elements[i], nullptr, 0, get_array_dimensions(env, (jobjectArray)cur_object.l)};
 			wrapper.from_jvalue(env, cur_object, type_to_expect, i);
 			wrapper.switch_to_primitive(env, i, types_elements[i]);
 		}

@@ -5,7 +5,7 @@
 
 argument_definition::argument_definition(metaffi_type_info type_alias)
 {
-	type = type_alias.type;
+	type = type_alias;
 	if(type_alias.alias != nullptr){
 		alias = std::string(type_alias.alias, type_alias.alias_length);
 	}
@@ -33,11 +33,11 @@ std::string argument_definition::to_jni_signature_type() const
 		return ss.str();
 	}
 	
-	if(type & metaffi_array_type){
-		ss << "[";
+	if(type.type & metaffi_array_type){
+		ss << std::string(type.dimensions, '[');
 	}
 	
-	metaffi_type tmp = type & (~metaffi_array_type);
+	metaffi_type tmp = type.type & (~metaffi_array_type);
 	
 	if (tmp == metaffi_null_type) ss << "V";
 	else if (tmp == metaffi_bool_type) ss << "Z";

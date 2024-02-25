@@ -7,29 +7,132 @@
 #include "utils/tracer.h"
 #include "jni_caller.h"
 
-#define copy_jni_array(name_of_java_class_type, jni_sig, name_of_getter, cdt_type_struct, jni_primitive_type) \
-	if(env->IsInstanceOf(val.l, env->FindClass("[Ljava/lang/" #name_of_java_class_type ";")) != JNI_TRUE) \
-	{\
-		throw std::runtime_error("Given argument is not " #name_of_java_class_type "[]");\
-	}\
-\
-	jclass cls = env->FindClass("Ljava/lang/" #name_of_java_class_type ";");\
-	jmethodID methID = env->GetMethodID(cls, name_of_getter, "()" #jni_sig);\
-	int len = env->GetArrayLength((jobjectArray)val.l);\
-	check_and_throw_jvm_exception(env, true);\
-	cdt_type_struct.dimensions = 1;\
-	cdt_type_struct.dimensions_lengths = new metaffi_size[1];\
-	cdt_type_struct.dimensions_lengths[0] = len;\
-	cdt_type_struct.vals = new jni_primitive_type[len];\
-\
-	for (int i = 0; i < len; i++)\
-	{\
-		jobject obj = env->GetObjectArrayElement((jobjectArray)val.l, i);\
-		check_and_throw_jvm_exception(env, true);\
-		cdt_type_struct.vals[i] = env->CallLongMethod(obj, methID);\
-		check_and_throw_jvm_exception(env, true);\
-		env->DeleteLocalRef(obj);\
+template<typename jni_primitive_t, typename jni_primitive_array_t>
+std::pair<jni_primitive_t*, metaffi_size*> copy_jvm_array(JNIEnv* env, bool is_array_of_objects, void* getter_func, jmethodID methID, jobjectArray obj_array, int dimensions)
+{
+	// Handle multi-dimensional array
+	if(dimensions == 1)
+	{
+		metaffi_size len = env->GetArrayLength(obj_array);
+		auto arr = new jni_primitive_t[len];
+	
+		if(is_array_of_objects)
+		{
+			for (int i = 0; i < len; i++)
+			{
+				jobject obj = env->GetObjectArrayElement(obj_array, i);
+				check_and_throw_jvm_exception(env, true);
+				arr[i] = ((jni_primitive_t(*)(JNIEnv*, jobject, jmethodID))getter_func)(env, obj, methID); // TODO: need to use the correct function
+				check_and_throw_jvm_exception(env, true);
+				env->DeleteLocalRef(obj);
+			}
+		}
+		else
+		{
+			jni_primitive_t* data = ((jni_primitive_t*(*)(JNIEnv*,jni_primitive_array_t, jboolean*))getter_func)(env, (jni_primitive_array_t)obj_array, nullptr);
+			check_and_throw_jvm_exception(env, true);
+			std::copy(data, data+len, arr);
+		}
+		
+		return std::pair<jni_primitive_t*, metaffi_size*>(arr, (metaffi_size*)len);
 	}
+	else
+	{
+		auto len = env->GetArrayLength(obj_array);
+		auto arr = new jni_primitive_t[len];
+		auto plen = new metaffi_size[len];
+		
+		for (jsize i = 0; i < len; i++)
+		{
+			jobjectArray innerArray = (jobjectArray)env->GetObjectArrayElement(obj_array, i);
+			auto res = copy_jvm_array<jni_primitive_t, jni_primitive_array_t>(env, is_array_of_objects, getter_func, methID, innerArray, dimensions - 1);
+			((jni_primitive_t**)arr)[i] = res.first;
+			plen[i] = (metaffi_size)res.second;
+			env->DeleteLocalRef(innerArray);
+		}
+		
+		return std::pair<jni_primitive_t*, metaffi_size*>(arr, plen);
+	}
+}
+
+#define copy_jni_array(name_of_java_class_type, jni_sig, name_of_getter, cdt_type_struct, jni_primitive_type, ctype, dims) \
+    jclass objectClass = env->GetObjectClass(val.l); \
+	jmethodID getClassMethod = env->GetMethodID(objectClass, "getClass", "()Ljava/lang/Class;"); \
+	jobject classObject = env->CallObjectMethod(val.l, getClassMethod);                                                                                                                    \
+	jclass classClass = env->GetObjectClass(classObject);                                                                                                                    \
+	jmethodID getNameMethod = env->GetMethodID(classClass, "getName", "()Ljava/lang/String;");                          \
+	jstring className = (jstring)env->CallObjectMethod(classObject, getNameMethod);\
+    const char* cClassName = env->GetStringUTFChars(className, nullptr);                                                                                                                \
+    bool is_array_of_objects = (strstr(cClassName, "/java/lang/") != nullptr);                                                                                                                \
+    env->ReleaseStringUTFChars(className, cClassName);                                                                          \
+    check_and_throw_jvm_exception(env, true);\
+                                                                                                                    \
+    cdt_type_struct.dimensions = dims; \
+    if(is_array_of_objects)                                                                                         \
+	{                                                                                                                  \
+		jclass cls = env->FindClass("Ljava/lang/" #name_of_java_class_type ";");\
+		jmethodID methID = env->GetMethodID(cls, name_of_getter, "()" jni_sig);\
+		int len = env->GetArrayLength((jobjectArray)val.l);\
+		check_and_throw_jvm_exception(env, true);\
+		\
+	    auto res = copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Call##name_of_java_class_type##Method, methID, (jobjectArray)val.l, dims); \
+		cdt_type_struct.dimensions_lengths = res.second;\
+		cdt_type_struct.vals = (ctype*)res.first; \
+	}   \
+	else  \
+	{  \
+		auto res = copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Get##name_of_java_class_type##ArrayElements, nullptr, (jobjectArray)val.l, dims); \
+		cdt_type_struct.dimensions_lengths = res.second;\
+		cdt_type_struct.vals = (ctype*)res.first; \
+	}
+	
+template<typename jni_primitive_t, typename jni_array_primitive_t, typename c_primitive_t>
+jobjectArray create_jvm_multidim_array(JNIEnv *env, c_primitive_t* arr, uint64_t dims, uint64_t* lengths, void* new_array_func, void* set_array_region_func, const char* jni_arr_sig, uint64_t cur_dim = 0)
+{
+	if (cur_dim+1 == dims)
+	{
+		jni_array_primitive_t data_arr = ((jni_array_primitive_t(*)(JNIEnv*, jsize))new_array_func)(env, (jsize)lengths[cur_dim]);
+		((void(*)(JNIEnv*,jni_array_primitive_t,jsize,jsize,jni_primitive_t*))set_array_region_func)(env,data_arr, 0, (jsize)lengths[cur_dim], (jni_primitive_t*)arr);
+		return (jobjectArray)data_arr;
+	}
+	else if (cur_dim+1 < dims)
+	{
+		jobjectArray outerArray = env->NewObjectArray((jsize)lengths[cur_dim], env->FindClass(jni_arr_sig), nullptr);
+		
+		for (jsize i = 0; i < lengths[cur_dim]; i++)
+		{
+			env->SetObjectArrayElement(outerArray, i, create_jvm_multidim_array<jni_primitive_t, jni_array_primitive_t, c_primitive_t>(env, arr + i * lengths[cur_dim], dims, lengths, new_array_func, set_array_region_func, jni_arr_sig, cur_dim + 1));
+		}
+		return outerArray;
+	}
+	return nullptr;
+}
+
+jobjectArray create_jvm_multidim_array(JNIEnv *env, cdt_metaffi_handle* arr, uint64_t dims, uint64_t* lengths, uint64_t cur_dim = 0)
+{
+	if (cur_dim+1 == dims)
+	{
+		jobjectArray data_arr = env->NewObjectArray((jsize)lengths[cur_dim], env->FindClass("java/lang/Object"), nullptr);
+		
+		for (jsize i = 0; i < lengths[0]; i++)
+		{
+			env->SetObjectArrayElement(data_arr, i, reinterpret_cast<jobject>(arr[i].val));
+		}
+		
+		return data_arr;
+	}
+	else if (cur_dim+1 < dims)
+	{
+		jobjectArray outerArray = env->NewObjectArray((jsize)lengths[cur_dim], env->FindClass("[Ljava/lang/Object;"), nullptr);
+		
+		for (jsize i = 0; i < lengths[cur_dim]; i++)
+		{
+			env->SetObjectArrayElement(outerArray, i, create_jvm_multidim_array(env, arr + i * lengths[cur_dim], dims, lengths,cur_dim + 1));
+		}
+		return outerArray;
+	}
+	return nullptr;
+}
 
 //--------------------------------------------------------------------
 cdts_java_wrapper::cdts_java_wrapper(cdt *cdts, metaffi_size cdts_length):metaffi::runtime::cdts_wrapper(cdts, cdts_length, false)
@@ -92,64 +195,103 @@ jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 		}break;
 		
 		// Add cases for array types
+		case metaffi_bool_array_type:
+		{
+			jval.l = create_jvm_multidim_array<jboolean, jbooleanArray, metaffi_bool>(env,
+			                                                             c->cdt_val.metaffi_bool_array_val.vals,
+			                                                             c->cdt_val.metaffi_bool_array_val.dimensions,
+			                                                             c->cdt_val.metaffi_bool_array_val.dimensions_lengths,
+			                                                             (void*)env->functions->NewBooleanArray,
+			                                                             (void*)env->functions->SetBooleanArrayRegion,
+			                                                             "[Z");
+			check_and_throw_jvm_exception(env, true);
+		} break;
 		case metaffi_int32_array_type:
 		{
-			jintArray arr = env->NewIntArray(c->cdt_val.metaffi_int32_array_val.dimensions_lengths[0]);
+			jval.l = create_jvm_multidim_array<jint, jintArray, int32_t>(env,
+			                                                               c->cdt_val.metaffi_int32_array_val.vals,
+			                                                               c->cdt_val.metaffi_int32_array_val.dimensions,
+			                                                               c->cdt_val.metaffi_int32_array_val.dimensions_lengths,
+			                                                               (void*)env->functions->NewIntArray,
+			                                                               (void*)env->functions->SetIntArrayRegion,
+			                                                               "[I");
 			check_and_throw_jvm_exception(env, true);
-			env->SetIntArrayRegion(arr, 0, c->cdt_val.metaffi_int32_array_val.dimensions_lengths[0], reinterpret_cast<jint*>(c->cdt_val.metaffi_int32_array_val.vals));
-			check_and_throw_jvm_exception(env, true);
-			jval.l = arr;
 		} break;
 		case metaffi_int64_array_type:
 		{
-			jlongArray arr = env->NewLongArray(c->cdt_val.metaffi_int64_array_val.dimensions_lengths[0]);
+			jval.l = create_jvm_multidim_array<jlong, jlongArray, int64_t>(env,
+			                                                             c->cdt_val.metaffi_int64_array_val.vals,
+			                                                             c->cdt_val.metaffi_int64_array_val.dimensions,
+			                                                             c->cdt_val.metaffi_int64_array_val.dimensions_lengths,
+			                                                             (void*)env->functions->NewLongArray,
+			                                                             (void*)env->functions->SetLongArrayRegion,
+			                                                             "[L");
 			check_and_throw_jvm_exception(env, true);
-			env->SetLongArrayRegion(arr, 0, c->cdt_val.metaffi_int64_array_val.dimensions_lengths[0], reinterpret_cast<jlong*>(c->cdt_val.metaffi_int64_array_val.vals));
-			check_and_throw_jvm_exception(env, true);
-			jval.l = arr;
 		} break;
 		case metaffi_int16_array_type:
 		{
-			jshortArray arr = env->NewShortArray(c->cdt_val.metaffi_int16_array_val.dimensions_lengths[0]);
+			jval.l = create_jvm_multidim_array<jshort, jshortArray, int16_t>(env,
+			                                                               c->cdt_val.metaffi_int16_array_val.vals,
+			                                                               c->cdt_val.metaffi_int16_array_val.dimensions,
+			                                                               c->cdt_val.metaffi_int16_array_val.dimensions_lengths,
+			                                                               (void*)env->functions->NewShortArray,
+			                                                               (void*)env->functions->SetShortArrayRegion,
+			                                                               "[S");
 			check_and_throw_jvm_exception(env, true);
-			env->SetShortArrayRegion(arr, 0, c->cdt_val.metaffi_int16_array_val.dimensions_lengths[0], reinterpret_cast<jshort*>(c->cdt_val.metaffi_int16_array_val.vals));
+		} break;
+		case metaffi_uint8_array_type:
+		{
+			jval.l = create_jvm_multidim_array<jbyte, jbyteArray, uint8_t>(env,
+																		   c->cdt_val.metaffi_uint8_array_val.vals,
+																		   c->cdt_val.metaffi_uint8_array_val.dimensions,
+																		   c->cdt_val.metaffi_uint8_array_val.dimensions_lengths,
+																		   (void*)env->functions->NewByteArray,
+																		   (void*)env->functions->SetByteArrayRegion,
+																		   "[B");
 			check_and_throw_jvm_exception(env, true);
-			jval.l = arr;
+			
 		} break;
 		case metaffi_int8_array_type:
 		{
-			jbyteArray arr = env->NewByteArray(c->cdt_val.metaffi_int8_array_val.dimensions_lengths[0]);
+			jval.l = create_jvm_multidim_array<jbyte, jbyteArray, int8_t>(env,
+			                                                               c->cdt_val.metaffi_int8_array_val.vals,
+			                                                               c->cdt_val.metaffi_int8_array_val.dimensions,
+			                                                               c->cdt_val.metaffi_int8_array_val.dimensions_lengths,
+			                                                               (void*)env->functions->NewByteArray,
+			                                                               (void*)env->functions->SetByteArrayRegion,
+			                                                               "[B");
 			check_and_throw_jvm_exception(env, true);
-			env->SetByteArrayRegion(arr, 0, c->cdt_val.metaffi_int8_array_val.dimensions_lengths[0], reinterpret_cast<jbyte*>(c->cdt_val.metaffi_int8_array_val.vals));
-			check_and_throw_jvm_exception(env, true);
-			jval.l = arr;
+			
 		} break;
 		case metaffi_float32_array_type:
 		{
-			jfloatArray arr = env->NewFloatArray(c->cdt_val.metaffi_float32_array_val.dimensions_lengths[0]);
+			jval.l = create_jvm_multidim_array<jfloat, jfloatArray, float>(env,
+		                                                                 c->cdt_val.metaffi_float32_array_val.vals,
+		                                                                 c->cdt_val.metaffi_float32_array_val.dimensions,
+		                                                                 c->cdt_val.metaffi_float32_array_val.dimensions_lengths,
+		                                                                 (void*)env->functions->NewFloatArray,
+		                                                                 (void*)env->functions->SetFloatArrayRegion,
+		                                                                 "[F");
 			check_and_throw_jvm_exception(env, true);
-			env->SetFloatArrayRegion(arr, 0, c->cdt_val.metaffi_float32_array_val.dimensions_lengths[0], reinterpret_cast<jfloat*>(c->cdt_val.metaffi_float32_array_val.vals));
-			check_and_throw_jvm_exception(env, true);
-			jval.l = arr;
 		} break;
 		case metaffi_float64_array_type:
 		{
-			jdoubleArray arr = env->NewDoubleArray(c->cdt_val.metaffi_float64_array_val.dimensions_lengths[0]);
+			jval.l = create_jvm_multidim_array<jdouble, jdoubleArray, double>(env,
+			                                                               c->cdt_val.metaffi_float64_array_val.vals,
+			                                                               c->cdt_val.metaffi_float64_array_val.dimensions,
+			                                                               c->cdt_val.metaffi_float64_array_val.dimensions_lengths,
+			                                                               (void*)env->functions->NewDoubleArray,
+			                                                               (void*)env->functions->SetDoubleArrayRegion,
+			                                                               "[D");
 			check_and_throw_jvm_exception(env, true);
-			env->SetDoubleArrayRegion(arr, 0, c->cdt_val.metaffi_float64_array_val.dimensions_lengths[0], reinterpret_cast<jdouble*>(c->cdt_val.metaffi_float64_array_val.vals));
-			check_and_throw_jvm_exception(env, true);
-			jval.l = arr;
 		} break;
 		case metaffi_handle_array_type:
 		{
-			jobjectArray arr = env->NewObjectArray(c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0], env->FindClass("java/lang/Object"), nullptr);
+			jval.l = create_jvm_multidim_array(env,
+									  c->cdt_val.metaffi_handle_array_val.vals,
+									  c->cdt_val.metaffi_handle_array_val.dimensions,
+									  c->cdt_val.metaffi_handle_array_val.dimensions_lengths);
 			check_and_throw_jvm_exception(env, true);
-			for (int i = 0; i < c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0]; ++i)
-			{
-				env->SetObjectArrayElement(arr, i, reinterpret_cast<jobject>(c->cdt_val.metaffi_handle_array_val.vals[i].val));
-				check_and_throw_jvm_exception(env, true);
-			}
-			jval.l = arr;
 		} break;
 		case metaffi_string8_array_type:
 		{
@@ -240,11 +382,11 @@ jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 	return jval;
 }
 //--------------------------------------------------------------------
-void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, metaffi_type type, int index) const
+void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, const metaffi_type_info& type, int index) const
 {
 	cdt* c = (*this)[index];
-	c->type = type;
-	switch (type)
+	c->type = type.type;
+	switch (c->type)
 	{
 		case metaffi_int32_type:
 			c->cdt_val.metaffi_int32_val.val = val.i;
@@ -354,33 +496,38 @@ void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, metaffi_type type, 
 		case metaffi_int64_array_type:
 		{
 			c->type = metaffi_int64_array_type;
-			copy_jni_array("Long", "J", "longValue", c->cdt_val.metaffi_int64_array_val, jlong);
+			copy_jni_array(Long, "J", "longValue", c->cdt_val.metaffi_int64_array_val, jlong, metaffi_int64, type.dimensions);
 
 		} break;
 		case metaffi_int16_array_type:
 		{
 			c->type = metaffi_int16_array_type;
-			copy_jni_array("Short", "S", "shortValue", c->cdt_val.metaffi_int16_array_val, jshort);
+			copy_jni_array(Short, "S", "shortValue", c->cdt_val.metaffi_int16_array_val, jshort, metaffi_int16, type.dimensions);
+		} break;
+		case metaffi_uint8_array_type:
+		{
+			c->type = metaffi_uint8_array_type;
+			copy_jni_array(Byte, "B", "byteValue", c->cdt_val.metaffi_uint8_array_val, jbyte, metaffi_uint8, type.dimensions);
 		} break;
 		case metaffi_int8_array_type:
 		{
 			c->type = metaffi_int8_array_type;
-			copy_jni_array("Byte", "B", "byteValue", c->cdt_val.metaffi_int8_array_val, jbyte);
+			copy_jni_array(Byte, "B", "byteValue", c->cdt_val.metaffi_int8_array_val, jbyte, metaffi_int8,type.dimensions);
 		} break;
 		case metaffi_bool_array_type:
 		{
 			c->type = metaffi_bool_array_type;
-			copy_jni_array("Boolean", "Z", "booleanValue", c->cdt_val.metaffi_bool_array_val, jboolean);
+			copy_jni_array(Boolean, "Z", "booleanValue", c->cdt_val.metaffi_bool_array_val, jboolean, metaffi_bool, type.dimensions);
 		} break;
 		case metaffi_float32_array_type:
 		{
 			c->type = metaffi_float32_array_type;
-			copy_jni_array("Float", "F", "floatValue", c->cdt_val.metaffi_float32_array_val, jfloat);
+			copy_jni_array(Float, "F", "floatValue", c->cdt_val.metaffi_float32_array_val, jfloat, metaffi_float32, type.dimensions);
 		} break;
 		case metaffi_float64_array_type:
 		{
 			c->type = metaffi_float64_array_type;
-			copy_jni_array("Double", "D", "doubleValue", c->cdt_val.metaffi_float64_array_val, jdouble);
+			copy_jni_array(Double, "D", "doubleValue", c->cdt_val.metaffi_float64_array_val, jdouble, metaffi_float64, type.dimensions);
 		} break;
 		case metaffi_handle_array_type:
 		{
@@ -428,7 +575,7 @@ void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, metaffi_type type, 
 		}break;
 		default:
 			std::stringstream ss;
-			ss << "The metaffi return type " << type << " is not handled";
+			ss << "The metaffi return type " << type.type << " is not handled";
 			throw std::runtime_error(ss.str());
 	}
 }

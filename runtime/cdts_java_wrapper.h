@@ -13,7 +13,7 @@ public:
 	explicit cdts_java_wrapper(cdt* cdts, metaffi_size cdts_length);
 	
 	jvalue to_jvalue(JNIEnv* env, int index) const;
-	void from_jvalue(JNIEnv* env, jvalue val, metaffi_type type, int index) const;
+	void from_jvalue(JNIEnv* env, jvalue val, const metaffi_type_info&, int index) const;
 	
 	void switch_to_object(JNIEnv* env, int i) const; // switch the type inside to java object (if possible)
 	void switch_to_primitive(JNIEnv* env, int i, metaffi_type t = metaffi_any_type) const; // switch the type inside to integer (if possible)

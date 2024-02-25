@@ -52,11 +52,11 @@ jfieldID jni_class::load_field(const std::string& field_name, const argument_def
 	return id;
 }
 //--------------------------------------------------------------------
-void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobject obj, jfieldID field_id, metaffi_type t)
+void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobject obj, jfieldID field_id, const metaffi_type_info& t)
 {
 	jvalue val;
 	bool is_static = obj == nullptr;
-	switch (t)
+	switch (t.type)
 	{
 		case metaffi_bool_type:
 			val.z = is_static? env->GetStaticBooleanField(cls, field_id) : env->GetBooleanField(obj, field_id);
@@ -121,7 +121,7 @@ void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobje
 		
 		default:
 			std::stringstream ss;
-			ss << "unsupported field type: " << t;
+			ss << "unsupported field type: " << t.type;
 			throw std::runtime_error(ss.str());
 	}
 	
@@ -391,7 +391,7 @@ void jni_class::write_cdts_to_field(int index, cdts_java_wrapper& wrapper, jobje
 	check_and_throw_jvm_exception(env, true);
 }
 //--------------------------------------------------------------------
-void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wrapper& retval_wrapper, metaffi_type retval_type, bool instance_required, bool is_constructor, const std::set<uint8_t>& any_type_indices, jmethodID method)
+void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wrapper& retval_wrapper, const metaffi_type_info& retval_type, bool instance_required, bool is_constructor, const std::set<uint8_t>& any_type_indices, jmethodID method)
 {
 	int start_index = instance_required ? 1 : 0;
 	int params_length = params_wrapper.get_cdts_length() - start_index;
@@ -413,7 +413,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 	if(!instance_required)
 	{
 		jvalue result;
-		switch (retval_type)
+		switch (retval_type.type)
 		{
 			case metaffi_int32_type:
 				result.i = env->CallStaticIntMethodA(cls, method, args.data());
@@ -460,6 +460,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				check_and_throw_jvm_exception(env, true);
 				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
+			case metaffi_uint8_array_type:
 			case metaffi_int8_array_type:
 			case metaffi_int16_array_type:
 			case metaffi_int32_array_type:
@@ -478,7 +479,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 			} break;
 			default:
 				std::stringstream ss;
-				ss << "Unsupported return type. Type: " << retval_type;
+				ss << "Unsupported return type. Type: " << retval_type.type;
 				throw std::runtime_error(ss.str());
 		}
 	}
@@ -495,7 +496,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 		jobject obj = params_wrapper.to_jvalue(env, 0).l;
 
 		jvalue result;
-		switch (retval_type)
+		switch (retval_type.type)
 		{
 			case metaffi_int32_type:
 				result.i = env->CallIntMethodA(obj, method, args.data());
@@ -539,6 +540,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				check_and_throw_jvm_exception(env, true);
 				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 			}	break;
+			case metaffi_uint8_array_type:
 			case metaffi_int8_array_type:
 			case metaffi_int16_array_type:
 			case metaffi_int32_array_type:
@@ -561,7 +563,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				break;
 			default:
 				std::stringstream ss;
-				ss << "Unsupported return type. Type: " << retval_type;
+				ss << "Unsupported return type. Type: " << retval_type.type;
 				throw std::runtime_error(ss.str());
 		}
 	}

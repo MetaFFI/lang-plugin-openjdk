@@ -340,7 +340,7 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 				}
 				
 				ctxt->field = loaded_class.load_field(fp["field"], argument_definition(retvals_types[0]), fp.contains("instance_required"));
-				ctxt->field_or_return_type = retvals_types[0].type;
+				ctxt->field_or_return_type = retvals_types[0];
 				entrypoint = fp.contains("instance_required") ? (void*)xcall_params_ret : (void*)xcall_no_params_ret;
 			}
 			else if(fp.contains("setter"))
@@ -377,7 +377,7 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 													fp.contains("instance_required"));
 
 			ctxt->constructor = fp["callable"] == "<init>";
-			ctxt->field_or_return_type = retval_count == 0 ? metaffi_null_type : retvals_types[0].type;
+			ctxt->field_or_return_type = retval_count == 0 ? metaffi_type_info{metaffi_null_type} : retvals_types[0];
 
 			if (params_count == 0 && retval_count == 0)
 			{
@@ -454,7 +454,7 @@ void** make_callable(void* make_callable_context, metaffi_type_infos_ptr params_
 			}
 		}
 
-		ctxt->field_or_return_type = retval_count == 0 ? metaffi_null_type : retvals_types[0].type;
+		ctxt->field_or_return_type = retval_count == 0 ? metaffi_type_info{metaffi_null_type} : retvals_types[0];
 
 		entrypoint = (params_count == 0 && retval_count == 0) ? (void*)xcall_no_params_no_ret  :
 		             (params_count > 0 && retval_count == 0) ? (void*)xcall_params_no_ret :

@@ -5,7 +5,7 @@
 
 struct argument_definition
 {
-	metaffi_type type = metaffi_null_type;
+	metaffi_type_info type{};
 	std::string alias;
 	
 	argument_definition() = default;

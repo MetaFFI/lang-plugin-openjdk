@@ -8,6 +8,6 @@ struct openjdk_context
     bool instance_required = false;
     bool is_getter = false;
     bool constructor = false;
-    metaffi_type field_or_return_type = metaffi_null_type;
+	metaffi_type_info field_or_return_type;
     std::set<uint8_t> any_type_indices;
 };
