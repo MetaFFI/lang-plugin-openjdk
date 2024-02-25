@@ -643,6 +643,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		metaffi::runtime::cdts_wrapper wrapper_get_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_get_ret[0]->type == metaffi_handle_array_type);
+		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.dimensions == 1);
+		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.dimensions_lengths[0] == 3);
 		
 		auto arr = wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val;
 		

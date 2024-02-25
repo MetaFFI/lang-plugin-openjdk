@@ -7,13 +7,107 @@
 #include "utils/tracer.h"
 #include "jni_caller.h"
 
+
+cdt_metaffi_handle* copy_jvm_object_array(JNIEnv* env, jobjectArray obj_array, metaffi_size* lengths, int dimensions)
+{
+	if(dimensions == 1)
+	{
+		metaffi_size len = env->GetArrayLength(obj_array);
+		lengths[dimensions-1] = len;
+		auto arr = new cdt_metaffi_handle[len];
+		
+		for (int i = 0; i < len; i++)
+		{
+			jobject obj = env->GetObjectArrayElement(obj_array, i);
+			check_and_throw_jvm_exception(env, true);
+			
+			// if val.l is MetaFFIHandle - get its inner data
+			if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, obj))
+			{
+				jni_metaffi_handle h(env, obj);
+				arr[i].val = h.get_handle();
+				arr[i].runtime_id = h.get_runtime_id(); // mark as openjdk object
+			}
+			else
+			{
+				arr[i].val = env->NewGlobalRef(obj);
+				arr[i].runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
+			}
+			break;
+			
+			env->DeleteLocalRef(obj);
+		}
+		
+		return arr;
+	}
+	else
+	{
+		auto len = env->GetArrayLength(obj_array);
+		lengths[dimensions-1] = len;
+		auto arr = new cdt_metaffi_handle[len];
+		
+		for (jsize i = 0; i < len; i++)
+		{
+			jobjectArray innerArray = (jobjectArray)env->GetObjectArrayElement(obj_array, i);
+			((cdt_metaffi_handle**)arr)[i] = copy_jvm_object_array(env, innerArray, lengths, dimensions - 1);
+			env->DeleteLocalRef(innerArray);
+		}
+		
+		return arr;
+	}
+}
+
+std::pair<char**, metaffi_size*> copy_jvm_string_array(JNIEnv* env, jobjectArray obj_array, metaffi_size* lengths, int dimensions)
+{
+	if(dimensions == 1)
+	{
+		metaffi_size len = env->GetArrayLength(obj_array);
+		lengths[dimensions-1] = len;
+		auto arr = new char*[len];
+		auto len_arr = new metaffi_size[len];
+		
+		for (int i = 0; i < len; i++)
+		{
+			jstring jstr = (jstring)env->GetObjectArrayElement(obj_array, i);
+			check_and_throw_jvm_exception(env, true);
+			const char* str = env->GetStringUTFChars(jstr, 0);
+			arr[i] = strdup(str);
+			len_arr[i] = strlen(arr[i]);
+			env->ReleaseStringUTFChars(jstr, str);
+			env->DeleteLocalRef(jstr);
+		}
+		
+		return std::make_pair(arr, len_arr);
+	}
+	else
+	{
+		auto len = env->GetArrayLength(obj_array);
+		lengths[dimensions-1] = len;
+		auto arr = new char*[len];
+		auto len_arr = new metaffi_size[len];
+		
+		for (jsize i = 0; i < len; i++)
+		{
+			jobjectArray innerArray = (jobjectArray)env->GetObjectArrayElement(obj_array, i);
+			auto res = copy_jvm_string_array(env, innerArray, lengths, dimensions - 1);
+			((char***)arr)[i] = res.first;
+			((metaffi_size**)len_arr)[i] = res.second;
+			env->DeleteLocalRef(innerArray);
+		}
+		
+		return std::make_pair(arr, len_arr);
+	}
+}
+
+
 template<typename jni_primitive_t, typename jni_primitive_array_t>
-std::pair<jni_primitive_t*, metaffi_size*> copy_jvm_array(JNIEnv* env, bool is_array_of_objects, void* getter_func, jmethodID methID, jobjectArray obj_array, int dimensions)
+jni_primitive_t* copy_jvm_array(JNIEnv* env, bool is_array_of_objects, void* getter_func, jmethodID methID, jobjectArray obj_array, metaffi_size* lengths, int dimensions)
 {
 	// Handle multi-dimensional array
 	if(dimensions == 1)
 	{
 		metaffi_size len = env->GetArrayLength(obj_array);
+		lengths[dimensions-1] = len;
 		auto arr = new jni_primitive_t[len];
 	
 		if(is_array_of_objects)
@@ -22,7 +116,7 @@ std::pair<jni_primitive_t*, metaffi_size*> copy_jvm_array(JNIEnv* env, bool is_a
 			{
 				jobject obj = env->GetObjectArrayElement(obj_array, i);
 				check_and_throw_jvm_exception(env, true);
-				arr[i] = ((jni_primitive_t(*)(JNIEnv*, jobject, jmethodID))getter_func)(env, obj, methID); // TODO: need to use the correct function
+				arr[i] = ((jni_primitive_t(*)(JNIEnv*, jobject, jmethodID))getter_func)(env, obj, methID);
 				check_and_throw_jvm_exception(env, true);
 				env->DeleteLocalRef(obj);
 			}
@@ -34,24 +128,22 @@ std::pair<jni_primitive_t*, metaffi_size*> copy_jvm_array(JNIEnv* env, bool is_a
 			std::copy(data, data+len, arr);
 		}
 		
-		return std::pair<jni_primitive_t*, metaffi_size*>(arr, (metaffi_size*)len);
+		return arr;
 	}
 	else
 	{
 		auto len = env->GetArrayLength(obj_array);
+		lengths[dimensions-1] = len;
 		auto arr = new jni_primitive_t[len];
-		auto plen = new metaffi_size[len];
 		
 		for (jsize i = 0; i < len; i++)
 		{
 			jobjectArray innerArray = (jobjectArray)env->GetObjectArrayElement(obj_array, i);
-			auto res = copy_jvm_array<jni_primitive_t, jni_primitive_array_t>(env, is_array_of_objects, getter_func, methID, innerArray, dimensions - 1);
-			((jni_primitive_t**)arr)[i] = res.first;
-			plen[i] = (metaffi_size)res.second;
+			((jni_primitive_t**)arr)[i] = copy_jvm_array<jni_primitive_t, jni_primitive_array_t>(env, is_array_of_objects, getter_func, methID, innerArray, lengths, dimensions - 1);
 			env->DeleteLocalRef(innerArray);
 		}
 		
-		return std::pair<jni_primitive_t*, metaffi_size*>(arr, plen);
+		return arr;
 	}
 }
 
@@ -75,15 +167,13 @@ std::pair<jni_primitive_t*, metaffi_size*> copy_jvm_array(JNIEnv* env, bool is_a
 		int len = env->GetArrayLength((jobjectArray)val.l);\
 		check_and_throw_jvm_exception(env, true);\
 		\
-	    auto res = copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Call##name_of_java_class_type##Method, methID, (jobjectArray)val.l, dims); \
-		cdt_type_struct.dimensions_lengths = res.second;\
-		cdt_type_struct.vals = (ctype*)res.first; \
+		cdt_type_struct.dimensions_lengths = new metaffi_size[dims];\
+		cdt_type_struct.vals = (ctype*)copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Call##name_of_java_class_type##Method, methID, (jobjectArray)val.l, cdt_type_struct.dimensions_lengths, dims); \
 	}   \
 	else  \
 	{  \
-		auto res = copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Get##name_of_java_class_type##ArrayElements, nullptr, (jobjectArray)val.l, dims); \
-		cdt_type_struct.dimensions_lengths = res.second;\
-		cdt_type_struct.vals = (ctype*)res.first; \
+		cdt_type_struct.dimensions_lengths = new metaffi_size[dims];\
+		cdt_type_struct.vals = (ctype*)copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Get##name_of_java_class_type##ArrayElements, nullptr, (jobjectArray)val.l, cdt_type_struct.dimensions_lengths, dims); \
 	}
 	
 template<typename jni_primitive_t, typename jni_array_primitive_t, typename c_primitive_t>
@@ -116,7 +206,15 @@ jobjectArray create_jvm_multidim_array(JNIEnv *env, cdt_metaffi_handle* arr, uin
 		
 		for (jsize i = 0; i < lengths[0]; i++)
 		{
-			env->SetObjectArrayElement(data_arr, i, reinterpret_cast<jobject>(arr[i].val));
+			if(arr[i].runtime_id != OPENJDK_RUNTIME_ID)
+			{
+				jni_metaffi_handle h(env, arr[i].val, arr[i].runtime_id);
+				env->SetObjectArrayElement(data_arr, i, reinterpret_cast<jobject>(h.new_jvm_object(env)));
+			}
+			else
+			{
+				env->SetObjectArrayElement(data_arr, i, reinterpret_cast<jobject>(arr[i].val));
+			}
 		}
 		
 		return data_arr;
@@ -459,39 +557,16 @@ void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, const metaffi_type_
 		} break;
 		case metaffi_string8_array_type:
 		{
-			
 			c->type = metaffi_string8_array_type;
-			jobjectArray arr = static_cast<jobjectArray>(val.l);
-			int len = env->GetArrayLength(arr);
-			check_and_throw_jvm_exception(env, true);
 			
-			c->cdt_val.metaffi_string8_array_val.dimensions = 1;
-			c->cdt_val.metaffi_string8_array_val.dimensions_lengths = new metaffi_size[1];
-			c->cdt_val.metaffi_string8_array_val.dimensions_lengths[0] = len;
-			c->cdt_val.metaffi_string8_array_val.vals = new metaffi_string8[len];
-			c->cdt_val.metaffi_string8_array_val.vals_sizes = new metaffi_size[len];
-			for (int i = 0; i < len; ++i)
-			{
-				
-				jstring str = static_cast<jstring>(env->GetObjectArrayElement(arr, i));
-				check_and_throw_jvm_exception(env, true);
-				
-				const char* chars = env->GetStringUTFChars(str, nullptr);
-				check_and_throw_jvm_exception(env, true);
-				int strlen = env->GetStringUTFLength(str);
-				check_and_throw_jvm_exception(env, true);
-				
-				c->cdt_val.metaffi_string8_array_val.vals[i] = new char[len+1]; // You might need to copy the string
-				c->cdt_val.metaffi_string8_array_val.vals_sizes[i] = strlen;
-				
-				std::copy(chars, chars+strlen, c->cdt_val.metaffi_string8_array_val.vals[i]);
-				
-				c->cdt_val.metaffi_string8_array_val.vals[i][strlen] = '\0';
-				
-				env->ReleaseStringUTFChars(str, chars);
-				
-				check_and_throw_jvm_exception(env, true);
-			}
+			c->cdt_val.metaffi_string8_array_val.dimensions = type.dimensions;
+			c->cdt_val.metaffi_string8_array_val.dimensions_lengths = new metaffi_size[type.dimensions];
+			
+			auto res = copy_jvm_string_array(env, static_cast<jobjectArray>(val.l), c->cdt_val.metaffi_string8_array_val.dimensions_lengths, type.dimensions);
+			
+			c->cdt_val.metaffi_string8_array_val.vals = res.first;
+			c->cdt_val.metaffi_string8_array_val.vals_sizes = res.second;
+		
 		} break;
 		case metaffi_int64_array_type:
 		{
@@ -531,19 +606,15 @@ void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, const metaffi_type_
 		} break;
 		case metaffi_handle_array_type:
 		{
+			// TODO: Support multi-dimensional arrays
 			c->type = metaffi_handle_array_type;
 			jobjectArray arr = static_cast<jobjectArray>(val.l);
-			int len = env->GetArrayLength(arr);
+			
 			check_and_throw_jvm_exception(env, true);
-			c->cdt_val.metaffi_handle_array_val.dimensions = 1;
-			c->cdt_val.metaffi_handle_array_val.dimensions_lengths = new metaffi_size[1];
-			c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0] = len;
-			c->cdt_val.metaffi_handle_array_val.vals = new cdt_metaffi_handle[len];
-			for (int i = 0; i < len; ++i)
-			{
-				c->cdt_val.metaffi_handle_array_val.vals[i].val = env->GetObjectArrayElement(arr, i);
-				c->cdt_val.metaffi_handle_array_val.vals[i].runtime_id = OPENJDK_RUNTIME_ID;
-			}
+			
+			c->cdt_val.metaffi_handle_array_val.dimensions = type.dimensions;
+			c->cdt_val.metaffi_handle_array_val.dimensions_lengths = new metaffi_size[type.dimensions];
+			c->cdt_val.metaffi_handle_array_val.vals = copy_jvm_object_array(env, arr, c->cdt_val.metaffi_handle_array_val.dimensions_lengths, type.dimensions);
 		} break;
 		case metaffi_any_type:
 		{
