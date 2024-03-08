@@ -636,6 +636,20 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		REQUIRE(pexpectThreeSomeClasses[0] != nullptr);
 		REQUIRE(pexpectThreeSomeClasses[1] != nullptr);
 		
+		function_path = "class=sanity.SomeClass,callable=print,instance_required";
+		metaffi_type_info params_SomeClassPrint_types[] = {{metaffi_handle_type, nullptr, 0, 0}};
+		
+		void** pSomeClassPrint = load_function(module_path.string().c_str(), module_path.string().length(),
+		                                       function_path.c_str(), function_path.length(),
+		                                       params_SomeClassPrint_types, nullptr,
+		                                       1, 0,
+		                                       &err, &err_len);
+		
+		if(err){ FAIL(err); }
+		REQUIRE(err_len == 0);
+		REQUIRE(pSomeClassPrint[0] != nullptr);
+		REQUIRE(pSomeClassPrint[1] != nullptr);
+		
 		cdts* cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(0, 1);
 		
 		uint64_t long_err_len = 0;
@@ -647,6 +661,19 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.dimensions_lengths[0] == 3);
 		
 		auto arr = wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val;
+		
+		//--------------------------------------------------------------------
+		
+		cdts* cdts_param_ret_print = (cdts*)xllr_alloc_cdts_buffer(1, 0);
+		metaffi::runtime::cdts_wrapper wrapper_print(cdts_param_ret_print[0].pcdt, cdts_param_ret_print[0].len, false);
+		wrapper_print[0]->type = metaffi_handle_type;
+		wrapper_print[0]->cdt_val.metaffi_handle_val = wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.vals[1]; // use the 2nd instance
+		
+		((void(*)(void*,cdts*,char**,uint64_t*))pSomeClassPrint[0])(pSomeClassPrint[1], (cdts*)cdts_param_ret_print, &err, &long_err_len);
+		if(err){ FAIL(err); }
+		REQUIRE(long_err_len == 0);
+		
+		//--------------------------------------------------------------------
 		
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(1, 0);
 		metaffi::runtime::cdts_wrapper wrapper_expect(cdts_param_ret[0].pcdt, cdts_param_ret[0].len, false);

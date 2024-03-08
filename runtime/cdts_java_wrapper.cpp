@@ -33,7 +33,6 @@ cdt_metaffi_handle* copy_jvm_object_array(JNIEnv* env, jobjectArray obj_array, m
 				arr[i].val = env->NewGlobalRef(obj);
 				arr[i].runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
 			}
-			break;
 			
 			env->DeleteLocalRef(obj);
 		}
