@@ -94,9 +94,9 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		cdts* cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(params_count, retvals_count);
 		metaffi::runtime::cdts_wrapper wrapper(cdts_param_ret[0].pcdt, cdts_param_ret[0].len, false);
 		wrapper[0]->type = metaffi_int64_type;
-		wrapper[0]->cdt_val.metaffi_int64_val.val = 10;
+		wrapper[0]->cdt_val.metaffi_int64_val = 10;
 		wrapper[1]->type = metaffi_int64_type;
-		wrapper[1]->cdt_val.metaffi_int64_val.val = 2;
+		wrapper[1]->cdt_val.metaffi_int64_val = 2;
 		
 		uint64_t long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))pdiv_integers[0])(pdiv_integers[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -105,7 +105,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		metaffi::runtime::cdts_wrapper wrapper_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_ret[0]->type == metaffi_float32_type);
-		REQUIRE(wrapper_ret[0]->cdt_val.metaffi_float32_val.val == 5.0);
+		REQUIRE(wrapper_ret[0]->cdt_val.metaffi_float32_val == 5.0);
 		
 		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
 			free(cdts_param_ret);
@@ -133,14 +133,12 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		cdts* cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(1, 1);
 		metaffi::runtime::cdts_wrapper wrapper(cdts_param_ret[0].pcdt, cdts_param_ret[0].len, false);
 		metaffi_size array_dimensions;
-		metaffi_size array_length[] = {3};
-		metaffi_string8 values[] = {(metaffi_string8)"one", (metaffi_string8)"two", (metaffi_string8)"three"};
-		metaffi_size vals_length[] = {strlen("one"), strlen("two"), strlen("three")};
+		metaffi_size array_length = 3;
+		metaffi_string8 values[] = {(metaffi_string8)"one\0", (metaffi_string8)"two\0", (metaffi_string8)"three\0"};
 		wrapper[0]->type = metaffi_string8_array_type;
-		wrapper[0]->cdt_val.metaffi_string8_array_val.dimensions = 1;
-		wrapper[0]->cdt_val.metaffi_string8_array_val.dimensions_lengths = (metaffi_size*)array_length;
+		wrapper[0]->cdt_val.metaffi_string8_array_val.dimension = 1;
+		wrapper[0]->cdt_val.metaffi_string8_array_val.length = array_length;
 		wrapper[0]->cdt_val.metaffi_string8_array_val.vals = values;
-		wrapper[0]->cdt_val.metaffi_string8_array_val.vals_sizes = vals_length;
 
 		uint64_t long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))join_strings[0])(join_strings[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -150,8 +148,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		metaffi::runtime::cdts_wrapper wrapper_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_ret[0]->type == metaffi_string8_type);
 
-		std::string returned(wrapper_ret[0]->cdt_val.metaffi_string8_val.val, wrapper_ret[0]->cdt_val.metaffi_string8_val.length);
-		REQUIRE(returned == "one,two,three");
+		std::u8string returned(wrapper_ret[0]->cdt_val.metaffi_string8_val);
+		REQUIRE(returned == u8"one,two,three");
 
 		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
 			free(cdts_param_ret);
@@ -209,8 +207,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(3, 0);
 		cdts_java_wrapper wrapper(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
-		wrapper.set(1, std::string("key"));
+		wrapper.set(0, cdt_metaffi_handle{ testmap_instance, OPENJDK_RUNTIME_ID, nullptr} );
+		wrapper.set(1, std::u8string(u8"key"));
 		wrapper.set(2, (int32_t)42);
 
 		long_err_len = 0;
@@ -240,8 +238,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(2, 1);
 		cdts_java_wrapper wrapper_contains_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_contains_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
-		wrapper_contains_params.set(1, std::string("key"));
+		wrapper_contains_params.set(0, cdt_metaffi_handle{testmap_instance, OPENJDK_RUNTIME_ID, nullptr});
+		wrapper_contains_params.set(1, std::u8string(u8"key"));
 
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_contains[0])(p_testmap_contains[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -250,7 +248,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		metaffi::runtime::cdts_wrapper wrapper_contains_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_contains_ret[0]->type == metaffi_bool_type);
-		REQUIRE(wrapper_contains_ret[0]->cdt_val.metaffi_bool_val.val != 0);
+		REQUIRE(wrapper_contains_ret[0]->cdt_val.metaffi_bool_val != 0);
 
 		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
 			free(cdts_param_ret);
@@ -278,8 +276,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		wrapper_get_params[0]->cdt_val.metaffi_handle_val.val = testmap_instance;
 		wrapper_get_params[0]->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 		wrapper_get_params[1]->type = metaffi_string8_type;
-		wrapper_get_params[1]->cdt_val.metaffi_string8_val.val = (char*)"key";
-		wrapper_get_params[1]->cdt_val.metaffi_string8_val.length = strlen("key");
+		wrapper_get_params[1]->cdt_val.metaffi_string8_val = (char8_t*)u8"key\0";
 
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_get[0])(p_testmap_get[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -288,7 +285,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		metaffi::runtime::cdts_wrapper wrapper_get_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_get_ret[0]->type == metaffi_int32_type);
-		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_int32_val.val == 42);
+		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_int32_val == 42);
 
 		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
 			free(cdts_param_ret);
@@ -348,9 +345,9 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(3, 0);
 		cdts_java_wrapper wrapper(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
-		wrapper.set(1, std::string("key"));
-		wrapper.set(2, &vec_to_insert, 733);
+		wrapper.set(0, cdt_metaffi_handle{testmap_instance, OPENJDK_RUNTIME_ID, nullptr});
+		wrapper.set(1, std::u8string(u8"key"));
+		wrapper.set(2, cdt_metaffi_handle{&vec_to_insert, 733, nullptr});
 		
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_set[0])(p_testmap_set[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -379,8 +376,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(2, 1);
 		cdts_java_wrapper wrapper_contains_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_contains_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
-		wrapper_contains_params.set(1, std::string("key"));
+		wrapper_contains_params.set(0, cdt_metaffi_handle{testmap_instance, OPENJDK_RUNTIME_ID});
+		wrapper_contains_params.set(1, std::u8string(u8"key"));
 		
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_contains[0])(p_testmap_contains[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -389,7 +386,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		metaffi::runtime::cdts_wrapper wrapper_contains_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_contains_ret[0]->type == metaffi_bool_type);
-		REQUIRE(wrapper_contains_ret[0]->cdt_val.metaffi_bool_val.val != 0);
+		REQUIRE(wrapper_contains_ret[0]->cdt_val.metaffi_bool_val != 0);
 		
 		if(cdts_param_ret[0].len + cdts_param_ret[1].len > cdts_cache_size){
 			free(cdts_param_ret);
@@ -417,8 +414,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		wrapper_get_params[0]->cdt_val.metaffi_handle_val.val = testmap_instance;
 		wrapper_get_params[0]->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 		wrapper_get_params[1]->type = metaffi_string8_type;
-		wrapper_get_params[1]->cdt_val.metaffi_string8_val.val = (char*)"key";
-		wrapper_get_params[1]->cdt_val.metaffi_string8_val.length = strlen("key");
+		wrapper_get_params[1]->cdt_val.metaffi_string8_val = (char8_t*)u8"key\0";
 		
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))p_testmap_get[0])(p_testmap_get[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -509,7 +505,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		// get name
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(1, 1);
 		cdts_java_wrapper wrapper_name_getter_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_name_getter_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
+		wrapper_name_getter_params.set(0, cdt_metaffi_handle{testmap_instance, OPENJDK_RUNTIME_ID});
 
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))pget_name[0])(pget_name[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -518,13 +514,13 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		metaffi::runtime::cdts_wrapper wrapper_get_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_get_ret[0]->type == metaffi_string8_type);
-		REQUIRE(std::string(wrapper_get_ret[0]->cdt_val.metaffi_string8_val.val, wrapper_get_ret[0]->cdt_val.metaffi_string8_val.length).empty());
+		REQUIRE(std::u8string(wrapper_get_ret[0]->cdt_val.metaffi_string8_val).empty());
 
 		// set name to "name is my name"
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(2, 0);
 		cdts_java_wrapper wrapper_set_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_set_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
-		wrapper_set_params.set(1, std::string("name is my name"));
+		wrapper_set_params.set(0, cdt_metaffi_handle{testmap_instance, OPENJDK_RUNTIME_ID});
+		wrapper_set_params.set(1, std::u8string(u8"name is my name"));
 		
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))pset_name[0])(pset_name[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -534,7 +530,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		// get name again and make sure it is "name is my name"
 		cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(1, 1);
 		cdts_java_wrapper wrapper_last_name_getter_params(cdts_param_ret[0].pcdt, cdts_param_ret[0].len);
-		wrapper_name_getter_params.set(0, testmap_instance, OPENJDK_RUNTIME_ID);
+		wrapper_name_getter_params.set(0, cdt_metaffi_handle{testmap_instance, OPENJDK_RUNTIME_ID});
 		
 		long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))pget_name[0])(pget_name[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -543,7 +539,7 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 
 		cdts_java_wrapper last_get_wrapper(cdts_param_ret[1].pcdt, cdts_param_ret[1].len);
 		REQUIRE(wrapper_get_ret[0]->type == metaffi_string8_type);
-		REQUIRE(std::string(wrapper_get_ret[0]->cdt_val.metaffi_string8_val.val, last_get_wrapper[0]->cdt_val.metaffi_string8_val.length) == "name is my name");
+		REQUIRE(std::u8string(wrapper_get_ret[0]->cdt_val.metaffi_string8_val) == u8"name is my name");
 	}
 	
 	SECTION("runtime_test_target.wait_a_bit")
@@ -572,9 +568,9 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		cdts_java_wrapper last_get_wrapper(getter_ret[1].pcdt, getter_ret[1].len);
 		REQUIRE(last_get_wrapper[0]->type == metaffi_int32_type);
-		REQUIRE(last_get_wrapper[0]->cdt_val.metaffi_int32_val.val == 5);
+		REQUIRE(last_get_wrapper[0]->cdt_val.metaffi_int32_val == 5);
 		
-		int32_t five = last_get_wrapper[0]->cdt_val.metaffi_int32_val.val;
+		int32_t five = last_get_wrapper[0]->cdt_val.metaffi_int32_val;
 
 		// call wait_a_bit
 		function_path = "class=sanity.TestRuntime,callable=waitABit";
@@ -657,8 +653,8 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		
 		metaffi::runtime::cdts_wrapper wrapper_get_ret(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		REQUIRE(wrapper_get_ret[0]->type == metaffi_handle_array_type);
-		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.dimensions == 1);
-		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.dimensions_lengths[0] == 3);
+		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.dimension == 1);
+		REQUIRE(wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val.length == 3);
 		
 		auto arr = wrapper_get_ret[0]->cdt_val.metaffi_handle_array_val;
 		
@@ -722,11 +718,19 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		cdts* cdts_param_ret = (cdts*)xllr_alloc_cdts_buffer(1, 0);
 		metaffi::runtime::cdts_wrapper wrapper_get_ret(cdts_param_ret[0].pcdt, cdts_param_ret[0].len, false);
 		wrapper_get_ret[0]->type = metaffi_uint8_array_type;
-		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.dimensions = 2;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.dimension = 2;
 		metaffi_size lengths[] = {3, 3};
-		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.dimensions_lengths = lengths;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.length = 3;
 		metaffi_size data[3][3] = { {0,1,2}, {3,4,5}, {6,7,8} };
-		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.vals = (uint8_t*)data;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[0].dimension = 1;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[0].length = 3;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[0].vals = (metaffi_uint8*)data[0];
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[1].dimension = 1;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[1].length = 3;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[1].vals = (metaffi_uint8*)data[1];
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[2].dimension = 1;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[2].length = 3;
+		wrapper_get_ret[0]->cdt_val.metaffi_uint8_array_val.arr[2].vals = (metaffi_uint8*)data[2];
 		
 		uint64_t long_err_len = 0;
 		((void(*)(void*,cdts*,char**,uint64_t*))pexpectThreeBuffers[0])(pexpectThreeBuffers[1], (cdts*)cdts_param_ret, &err, &long_err_len);
@@ -743,18 +747,21 @@ TEST_CASE( "openjdk runtime api", "[openjdkruntime]" )
 		metaffi::runtime::cdts_wrapper wrapper_get_buffers(cdts_param_ret[1].pcdt, cdts_param_ret[1].len, false);
 		
 		REQUIRE(wrapper_get_buffers[0]->type == metaffi_uint8_array_type);
-		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.dimensions == 2);
-		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.dimensions_lengths[0] == 3);
-		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.dimensions_lengths[1] == 3);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[0])[0] == 1);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[0])[1] == 2);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[0])[2] == 3);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[1])[0] == 1);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[1])[1] == 2);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[1])[2] == 3);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[2])[0] == 1);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[2])[1] == 2);
-		REQUIRE((((metaffi_uint8**)(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.vals))[2])[2] == 3);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.dimension == 2);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.length == 3);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[0].length == 3);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[1].length == 3);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[2].length == 3);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[0].vals[0] == 1);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[0].vals[1] == 2);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[0].vals[2] == 3);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[1].vals[0] == 1);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[1].vals[1] == 2);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[1].vals[2] == 3);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[2].vals[0] == 1);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[2].vals[1] == 2);
+		REQUIRE(wrapper_get_buffers[0]->cdt_val.metaffi_uint8_array_val.arr[2].vals[2] == 3);
+		
 	}
 	
 	SECTION("Free Runtime")

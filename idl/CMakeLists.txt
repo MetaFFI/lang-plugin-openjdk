@@ -3,7 +3,7 @@
 set(target_name "metaffi.idl.java")
 
 add_java()
-add_ctest_and_catch2_packages()
+add_ctest_and_unitest_libs()
 
 add_custom_target(${target_name} ALL)
 add_dependencies(${target_name} metaffi.compiler.openjdk)

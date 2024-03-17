@@ -5,6 +5,7 @@ add_boost(filesystem)
 add_jni()
 add_java()
 
+
 include(UseJava)
 
 set(target_name "xllr.openjdk")
@@ -47,6 +48,18 @@ target_include_directories(openjdk_api_test PRIVATE ${METAFFI_SDK} ${JNI_INCLUDE
 if(NOT WIN32)
 	add_custom_command(TARGET openjdk_api_test POST_BUILD COMMAND patchelf --set-rpath "$ORIGIN:$ORIGIN/lib:$ENV{METAFFI_HOME}:${Boost_LIBRARY_DIRS}:$ENV{JAVA_HOME}/lib/server/:$ENV{JAVA_HOME}/lib/:$ENV{JAVA_HOME}" $<TARGET_FILE:openjdk_api_test>)
 endif()
+
+
+
+add_executable(cdts_java_test "cdts_java_test.cpp" ${utils_srcs} ${runtime_srcs})
+target_link_libraries(cdts_java_test PRIVATE doctest::doctest ${target_name} Boost::filesystem ${JNI_LIBRARIES})
+add_test(NAME "OpenJDK CDTS Test" COMMAND cdts_java_test)
+target_include_directories(cdts_java_test PRIVATE ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
+if(NOT WIN32)
+	add_custom_command(TARGET openjdk_api_test POST_BUILD COMMAND patchelf --set-rpath "$ORIGIN:$ORIGIN/lib:$ENV{METAFFI_HOME}:${Boost_LIBRARY_DIRS}:$ENV{JAVA_HOME}/lib/server/:$ENV{JAVA_HOME}/lib/:$ENV{JAVA_HOME}" $<TARGET_FILE:cdts_java_test>)
+endif()
+
+
 
 
 # install

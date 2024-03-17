@@ -3,17 +3,21 @@
 #include <utils/scope_guard.hpp>
 #include "runtime_id.h"
 #include "exception_macro.h"
+#include "jbyte_wrapper.h"
 
 
 //--------------------------------------------------------------------
-jni_class::jni_class(JNIEnv* env, jclass cls):env(env),cls(cls){}
+jni_class::jni_class(JNIEnv* env, jclass cls) : env(env), cls(cls)
+{}
 
 //--------------------------------------------------------------------
-jmethodID jni_class::load_method(const std::string& method_name, const argument_definition& return_type, const std::vector<argument_definition>& parameters_types, bool instance_required)
+jmethodID jni_class::load_method(const std::string& method_name, const argument_definition& return_type,
+                                 const std::vector<argument_definition>& parameters_types, bool instance_required)
 {
 	std::stringstream ss;
 	ss << "(";
-	for(const argument_definition& a : parameters_types){
+	for(const argument_definition& a: parameters_types)
+	{
 		ss << a.to_jni_signature_type();
 	}
 	ss << ")";
@@ -34,67 +38,73 @@ jmethodID jni_class::load_method(const std::string& method_name, const argument_
 	check_and_throw_jvm_exception(env, id);
 	return id;
 }
+
 //--------------------------------------------------------------------
-jfieldID jni_class::load_field(const std::string& field_name, const argument_definition& field_type, bool instance_required)
+jfieldID
+jni_class::load_field(const std::string& field_name, const argument_definition& field_type, bool instance_required)
 {
-	jfieldID id = !instance_required ? env->GetStaticFieldID(cls, field_name.c_str(), field_type.to_jni_signature_type().c_str()) :
+	jfieldID id = !instance_required ? env->GetStaticFieldID(cls, field_name.c_str(),
+	                                                         field_type.to_jni_signature_type().c_str()) :
 	              env->GetFieldID(cls, field_name.c_str(), field_type.to_jni_signature_type().c_str());
 	
 	if(id == nullptr)
 	{
 		if(env->ExceptionCheck() == JNI_TRUE)
 		{
-			std::string err_msg = "failed getting field id: " + field_name + " of type: " + field_type.to_jni_signature_type()+"\n";
+			std::string err_msg =
+					"failed getting field id: " + field_name + " of type: " + field_type.to_jni_signature_type() + "\n";
 			err_msg += jvm::get_exception_description(env, env->ExceptionOccurred());
 			throw std::runtime_error(err_msg);
 		}
 	}
 	return id;
 }
+
 //--------------------------------------------------------------------
-void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobject obj, jfieldID field_id, const metaffi_type_info& t)
+void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobject obj, jfieldID field_id,
+                                    const metaffi_type_info& t)
 {
 	jvalue val;
 	bool is_static = obj == nullptr;
-	switch (t.type)
+	switch(t.type)
 	{
 		case metaffi_bool_type:
-			val.z = is_static? env->GetStaticBooleanField(cls, field_id) : env->GetBooleanField(obj, field_id);
+			val.z = is_static ? env->GetStaticBooleanField(cls, field_id) : env->GetBooleanField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int8_type:
-			val.b = is_static? env->GetStaticByteField(cls, field_id) : env->GetByteField(obj, field_id);
+			val.b = is_static ? env->GetStaticByteField(cls, field_id) : env->GetByteField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_uint16_type:
-			val.c = is_static? env->GetStaticCharField(cls, field_id) : env->GetCharField(obj, field_id);
+			val.c = is_static ? env->GetStaticCharField(cls, field_id) : env->GetCharField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int16_type:
-			val.s = is_static? env->GetStaticShortField(cls, field_id) : env->GetShortField(obj, field_id);
+			val.s = is_static ? env->GetStaticShortField(cls, field_id) : env->GetShortField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int32_type:
-			val.i = is_static? env->GetStaticIntField(cls, field_id) : env->GetIntField(obj, field_id);
+			val.i = is_static ? env->GetStaticIntField(cls, field_id) : env->GetIntField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_int64_type:
-			val.j = is_static? env->GetStaticLongField(cls, field_id) : env->GetLongField(obj, field_id);
+			val.j = is_static ? env->GetStaticLongField(cls, field_id) : env->GetLongField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_float32_type:
-			val.f = is_static? env->GetStaticFloatField(cls, field_id) : env->GetFloatField(obj, field_id);
+			val.f = is_static ? env->GetStaticFloatField(cls, field_id) : env->GetFloatField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
 		case metaffi_float64_type:
-			val.d = is_static? env->GetStaticDoubleField(cls, field_id) : env->GetDoubleField(obj, field_id);
+			val.d = is_static ? env->GetStaticDoubleField(cls, field_id) : env->GetDoubleField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			break;
@@ -113,7 +123,7 @@ void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobje
 		case metaffi_string8_array_type:
 		case metaffi_string16_array_type:
 		case metaffi_any_type:
-			val.l = is_static? env->GetStaticObjectField(cls, field_id) : env->GetObjectField(obj, field_id);
+			val.l = is_static ? env->GetStaticObjectField(cls, field_id) : env->GetObjectField(obj, field_id);
 			check_and_throw_jvm_exception(env, true);
 			wrapper.from_jvalue(env, val, t, index);
 			wrapper.switch_to_primitive(env, index);
@@ -126,294 +136,141 @@ void jni_class::write_field_to_cdts(int index, cdts_java_wrapper& wrapper, jobje
 	}
 	
 }
+
 //--------------------------------------------------------------------
 void jni_class::write_cdts_to_field(int index, cdts_java_wrapper& wrapper, jobject obj, jfieldID field_id)
 {
-	cdt* c = wrapper[index];
 	bool is_static = (obj == nullptr);
+
+#define set_field(type, jvalue_field) \
+    {                                  \
+    if(is_static) \
+        env->SetStatic##type##Field(cls, field_id, wrapper.to_jvalue(env, index).jvalue_field); \
+    else \
+        env->Set##type##Field(obj, field_id, wrapper.to_jvalue(env, index).jvalue_field);\
+    }
 	
-	switch (c->type)
+	
+	switch(wrapper[index]->type)
 	{
 		case metaffi_int8_type:
-			if (is_static)
-				env->SetStaticByteField(cls, field_id, c->cdt_val.metaffi_int8_val.val);
-			else
-				env->SetByteField(obj, field_id, c->cdt_val.metaffi_int8_val.val);
+			set_field(Byte, b);
+			break;
+		case metaffi_int8_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_int16_type:
-			if (is_static)
-				env->SetStaticShortField(cls, field_id, c->cdt_val.metaffi_int16_val.val);
-			else
-				env->SetShortField(obj, field_id, c->cdt_val.metaffi_int16_val.val);
+			set_field(Short, s);
+			break;
+		case metaffi_int16_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_int32_type:
-			if (is_static)
-				env->SetStaticIntField(cls, field_id, c->cdt_val.metaffi_int32_val.val);
-			else
-				env->SetIntField(obj, field_id, c->cdt_val.metaffi_int32_val.val);
+			set_field(Int, i);
+			break;
+		case metaffi_int32_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_int64_type:
-			if (is_static)
-				env->SetStaticLongField(cls, field_id, c->cdt_val.metaffi_int64_val.val);
-			else
-				env->SetLongField(obj, field_id, c->cdt_val.metaffi_int64_val.val);
+			set_field(Long, j);
+			break;
+		case metaffi_int64_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_uint8_type:
+		case metaffi_uint8_array_type:
 		case metaffi_uint16_type:
+		case metaffi_uint16_array_type:
 		case metaffi_uint32_type:
+		case metaffi_uint32_array_type:
 		case metaffi_uint64_type:
 		{
-			const char *metaffi_type_str;
-			metaffi_type_to_str(c->type, metaffi_type_str);
 			std::stringstream ss;
-			ss << "The type " << metaffi_type_str << " is not supported in JVM";
+			ss << "The type " << wrapper[index]->type << " is not supported in JVM";
 			throw std::runtime_error(ss.str());
-		}break;
+		}
+			break;
 		case metaffi_float32_type:
-			if (is_static)
-				env->SetStaticFloatField(cls, field_id, c->cdt_val.metaffi_float32_val.val);
-			else
-				env->SetFloatField(obj, field_id, c->cdt_val.metaffi_float32_val.val);
+			set_field(Float, f);
+			break;
+		case metaffi_float32_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_float64_type:
-			if (is_static)
-				env->SetStaticDoubleField(cls, field_id, c->cdt_val.metaffi_float64_val.val);
-			else
-				env->SetDoubleField(obj, field_id, c->cdt_val.metaffi_float64_val.val);
+			set_field(Double, d);
+			break;
+		case metaffi_float64_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_bool_type:
-			if (is_static)
-				env->SetStaticBooleanField(cls, field_id, c->cdt_val.metaffi_bool_val.val);
-			else
-				env->SetBooleanField(obj, field_id, c->cdt_val.metaffi_bool_val.val);
+			set_field(Boolean, z);
+			break;
+		case metaffi_bool_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_handle_type:
-			if (is_static)
-				env->SetStaticObjectField(cls, field_id, static_cast<jobject>(c->cdt_val.metaffi_handle_val.val));
-			else
-				env->SetObjectField(obj, field_id, static_cast<jobject>(c->cdt_val.metaffi_handle_val.val));
+			set_field(Object, l);
+			break;
+		case metaffi_handle_array_type:
+			set_field(Object, l);
 			break;
 		case metaffi_string8_type:
-		{
-			jstring str = env->NewStringUTF(std::string(c->cdt_val.metaffi_string8_val.val,
-			                                            c->cdt_val.metaffi_string8_val.length).c_str());
-			
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, static_cast<jobject>(str));
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, static_cast<jobject>(str));
-			}
-			
-			env->DeleteLocalRef(str);
-		}break;
-		
-		case metaffi_int32_array_type:
-		{
-			if (c->cdt_val.metaffi_int32_array_val.dimensions != 1){
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jintArray arr = env->NewIntArray(c->cdt_val.metaffi_int32_array_val.dimensions_lengths[0]);
-			env->SetIntArrayRegion(arr, 0, c->cdt_val.metaffi_int32_array_val.dimensions_lengths[0], reinterpret_cast<jint*>(c->cdt_val.metaffi_int32_array_val.vals));
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		} break;
-		case metaffi_int64_array_type:
-		{
-			if (c->cdt_val.metaffi_int32_array_val.dimensions != 1){
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jlongArray arr = env->NewLongArray(c->cdt_val.metaffi_int64_array_val.dimensions_lengths[0]);
-			env->SetLongArrayRegion(arr, 0, c->cdt_val.metaffi_int64_array_val.dimensions_lengths[0], reinterpret_cast<jlong*>(c->cdt_val.metaffi_int64_array_val.vals));
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		} break;
-		case metaffi_int16_array_type:
-		{
-			if (c->cdt_val.metaffi_int32_array_val.dimensions != 1){
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jshortArray arr = env->NewShortArray(c->cdt_val.metaffi_int16_array_val.dimensions_lengths[0]);
-			env->SetShortArrayRegion(arr, 0, c->cdt_val.metaffi_int16_array_val.dimensions_lengths[0], reinterpret_cast<jshort*>(c->cdt_val.metaffi_int16_array_val.vals));
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		} break;
-		case metaffi_int8_array_type:
-		{
-			if (c->cdt_val.metaffi_int32_array_val.dimensions != 1){
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jbyteArray arr = env->NewByteArray(c->cdt_val.metaffi_int8_array_val.dimensions_lengths[0]);
-			env->SetByteArrayRegion(arr, 0, c->cdt_val.metaffi_int8_array_val.dimensions_lengths[0], reinterpret_cast<jbyte*>(c->cdt_val.metaffi_int8_array_val.vals));
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		} break;
-		case metaffi_float32_array_type:
-		{
-			if (c->cdt_val.metaffi_int32_array_val.dimensions != 1){
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jfloatArray arr = env->NewFloatArray(c->cdt_val.metaffi_float32_array_val.dimensions_lengths[0]);
-			env->SetFloatArrayRegion(arr, 0, c->cdt_val.metaffi_float32_array_val.dimensions_lengths[0], reinterpret_cast<jfloat*>(c->cdt_val.metaffi_float32_array_val.vals));
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		} break;
-		case metaffi_float64_array_type:
-		{
-			if (c->cdt_val.metaffi_int32_array_val.dimensions != 1){
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jdoubleArray arr = env->NewDoubleArray(c->cdt_val.metaffi_float64_array_val.dimensions_lengths[0]);
-			env->SetDoubleArrayRegion(arr, 0, c->cdt_val.metaffi_float64_array_val.dimensions_lengths[0], reinterpret_cast<jdouble*>(c->cdt_val.metaffi_float64_array_val.vals));
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		} break;
-		case metaffi_handle_array_type:
-		{
-			if (c->cdt_val.metaffi_int32_array_val.dimensions != 1){
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jobjectArray arr = env->NewObjectArray(c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0], cls, nullptr);
-			for (int i = 0; i < c->cdt_val.metaffi_handle_array_val.dimensions_lengths[0]; ++i)
-			{
-				env->SetObjectArrayElement(arr, i, reinterpret_cast<jobject>(c->cdt_val.metaffi_handle_array_val.vals[i].val));
-			}
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		} break;
+			set_field(Object, l);
+			break;
 		case metaffi_string8_array_type:
-		{
-			if (c->cdt_val.metaffi_string8_array_val.dimensions != 1)
-			{
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jobjectArray arr = env->NewObjectArray(c->cdt_val.metaffi_string8_array_val.dimensions_lengths[0], env->FindClass("java/lang/String"), nullptr);
-			for (int i = 0; i < c->cdt_val.metaffi_string8_array_val.dimensions_lengths[0]; i++)
-			{
-				jstring str = env->NewStringUTF(std::string(c->cdt_val.metaffi_string8_array_val.vals[i], c->cdt_val.metaffi_string8_array_val.vals_sizes[i]).c_str());
-				env->SetObjectArrayElement(arr, i, str);
-				env->DeleteLocalRef(str);
-			}
-			
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		}
+			set_field(Object, l);
+			break;
+		case metaffi_string16_type:
+			set_field(Object, l);
+			break;
 		case metaffi_string16_array_type:
-		{
-			if (c->cdt_val.metaffi_string16_array_val.dimensions != 1)
-			{
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jobjectArray arr = env->NewObjectArray(c->cdt_val.metaffi_string16_array_val.dimensions_lengths[0], env->FindClass("java/lang/String"), nullptr);
-			for (int i = 0; i < c->cdt_val.metaffi_string16_array_val.dimensions_lengths[0]; i++)
-			{
-				jstring str = env->NewString((const jchar*)c->cdt_val.metaffi_string16_array_val.vals[i], c->cdt_val.metaffi_string16_array_val.vals_sizes[i]);
-				env->SetObjectArrayElement(arr, i, str);
-				env->DeleteLocalRef(str);
-			}
-			
-			if (is_static)
-			{
-				env->SetStaticObjectField(cls, field_id, arr);
-			}
-			else
-			{
-				env->SetObjectField(obj, field_id, arr);
-			}
-		}
-		
+			set_field(Object, l);
+			break;
+		case metaffi_string32_type:
+			set_field(Object, l);
+			break;
+		case metaffi_string32_array_type:
+			set_field(Object, l);
+			break;
+		case metaffi_callable_type:
+			throw std::runtime_error("Not implemented yet");
+			break;
 		default:
 			std::stringstream ss;
-			ss << "Unsupported type to set field. Type: " << c->type;
+			ss << "Unsupported type to set field. Type: " << wrapper[index]->type;
 			throw std::runtime_error(ss.str());
-			
 	}
 	
 	check_and_throw_jvm_exception(env, true);
 }
+
+
 //--------------------------------------------------------------------
-void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wrapper& retval_wrapper, const metaffi_type_info& retval_type, bool instance_required, bool is_constructor, const std::set<uint8_t>& any_type_indices, jmethodID method)
+void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wrapper& retval_wrapper,
+                     const metaffi_type_info& retval_type, bool instance_required, bool is_constructor,
+                     const std::set<uint8_t>& any_type_indices, jmethodID method)
 {
 	int start_index = instance_required ? 1 : 0;
 	int params_length = params_wrapper.get_cdts_length() - start_index;
 	std::vector<jvalue> args(params_length);
 	
-	for (int i = 0; i < params_length; ++i)
+	for(int i = 0; i < params_length; ++i)
 	{
 		// if parameter expects a primitive in its object form - switch to object
-		if(params_wrapper[i+start_index]->type != metaffi_handle_type &&
-				(params_wrapper[i+start_index]->type & metaffi_array_type) == 0 &&
-					any_type_indices.contains(i+start_index))
+		if(params_wrapper[i + start_index]->type != metaffi_handle_type &&
+		   (params_wrapper[i + start_index]->type & metaffi_array_type) == 0 &&
+		   any_type_indices.contains(i + start_index))
 		{
-			params_wrapper.switch_to_object(env, i+start_index);
+			params_wrapper.switch_to_object(env, i + start_index);
 		}
 		
 		args[i] = params_wrapper.to_jvalue(env, i + start_index);
 	}
-
+	
 	if(!instance_required)
 	{
 		jvalue result;
-		switch (retval_type.type)
+		switch(retval_type.type)
 		{
 			case metaffi_int32_type:
 				result.i = env->CallStaticIntMethodA(cls, method, args.data());
@@ -446,7 +303,9 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				break;
 			case metaffi_handle_type:
-				result.l = is_constructor ? env->NewObject(cls, method, args.data()) : env->CallStaticObjectMethodA(cls, method, args.data());
+				result.l = is_constructor ? env->NewObject(cls, method, args.data()) : env->CallStaticObjectMethodA(cls,
+				                                                                                                    method,
+				                                                                                                    args.data());
 				check_and_throw_jvm_exception(env, true);
 				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				retval_wrapper.switch_to_primitive(env, 0); // switch to metaffi primitive, if possible
@@ -476,7 +335,8 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				check_and_throw_jvm_exception(env, true);
 				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				env->DeleteLocalRef(result.l);
-			} break;
+			}
+				break;
 			default:
 				std::stringstream ss;
 				ss << "Unsupported return type. Type: " << retval_type.type;
@@ -485,18 +345,20 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 	}
 	else
 	{
-		if(params_wrapper[0]->type != metaffi_handle_type){
+		if(params_wrapper[0]->type != metaffi_handle_type)
+		{
 			throw std::runtime_error("expected an object in index 0");
 		}
 		
-		if(params_wrapper[0]->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID){
+		if(params_wrapper[0]->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID)
+		{
 			throw std::runtime_error("expected Java object");
 		}
-
+		
 		jobject obj = params_wrapper.to_jvalue(env, 0).l;
-
+		
 		jvalue result;
-		switch (retval_type.type)
+		switch(retval_type.type)
 		{
 			case metaffi_int32_type:
 				result.i = env->CallIntMethodA(obj, method, args.data());
@@ -539,7 +401,8 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				result.z = env->CallBooleanMethodA(obj, method, args.data());
 				check_and_throw_jvm_exception(env, true);
 				retval_wrapper.from_jvalue(env, result, retval_type, 0);
-			}	break;
+			}
+				break;
 			case metaffi_uint8_array_type:
 			case metaffi_int8_array_type:
 			case metaffi_int16_array_type:
@@ -556,7 +419,8 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				check_and_throw_jvm_exception(env, true);
 				retval_wrapper.from_jvalue(env, result, retval_type, 0);
 				env->DeleteLocalRef(result.l);
-			} break;
+			}
+				break;
 			case metaffi_null_type:
 				env->CallVoidMethodA(obj, method, args.data());
 				check_and_throw_jvm_exception(env, true);
@@ -567,66 +431,5 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 				throw std::runtime_error(ss.str());
 		}
 	}
-}
-//--------------------------------------------------------------------
-void jni_class::validate_valid_jobject(jobject obj)
-{
-	jobjectRefType ref_type = env->GetObjectRefType(obj);
-	
-	if(ref_type == JNIWeakGlobalRefType){
-		throw std::runtime_error("\"this\" has weak global ref type, meaning it might be garbage collected");
-	}
-	
-	if(ref_type != JNILocalRefType && ref_type != JNIGlobalRefType){
-		throw std::runtime_error("\"this\" has an invalid ref type");
-	}
-}
-//--------------------------------------------------------------------
-std::string jni_class::get_method_name(JNIEnv *env, jclass cls, jmethodID mid) const
-{
-	// Get the Class class
-	jclass classClass = env->FindClass("java/lang/Class");
-	check_and_throw_jvm_exception(env, true);
-	
-	// Get the getDeclaredMethods method ID
-	jmethodID midGetDeclaredMethods = env->GetMethodID(classClass, "getDeclaredMethods", "()[Ljava/lang/reflect/Method;");
-	check_and_throw_jvm_exception(env, true);
-	
-	// Call getDeclaredMethods
-	jobjectArray methods = (jobjectArray)env->CallObjectMethod(cls, midGetDeclaredMethods);
-	check_and_throw_jvm_exception(env, true);
-	
-	// Get the Method class
-	jclass classMethod = env->FindClass("java/lang/reflect/Method");
-	check_and_throw_jvm_exception(env, true);
-	
-	// Get the getName method ID
-	jmethodID midGetName = env->GetMethodID(classMethod, "getName", "()Ljava/lang/String;");
-	check_and_throw_jvm_exception(env, true);
-	
-	jsize methodCount = env->GetArrayLength(methods);
-	check_and_throw_jvm_exception(env, true);
-	
-	for (int i = 0; i < methodCount; i++)
-	{
-		jobject method = env->GetObjectArrayElement(methods, i);
-		check_and_throw_jvm_exception(env, true);
-		
-		// If the method IDs match, return the name
-		if (env->FromReflectedMethod(method) == mid)
-		{
-			jstring name = (jstring)env->CallObjectMethod(method, midGetName);
-			check_and_throw_jvm_exception(env, true);
-			
-			const char* nameStr = env->GetStringUTFChars(name, nullptr);
-			check_and_throw_jvm_exception(env, true);
-			
-			std::string methodName(nameStr);  // Convert to std::string
-			env->ReleaseStringUTFChars(name, nameStr);  // Release the C string
-			return methodName;
-		}
-	}
-	
-	return "";  // Method not found
 }
 //--------------------------------------------------------------------

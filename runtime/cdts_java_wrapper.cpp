@@ -6,264 +6,742 @@
 #include "exception_macro.h"
 #include "utils/tracer.h"
 #include "jni_caller.h"
-
-
-cdt_metaffi_handle* copy_jvm_object_array(JNIEnv* env, jobjectArray obj_array, metaffi_size* lengths, int dimensions)
-{
-	if(dimensions == 1)
-	{
-		metaffi_size len = env->GetArrayLength(obj_array);
-		lengths[dimensions-1] = len;
-		auto arr = new cdt_metaffi_handle[len];
-		
-		for (int i = 0; i < len; i++)
-		{
-			jobject obj = env->GetObjectArrayElement(obj_array, i);
-			check_and_throw_jvm_exception(env, true);
-			
-			// if val.l is MetaFFIHandle - get its inner data
-			if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, obj))
-			{
-				jni_metaffi_handle h(env, obj);
-				arr[i].val = h.get_handle();
-				arr[i].runtime_id = h.get_runtime_id(); // mark as openjdk object
-			}
-			else
-			{
-				arr[i].val = env->NewGlobalRef(obj);
-				arr[i].runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
-			}
-			
-			env->DeleteLocalRef(obj);
-		}
-		
-		return arr;
-	}
-	else
-	{
-		auto len = env->GetArrayLength(obj_array);
-		lengths[dimensions-1] = len;
-		auto arr = new cdt_metaffi_handle[len];
-		
-		for (jsize i = 0; i < len; i++)
-		{
-			jobjectArray innerArray = (jobjectArray)env->GetObjectArrayElement(obj_array, i);
-			((cdt_metaffi_handle**)arr)[i] = copy_jvm_object_array(env, innerArray, lengths, dimensions - 1);
-			env->DeleteLocalRef(innerArray);
-		}
-		
-		return arr;
-	}
-}
-
-std::pair<char**, metaffi_size*> copy_jvm_string_array(JNIEnv* env, jobjectArray obj_array, metaffi_size* lengths, int dimensions)
-{
-	if(dimensions == 1)
-	{
-		metaffi_size len = env->GetArrayLength(obj_array);
-		lengths[dimensions-1] = len;
-		auto arr = new char*[len];
-		auto len_arr = new metaffi_size[len];
-		
-		for (int i = 0; i < len; i++)
-		{
-			jstring jstr = (jstring)env->GetObjectArrayElement(obj_array, i);
-			check_and_throw_jvm_exception(env, true);
-			const char* str = env->GetStringUTFChars(jstr, 0);
-			arr[i] = strdup(str);
-			len_arr[i] = strlen(arr[i]);
-			env->ReleaseStringUTFChars(jstr, str);
-			env->DeleteLocalRef(jstr);
-		}
-		
-		return std::make_pair(arr, len_arr);
-	}
-	else
-	{
-		auto len = env->GetArrayLength(obj_array);
-		lengths[dimensions-1] = len;
-		auto arr = new char*[len];
-		auto len_arr = new metaffi_size[len];
-		
-		for (jsize i = 0; i < len; i++)
-		{
-			jobjectArray innerArray = (jobjectArray)env->GetObjectArrayElement(obj_array, i);
-			auto res = copy_jvm_string_array(env, innerArray, lengths, dimensions - 1);
-			((char***)arr)[i] = res.first;
-			((metaffi_size**)len_arr)[i] = res.second;
-			env->DeleteLocalRef(innerArray);
-		}
-		
-		return std::make_pair(arr, len_arr);
-	}
-}
-
-
-template<typename jni_primitive_t, typename jni_primitive_array_t>
-jni_primitive_t* copy_jvm_array(JNIEnv* env, bool is_array_of_objects, void* getter_func, jmethodID methID, jobjectArray obj_array, metaffi_size* lengths, int dimensions)
-{
-	// Handle multi-dimensional array
-	if(dimensions == 1)
-	{
-		metaffi_size len = env->GetArrayLength(obj_array);
-		lengths[dimensions-1] = len;
-		auto arr = new jni_primitive_t[len];
-	
-		if(is_array_of_objects)
-		{
-			for (int i = 0; i < len; i++)
-			{
-				jobject obj = env->GetObjectArrayElement(obj_array, i);
-				check_and_throw_jvm_exception(env, true);
-				arr[i] = ((jni_primitive_t(*)(JNIEnv*, jobject, jmethodID))getter_func)(env, obj, methID);
-				check_and_throw_jvm_exception(env, true);
-				env->DeleteLocalRef(obj);
-			}
-		}
-		else
-		{
-			jni_primitive_t* data = ((jni_primitive_t*(*)(JNIEnv*,jni_primitive_array_t, jboolean*))getter_func)(env, (jni_primitive_array_t)obj_array, nullptr);
-			check_and_throw_jvm_exception(env, true);
-			std::copy(data, data+len, arr);
-		}
-		
-		return arr;
-	}
-	else
-	{
-		auto len = env->GetArrayLength(obj_array);
-		lengths[dimensions-1] = len;
-		auto arr = new jni_primitive_t[len];
-		
-		for (jsize i = 0; i < len; i++)
-		{
-			jobjectArray innerArray = (jobjectArray)env->GetObjectArrayElement(obj_array, i);
-			((jni_primitive_t**)arr)[i] = copy_jvm_array<jni_primitive_t, jni_primitive_array_t>(env, is_array_of_objects, getter_func, methID, innerArray, lengths, dimensions - 1);
-			env->DeleteLocalRef(innerArray);
-		}
-		
-		return arr;
-	}
-}
-
-#define copy_jni_array(name_of_java_class_type, jni_sig, name_of_getter, cdt_type_struct, jni_primitive_type, ctype, dims) \
-    jclass objectClass = env->GetObjectClass(val.l); \
-	jmethodID getClassMethod = env->GetMethodID(objectClass, "getClass", "()Ljava/lang/Class;"); \
-	jobject classObject = env->CallObjectMethod(val.l, getClassMethod);                                                                                                                    \
-	jclass classClass = env->GetObjectClass(classObject);                                                                                                                    \
-	jmethodID getNameMethod = env->GetMethodID(classClass, "getName", "()Ljava/lang/String;");                          \
-	jstring className = (jstring)env->CallObjectMethod(classObject, getNameMethod);\
-    const char* cClassName = env->GetStringUTFChars(className, nullptr);                                                                                                                \
-    bool is_array_of_objects = (strstr(cClassName, "/java/lang/") != nullptr);                                                                                                                \
-    env->ReleaseStringUTFChars(className, cClassName);                                                                          \
-    check_and_throw_jvm_exception(env, true);\
-                                                                                                                    \
-    cdt_type_struct.dimensions = dims; \
-    if(is_array_of_objects)                                                                                         \
-	{                                                                                                                  \
-		jclass cls = env->FindClass("Ljava/lang/" #name_of_java_class_type ";");\
-		jmethodID methID = env->GetMethodID(cls, name_of_getter, "()" jni_sig);\
-		int len = env->GetArrayLength((jobjectArray)val.l);\
-		check_and_throw_jvm_exception(env, true);\
-		\
-		cdt_type_struct.dimensions_lengths = new metaffi_size[dims];\
-		cdt_type_struct.vals = (ctype*)copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Call##name_of_java_class_type##Method, methID, (jobjectArray)val.l, cdt_type_struct.dimensions_lengths, dims); \
-	}   \
-	else  \
-	{  \
-		cdt_type_struct.dimensions_lengths = new metaffi_size[dims];\
-		cdt_type_struct.vals = (ctype*)copy_jvm_array<jni_primitive_type, jni_primitive_type##Array>(env, is_array_of_objects, (void*)env->functions->Get##name_of_java_class_type##ArrayElements, nullptr, (jobjectArray)val.l, cdt_type_struct.dimensions_lengths, dims); \
-	}
-	
-template<typename jni_primitive_t, typename jni_array_primitive_t, typename c_primitive_t>
-jobjectArray create_jvm_multidim_array(JNIEnv *env, c_primitive_t* arr, uint64_t dims, uint64_t* lengths, void* new_array_func, void* set_array_region_func, const char* jni_arr_sig, uint64_t cur_dim = 0)
-{
-	if (cur_dim+1 == dims)
-	{
-		jni_array_primitive_t data_arr = ((jni_array_primitive_t(*)(JNIEnv*, jsize))new_array_func)(env, (jsize)lengths[cur_dim]);
-		((void(*)(JNIEnv*,jni_array_primitive_t,jsize,jsize,jni_primitive_t*))set_array_region_func)(env,data_arr, 0, (jsize)lengths[cur_dim], (jni_primitive_t*)arr);
-		return (jobjectArray)data_arr;
-	}
-	else if (cur_dim+1 < dims)
-	{
-		jobjectArray outerArray = env->NewObjectArray((jsize)lengths[cur_dim], env->FindClass(jni_arr_sig), nullptr);
-		
-		for (jsize i = 0; i < lengths[cur_dim]; i++)
-		{
-			env->SetObjectArrayElement(outerArray, i, create_jvm_multidim_array<jni_primitive_t, jni_array_primitive_t, c_primitive_t>(env, arr + i * lengths[cur_dim], dims, lengths, new_array_func, set_array_region_func, jni_arr_sig, cur_dim + 1));
-		}
-		return outerArray;
-	}
-	return nullptr;
-}
-
-jobjectArray create_jvm_multidim_array(JNIEnv *env, cdt_metaffi_handle* arr, uint64_t dims, uint64_t* lengths, uint64_t cur_dim = 0)
-{
-	if (cur_dim+1 == dims)
-	{
-		jobjectArray data_arr = env->NewObjectArray((jsize)lengths[cur_dim], env->FindClass("java/lang/Object"), nullptr);
-		
-		for (jsize i = 0; i < lengths[0]; i++)
-		{
-			if(arr[i].runtime_id != OPENJDK_RUNTIME_ID)
-			{
-				jni_metaffi_handle h(env, arr[i].val, arr[i].runtime_id);
-				env->SetObjectArrayElement(data_arr, i, reinterpret_cast<jobject>(h.new_jvm_object(env)));
-			}
-			else
-			{
-				env->SetObjectArrayElement(data_arr, i, reinterpret_cast<jobject>(arr[i].val));
-			}
-		}
-		
-		return data_arr;
-	}
-	else if (cur_dim+1 < dims)
-	{
-		jobjectArray outerArray = env->NewObjectArray((jsize)lengths[cur_dim], env->FindClass("[Ljava/lang/Object;"), nullptr);
-		
-		for (jsize i = 0; i < lengths[cur_dim]; i++)
-		{
-			env->SetObjectArrayElement(outerArray, i, create_jvm_multidim_array(env, arr + i * lengths[cur_dim], dims, lengths,cur_dim + 1));
-		}
-		return outerArray;
-	}
-	return nullptr;
-}
+#include "jbyte_wrapper.h"
+#include "jobjectArray_wrapper.h"
+#include "jshort_wrapper.h"
+#include "jint_wrapper.h"
+#include "jlong_wrapper.h"
+#include "jfloat_wrapper.h"
+#include "jdouble_wrapper.h"
+#include "jboolean_wrapper.h"
+#include "jchar_wrapper.h"
+#include "jstring_wrapper.h"
+#include "jobject_wrapper.h"
 
 //--------------------------------------------------------------------
 cdts_java_wrapper::cdts_java_wrapper(cdt *cdts, metaffi_size cdts_length):metaffi::runtime::cdts_wrapper(cdts, cdts_length, false)
 {
 }
 //--------------------------------------------------------------------
+auto get_on_int8_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "B", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "B", array_length, current_dimensions));
+	};
+}
+
+template<typename metaffi_type_t>
+auto get_on_int8_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = *((std::pair<JNIEnv*, jobject*>*)other_array)->second;
+		
+		jbyteArray newarr = jbyte_wrapper::new_1d_array(env, length, (const jbyte*)arr);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_int16_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "S", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "S", array_length, current_dimensions));
+	};
+}
+
+template<typename metaffi_type_t>
+auto get_on_int16_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jshortArray newarr = jshort_wrapper::new_1d_array(env, length, (const jshort*)arr);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_int32_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "I", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "I", array_length, current_dimensions));
+	};
+}
+
+template<typename metaffi_type_t>
+auto get_on_int32_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jintArray newarr = jint_wrapper::new_1d_array(env, length, (const jint*)arr);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_int64_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "J", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "J", array_length, current_dimensions));
+	};
+}
+
+template<typename metaffi_type_t>
+auto get_on_int64_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jlongArray newarr = jlong_wrapper::new_1d_array(env, length, (const jlong*)arr);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_float32_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "F", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "F", array_length, current_dimensions));
+	};
+}
+
+auto get_on_float32_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_float32* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jfloatArray newarr = jfloat_wrapper::new_1d_array(env, length, (const jfloat*)arr);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_float64_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "D", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "D", array_length, current_dimensions));
+	};
+}
+
+auto get_on_float64_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_float64* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jdoubleArray newarr = jdouble_wrapper::new_1d_array(env, length, (const jdouble*)arr);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_bool_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "Z", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "Z", array_length, current_dimensions));
+	};
+}
+
+auto get_on_bool_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_bool* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jbooleanArray newarr = jboolean_wrapper::new_1d_array(env, length, (const jboolean*)arr);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_metaffi_handle_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "Ljava/lang/Object;", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "Ljava/lang/Object;", array_length, current_dimensions));
+	};
+}
+
+auto get_on_metaffi_handle_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, cdt_metaffi_handle* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jobjectArray_wrapper newarr(env, jobjectArray_wrapper::create_array(env, "Ljava/lang/Object;", length, 1));
+		
+		for(int i=0 ; i<length ; i++)
+		{
+			cdt_metaffi_handle* curitem = (arr + i);
+			if(curitem->runtime_id != OPENJDK_RUNTIME_ID)
+			{
+				jni_metaffi_handle h(env, curitem->val, curitem->runtime_id);
+				newarr.set(i, h.new_jvm_object(env));
+			}
+			else
+			{
+				newarr.set(i, static_cast<jobject>(curitem->val));
+			}
+		}
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = (jobjectArray)newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], (jobjectArray)newarr);
+		}
+	};
+}
+
+auto get_on_char_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "C", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "C", array_length, current_dimensions));
+	};
+}
+
+template<typename char_t>
+auto get_on_char_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, char_t* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jcharArray newarr = jchar_wrapper::new_1d_array(env, (const char_t*)arr, length);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
+auto get_on_string_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			jobjectArray arr = jobjectArray_wrapper::create_array(env, "Ljava/lang/String;", array_length, current_dimensions);
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
+			return;
+		}
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		
+		// traverse by the indices
+		for(int i=0 ; i<index_size-1 ; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "Ljava/lang/String;", array_length, current_dimensions));
+	};
+}
+
+template<typename string_t>
+auto get_on_string_1d_array()
+{
+	return [](metaffi_size* index, metaffi_size index_size, string_t* arr, metaffi_size length, void* other_array)
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
+		
+		jobjectArray newarr = jstring_wrapper::new_1d_array(env, (const string_t*)arr, length);
+		
+		if(!multidim_array)
+		{
+			// create the array in the given indices
+			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+		}
+		else
+		{
+			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
+			
+			// traverse by the indices
+			for(int i=0 ; i<index_size-1 ; i++)
+			{
+				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+			}
+			
+			higher_dim_array.set(index[index_size-1], newarr);
+		}
+	};
+}
+
 jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 {
-	jvalue jval;
+	jvalue jval{};
 	cdt* c = (*this)[index];
 
 	switch (c->type)
 	{
-		case metaffi_bool_type:
-			jval.z = c->cdt_val.metaffi_bool_val.val ? JNI_TRUE : JNI_FALSE;
-			break;
-		case metaffi_int32_type:
-			jval.i = c->cdt_val.metaffi_int32_val.val;
-			break;
-		case metaffi_int64_type:
-			jval.j = c->cdt_val.metaffi_int64_val.val;
-			break;
-		case metaffi_int16_type:
-			jval.s = c->cdt_val.metaffi_int16_val.val;
-			break;
 		case metaffi_int8_type:
-			jval.b = c->cdt_val.metaffi_int8_val.val;
+			jval.b = c->cdt_val.metaffi_int8_val;
 			break;
+		case metaffi_int8_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int8_array, metaffi_int8>(
+					c->cdt_val.metaffi_int8_array_val,
+					&other_array,
+					get_on_int8_array(),
+					get_on_int8_1d_array<metaffi_int8>());
+		}break;
+		case metaffi_uint8_type:
+			jval.b = c->cdt_val.metaffi_uint8_val;
+			break;
+		case metaffi_uint8_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint8_array, metaffi_uint8>(
+					c->cdt_val.metaffi_uint8_array_val,
+					&other_array,
+					get_on_int8_array(),
+					get_on_int8_1d_array<metaffi_uint8>());
+		}break;
+		case metaffi_int16_type:
+			jval.s = c->cdt_val.metaffi_int16_val;
+			break;
+		case metaffi_int16_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int16_array, metaffi_int16>(
+					c->cdt_val.metaffi_int16_array_val,
+					&other_array,
+					get_on_int16_array(),
+					get_on_int16_1d_array<metaffi_int16>());
+		}break;
+		case metaffi_uint16_type:
+			jval.s = c->cdt_val.metaffi_uint16_val;
+			break;
+		case metaffi_uint16_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint16_array, metaffi_uint16>(
+					c->cdt_val.metaffi_uint16_array_val,
+					&other_array,
+					get_on_int16_array(),
+					get_on_int16_1d_array<metaffi_uint16>());
+		}break;
+		case metaffi_int32_type:
+			jval.i = c->cdt_val.metaffi_int32_val;
+			break;
+		case metaffi_int32_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int32_array, metaffi_int32>(
+					c->cdt_val.metaffi_int32_array_val,
+					&other_array,
+					get_on_int32_array(),
+					get_on_int32_1d_array<metaffi_int32>());
+		}break;
+		case metaffi_uint32_type:
+			jval.i = c->cdt_val.metaffi_uint32_val;
+			break;
+		case metaffi_uint32_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint32_array, metaffi_uint32>(
+					c->cdt_val.metaffi_uint32_array_val,
+					&other_array,
+					get_on_int32_array(),
+					get_on_int32_1d_array<metaffi_uint32>());
+		}break;
+		case metaffi_int64_type:
+			jval.j = c->cdt_val.metaffi_int64_val;
+			break;
+		case metaffi_int64_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int64_array, metaffi_int64>(
+					c->cdt_val.metaffi_int64_array_val,
+					&other_array,
+					get_on_int64_array(),
+					get_on_int64_1d_array<metaffi_int64>());
+		}break;
+		case metaffi_uint64_type:
+			jval.j = c->cdt_val.metaffi_uint64_val;
+			break;
+		case metaffi_uint64_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint64_array, metaffi_uint64>(
+					c->cdt_val.metaffi_uint64_array_val,
+					&other_array,
+					get_on_int64_array(),
+					get_on_int64_1d_array<metaffi_uint64>());
+		}break;
 		case metaffi_float32_type:
-			jval.f = c->cdt_val.metaffi_float32_val.val;
+			jval.f = c->cdt_val.metaffi_float32_val;
 			break;
+		case metaffi_float32_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_float32_array, metaffi_float32>(
+					c->cdt_val.metaffi_float32_array_val,
+					&other_array,
+					get_on_float32_array(),
+					get_on_float32_1d_array());
+		}break;
 		case metaffi_float64_type:
-			jval.d = c->cdt_val.metaffi_float64_val.val;
+			jval.d = c->cdt_val.metaffi_float64_val;
 			break;
+		case metaffi_float64_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_float64_array, metaffi_float64>(
+					c->cdt_val.metaffi_float64_array_val,
+					&other_array,
+					get_on_float64_array(),
+					get_on_float64_1d_array());
+		}break;
+		case metaffi_bool_type:
+			jval.z = c->cdt_val.metaffi_bool_val ? JNI_TRUE : JNI_FALSE;
+			break;
+		case metaffi_bool_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_bool_array, metaffi_bool>(
+					c->cdt_val.metaffi_bool_array_val,
+					&other_array,
+					get_on_bool_array(),
+					get_on_bool_1d_array());
+		}break;
 		case metaffi_handle_type:
 			// if runtime_id is NOT openjdk, wrap in MetaFFIHandle
 			if(c->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID)
@@ -276,163 +754,95 @@ jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 				jval.l = static_cast<jobject>(c->cdt_val.metaffi_handle_val.val);
 			}
 			break;
+		case metaffi_handle_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_handle_array, cdt_metaffi_handle>(
+					c->cdt_val.metaffi_handle_array_val,
+					&other_array,
+					get_on_metaffi_handle_array(),
+					get_on_metaffi_handle_1d_array());
+		}break;
+		case metaffi_char8_type:
+		{
+			jval.c = (jchar)jchar_wrapper(env, c->cdt_val.metaffi_char8_val);
+		}break;
+		case metaffi_char8_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_char8_array, metaffi_char8>(
+					c->cdt_val.metaffi_char8_array_val,
+					&other_array,
+					get_on_char_array(),
+					get_on_char_1d_array<metaffi_char8>());
+		}break;
 		case metaffi_string8_type:
 		{
-			jstring str = env->NewStringUTF(std::string(c->cdt_val.metaffi_string8_val.val,
-			                                            c->cdt_val.metaffi_string8_val.length).c_str());
+			jstring str = env->NewStringUTF((const char*)c->cdt_val.metaffi_string8_val);
 			check_and_throw_jvm_exception(env, true);
 			jval.l = str;
+		}break;
+		case metaffi_string8_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_string8_array, metaffi_string8>(
+					c->cdt_val.metaffi_string8_array_val,
+					&other_array,
+					get_on_string_array(),
+					get_on_string_1d_array<metaffi_string8>());
+		}break;
+		case metaffi_char16_type:
+			jval.c = (jchar)jchar_wrapper(env, c->cdt_val.metaffi_char16_val);
+			break;
+		case metaffi_char16_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_char16_array, metaffi_char16>(
+					c->cdt_val.metaffi_char16_array_val,
+					&other_array,
+					get_on_char_array(),
+					get_on_char_1d_array<metaffi_char16>());
 		}break;
 		case metaffi_string16_type:
 		{
-			jstring str = env->NewString((jchar*)c->cdt_val.metaffi_string16_val.val,
-			                                            c->cdt_val.metaffi_string16_val.length);
-			check_and_throw_jvm_exception(env, true);
-			jval.l = str;
-		}break;
-		
-		// Add cases for array types
-		case metaffi_bool_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jboolean, jbooleanArray, metaffi_bool>(env,
-			                                                             c->cdt_val.metaffi_bool_array_val.vals,
-			                                                             c->cdt_val.metaffi_bool_array_val.dimensions,
-			                                                             c->cdt_val.metaffi_bool_array_val.dimensions_lengths,
-			                                                             (void*)env->functions->NewBooleanArray,
-			                                                             (void*)env->functions->SetBooleanArrayRegion,
-			                                                             "[Z");
-			check_and_throw_jvm_exception(env, true);
-		} break;
-		case metaffi_int32_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jint, jintArray, int32_t>(env,
-			                                                               c->cdt_val.metaffi_int32_array_val.vals,
-			                                                               c->cdt_val.metaffi_int32_array_val.dimensions,
-			                                                               c->cdt_val.metaffi_int32_array_val.dimensions_lengths,
-			                                                               (void*)env->functions->NewIntArray,
-			                                                               (void*)env->functions->SetIntArrayRegion,
-			                                                               "[I");
-			check_and_throw_jvm_exception(env, true);
-		} break;
-		case metaffi_int64_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jlong, jlongArray, int64_t>(env,
-			                                                             c->cdt_val.metaffi_int64_array_val.vals,
-			                                                             c->cdt_val.metaffi_int64_array_val.dimensions,
-			                                                             c->cdt_val.metaffi_int64_array_val.dimensions_lengths,
-			                                                             (void*)env->functions->NewLongArray,
-			                                                             (void*)env->functions->SetLongArrayRegion,
-			                                                             "[L");
-			check_and_throw_jvm_exception(env, true);
-		} break;
-		case metaffi_int16_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jshort, jshortArray, int16_t>(env,
-			                                                               c->cdt_val.metaffi_int16_array_val.vals,
-			                                                               c->cdt_val.metaffi_int16_array_val.dimensions,
-			                                                               c->cdt_val.metaffi_int16_array_val.dimensions_lengths,
-			                                                               (void*)env->functions->NewShortArray,
-			                                                               (void*)env->functions->SetShortArrayRegion,
-			                                                               "[S");
-			check_and_throw_jvm_exception(env, true);
-		} break;
-		case metaffi_uint8_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jbyte, jbyteArray, uint8_t>(env,
-																		   c->cdt_val.metaffi_uint8_array_val.vals,
-																		   c->cdt_val.metaffi_uint8_array_val.dimensions,
-																		   c->cdt_val.metaffi_uint8_array_val.dimensions_lengths,
-																		   (void*)env->functions->NewByteArray,
-																		   (void*)env->functions->SetByteArrayRegion,
-																		   "[B");
-			check_and_throw_jvm_exception(env, true);
-			
-		} break;
-		case metaffi_int8_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jbyte, jbyteArray, int8_t>(env,
-			                                                               c->cdt_val.metaffi_int8_array_val.vals,
-			                                                               c->cdt_val.metaffi_int8_array_val.dimensions,
-			                                                               c->cdt_val.metaffi_int8_array_val.dimensions_lengths,
-			                                                               (void*)env->functions->NewByteArray,
-			                                                               (void*)env->functions->SetByteArrayRegion,
-			                                                               "[B");
-			check_and_throw_jvm_exception(env, true);
-			
-		} break;
-		case metaffi_float32_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jfloat, jfloatArray, float>(env,
-		                                                                 c->cdt_val.metaffi_float32_array_val.vals,
-		                                                                 c->cdt_val.metaffi_float32_array_val.dimensions,
-		                                                                 c->cdt_val.metaffi_float32_array_val.dimensions_lengths,
-		                                                                 (void*)env->functions->NewFloatArray,
-		                                                                 (void*)env->functions->SetFloatArrayRegion,
-		                                                                 "[F");
-			check_and_throw_jvm_exception(env, true);
-		} break;
-		case metaffi_float64_array_type:
-		{
-			jval.l = create_jvm_multidim_array<jdouble, jdoubleArray, double>(env,
-			                                                               c->cdt_val.metaffi_float64_array_val.vals,
-			                                                               c->cdt_val.metaffi_float64_array_val.dimensions,
-			                                                               c->cdt_val.metaffi_float64_array_val.dimensions_lengths,
-			                                                               (void*)env->functions->NewDoubleArray,
-			                                                               (void*)env->functions->SetDoubleArrayRegion,
-			                                                               "[D");
-			check_and_throw_jvm_exception(env, true);
-		} break;
-		case metaffi_handle_array_type:
-		{
-			jval.l = create_jvm_multidim_array(env,
-									  c->cdt_val.metaffi_handle_array_val.vals,
-									  c->cdt_val.metaffi_handle_array_val.dimensions,
-									  c->cdt_val.metaffi_handle_array_val.dimensions_lengths);
-			check_and_throw_jvm_exception(env, true);
-		} break;
-		case metaffi_string8_array_type:
-		{
-			if (c->cdt_val.metaffi_string8_array_val.dimensions != 1)
-			{
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jobjectArray arr = env->NewObjectArray(c->cdt_val.metaffi_string8_array_val.dimensions_lengths[0], env->FindClass("java/lang/String"), nullptr);
-			check_and_throw_jvm_exception(env, true);
-			for (int i = 0; i < c->cdt_val.metaffi_string8_array_val.dimensions_lengths[0]; i++)
-			{
-				jstring str = env->NewStringUTF(std::string(c->cdt_val.metaffi_string8_array_val.vals[i], c->cdt_val.metaffi_string8_array_val.vals_sizes[i]).c_str());
-				check_and_throw_jvm_exception(env, true);
-				env->SetObjectArrayElement(arr, i, str);
-				check_and_throw_jvm_exception(env, true);
-				env->DeleteLocalRef(str);
-				check_and_throw_jvm_exception(env, true);
-			}
-			
-			jval.l = arr;
+			jstring_wrapper w(env, c->cdt_val.metaffi_string16_val);
+			jval.l = (jstring)w;
 		}break;
 		case metaffi_string16_array_type:
 		{
-			if (c->cdt_val.metaffi_string16_array_val.dimensions != 1)
-			{
-				throw std::runtime_error("Only arrays of 1 dimension are supported");
-			}
-			
-			jobjectArray arr = env->NewObjectArray(c->cdt_val.metaffi_string16_array_val.dimensions_lengths[0], env->FindClass("java/lang/String"), nullptr);
-			check_and_throw_jvm_exception(env, true);
-			for (int i = 0; i < c->cdt_val.metaffi_string16_array_val.dimensions_lengths[0]; i++)
-			{
-				jstring str = env->NewString((const jchar*)c->cdt_val.metaffi_string16_array_val.vals[i], c->cdt_val.metaffi_string16_array_val.vals_sizes[i]);
-				check_and_throw_jvm_exception(env, true);
-				env->SetObjectArrayElement(arr, i, str);
-				check_and_throw_jvm_exception(env, true);
-				env->DeleteLocalRef(str);
-				check_and_throw_jvm_exception(env, true);
-			}
-			
-			jval.l = arr;
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_string16_array, metaffi_string16>(
+					c->cdt_val.metaffi_string16_array_val,
+					&other_array,
+					get_on_string_array(),
+					get_on_string_1d_array<metaffi_string16>());
 		}break;
-
+		case metaffi_char32_type:
+			jval.c = (jchar)jchar_wrapper(env, c->cdt_val.metaffi_char32_val);
+			break;
+		case metaffi_char32_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_char32_array, metaffi_char32>(
+					c->cdt_val.metaffi_char32_array_val,
+					&other_array,
+					get_on_char_array(),
+					get_on_char_1d_array<metaffi_char32>());
+		}break;
+		case metaffi_string32_type:
+		{
+			jstring str = (jstring)jstring_wrapper(env, c->cdt_val.metaffi_string32_val);
+			jval.l = str;
+		}break;
+		case metaffi_string32_array_type:
+		{
+			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
+			metaffi::runtime::traverse_multidim_array<cdt_metaffi_string32_array, metaffi_string32>(
+					c->cdt_val.metaffi_string32_array_val,
+					&other_array,
+					get_on_string_array(),
+					get_on_string_1d_array<metaffi_string32>());
+		}break;
 		case metaffi_callable_type:
 		{
 			// return LoadCallable.CallableWithArgs instance by calling LoadCallable.load()
@@ -479,164 +889,378 @@ jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 	return jval;
 }
 //--------------------------------------------------------------------
-void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue val, const metaffi_type_info& type, int index) const
+auto get_get_array_callback()
+{
+	return [](metaffi_size* index, metaffi_size index_length, void* other_array)->metaffi_size
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject>*)other_array)->second;
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		for (metaffi_size i = 0; i < index_length; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		return arr.size();
+	};
+}
+
+template<typename metaffi_type_t, typename jwrapper_t>
+auto get_get_1d_array_callback()
+{
+	return [](metaffi_size* index, metaffi_size index_length, metaffi_size& out_1d_array_length, void* other_array)->metaffi_type_t*
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject>*)other_array)->second;
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		for (metaffi_size i = 0; i < index_length; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		out_1d_array_length = arr.size();
+		
+		return jwrapper_t::to_c_array<metaffi_type_t>(env, (jarray)((jobject)arr));
+	};
+}
+
+auto get_get_1d_object_array_callback()
+{
+	return [](metaffi_size* index, metaffi_size index_length, metaffi_size& out_1d_array_length, void* other_array)->cdt_metaffi_handle*
+	{
+		JNIEnv* env = ((std::pair<JNIEnv*, jobject>*)other_array)->first;
+		jobject multidim_array = ((std::pair<JNIEnv*, jobject>*)other_array)->second;
+		
+		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
+		for (metaffi_size i = 0; i < index_length; i++)
+		{
+			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+		}
+		
+		out_1d_array_length = arr.size();
+		
+		cdt_metaffi_handle* mffi_arr = new cdt_metaffi_handle[out_1d_array_length]{};
+		
+		for(int i=0 ; i<out_1d_array_length ; i++)
+		{
+			jobject obj = arr.get(i);
+			if(obj)
+			{
+				mffi_arr[i].runtime_id = OPENJDK_RUNTIME_ID;
+				mffi_arr[i].val = obj;
+			}
+			
+			if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, obj))
+			{
+				jni_metaffi_handle h(env, obj);
+				mffi_arr[i].val = h.get_handle();
+				mffi_arr[i].runtime_id = h.get_runtime_id(); // mark as openjdk object
+			}
+			else
+			{
+				// mffi_arr[i].val = env->NewGlobalRef(obj); // Is that required here?!
+				mffi_arr[i].val = obj;
+				mffi_arr[i].runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
+			}
+		}
+		
+		return mffi_arr;
+	};
+}
+
+//--------------------------------------------------------------------
+void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue jval, const metaffi_type_info& type, int index) const
 {
 	cdt* c = (*this)[index];
 	c->type = type.type;
 	switch (c->type)
 	{
-		case metaffi_int32_type:
-			c->cdt_val.metaffi_int32_val.val = val.i;
-			c->type = metaffi_int32_type;
-			break;
-		case metaffi_int64_type:
-			c->cdt_val.metaffi_int64_val.val = val.j;
-			c->type = metaffi_int64_type;
-			break;
-		case metaffi_int16_type:
-			c->cdt_val.metaffi_int16_val.val = val.s;
-			c->type = metaffi_int16_type;
-			break;
 		case metaffi_int8_type:
-			c->cdt_val.metaffi_int8_val.val = val.b;
-			c->type = metaffi_int8_type;
+			c->cdt_val.metaffi_int8_val = jbyte_wrapper(jval.b);
 			break;
+		case metaffi_int8_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_int8_array, metaffi_int8>(
+					c->cdt_val.metaffi_int8_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_int8, jbyte_wrapper>());
+		} break;
+		case metaffi_uint8_type:
+			c->cdt_val.metaffi_uint8_val = jbyte_wrapper(jval.b);
+			break;
+		case metaffi_uint8_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint8_array, metaffi_uint8>(
+					c->cdt_val.metaffi_uint8_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_uint8, jbyte_wrapper>());
+		} break;
+		case metaffi_int16_type:
+			c->cdt_val.metaffi_int16_val = jval.s;
+			break;
+		case metaffi_int16_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_int16_array, metaffi_int16>(
+					c->cdt_val.metaffi_int16_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_int16, jshort_wrapper>());
+		} break;
+		case metaffi_uint16_type:
+			c->cdt_val.metaffi_uint16_val = jval.s;
+			break;
+		case metaffi_uint16_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint16_array, metaffi_uint16>(
+					c->cdt_val.metaffi_uint16_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_uint16, jshort_wrapper>());
+		} break;
+		case metaffi_int32_type:
+			c->cdt_val.metaffi_int32_val = jval.i;
+			break;
+		case metaffi_int32_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_int32_array, metaffi_int32>(
+					c->cdt_val.metaffi_int32_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_int32, jint_wrapper>());
+		} break;
+		case metaffi_uint32_type:
+			c->cdt_val.metaffi_uint32_val = jval.i;
+			break;
+		case metaffi_uint32_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint32_array, metaffi_uint32>(
+					c->cdt_val.metaffi_uint32_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_uint32, jint_wrapper>());
+		} break;
+		case metaffi_int64_type:
+			c->cdt_val.metaffi_int64_val = jval.j;
+			break;
+		case metaffi_int64_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_int64_array, metaffi_int64>(
+					c->cdt_val.metaffi_int64_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_int64, jlong_wrapper>());
+		} break;
+		case metaffi_uint64_type:
+			c->cdt_val.metaffi_uint64_val = jval.j;
+			break;
+		case metaffi_uint64_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint64_array, metaffi_uint64>(
+					c->cdt_val.metaffi_uint64_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_uint64, jlong_wrapper>());
+		} break;
 		case metaffi_float32_type:
-			c->cdt_val.metaffi_float32_val.val = val.f;
-			c->type = metaffi_float32_type;
+			c->cdt_val.metaffi_float32_val = jval.f;
 			break;
+		case metaffi_float32_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_float32_array, metaffi_float32>(
+					c->cdt_val.metaffi_float32_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_float32, jfloat_wrapper>());
+		}break;
 		case metaffi_float64_type:
-			c->cdt_val.metaffi_float64_val.val = val.d;
-			c->type = metaffi_float64_type;
+			c->cdt_val.metaffi_float64_val = jval.d;
 			break;
+		case metaffi_float64_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_float64_array, metaffi_float64>(
+					c->cdt_val.metaffi_float64_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_float64, jdouble_wrapper>());
+		}break;
 		case metaffi_handle_type:
 			// if val.l is MetaFFIHandle - get its inner data
-			if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, val.l))
+			if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, jval.l))
 			{
-				jni_metaffi_handle h(env, val.l);
+				jni_metaffi_handle h(env, jval.l);
 				c->cdt_val.metaffi_handle_val.val = h.get_handle();
 				c->cdt_val.metaffi_handle_val.runtime_id = h.get_runtime_id(); // mark as openjdk object
 				c->type = metaffi_handle_type;
 			}
 			else
 			{
-				c->cdt_val.metaffi_handle_val.val = env->NewGlobalRef(val.l);
+				c->cdt_val.metaffi_handle_val.val = env->NewGlobalRef(jval.l);
 				c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
 				c->type = metaffi_handle_type;
 			}
 			break;
+		case metaffi_handle_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_handle_array, cdt_metaffi_handle>(
+					c->cdt_val.metaffi_handle_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_object_array_callback());
+		}break;
 		case metaffi_callable_type:
 			// get from val.l should be Caller class
-			if(!is_caller_class(env, val.l))
+			if(!is_caller_class(env, jval.l))
 			{
 				throw std::runtime_error("caller_type expects metaffi.Caller object");
 			}
-			fill_callable_cdt(env, val.l, c->cdt_val.metaffi_callable_val.val,
+			fill_callable_cdt(env, jval.l, c->cdt_val.metaffi_callable_val.val,
 								c->cdt_val.metaffi_callable_val.parameters_types, c->cdt_val.metaffi_callable_val.params_types_length,
 								c->cdt_val.metaffi_callable_val.retval_types, c->cdt_val.metaffi_callable_val.retval_types_length);
-			c->type = metaffi_callable_type;
 			break;
 		case metaffi_bool_type:
-			c->cdt_val.metaffi_bool_val.val = val.z;
-			c->type = metaffi_bool_type;
+			c->cdt_val.metaffi_bool_val = jval.z;
 			break;
+		case metaffi_bool_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_bool_array, metaffi_bool>(
+					c->cdt_val.metaffi_bool_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_bool, jboolean_wrapper>());
+		}break;
+		case metaffi_char8_type:
+			c->cdt_val.metaffi_char8_val = ((std::u8string)jchar_wrapper(env, jval.c))[0];
+			break;
+		case metaffi_char8_array_type:
+		{
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_char8_array, metaffi_char8>(
+					c->cdt_val.metaffi_char8_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_char8, jchar_wrapper>());
+		}
 		case metaffi_string8_type:
 		{
-			jstring str = static_cast<jstring>(val.l);
-			const char* chars = env->GetStringUTFChars(str, nullptr);
-			check_and_throw_jvm_exception(env, true);
-			int len = env->GetStringUTFLength(str);
-			check_and_throw_jvm_exception(env, true);
-			c->type = metaffi_string8_type;
-			c->cdt_val.metaffi_string8_val.val = new char[len]; // You might need to copy the string
-			c->cdt_val.metaffi_string8_val.length = len;
-			std::copy_n(chars, len, c->cdt_val.metaffi_string8_val.val);
-			env->ReleaseStringUTFChars(str, chars);
-			check_and_throw_jvm_exception(env, true);
+			jstring_wrapper w(env, (jstring)jval.l);
+			c->cdt_val.metaffi_string8_val = (metaffi_string8)((const char8_t*)w);
 		} break;
 		case metaffi_string8_array_type:
 		{
-			c->type = metaffi_string8_array_type;
-			
-			c->cdt_val.metaffi_string8_array_val.dimensions = type.dimensions;
-			c->cdt_val.metaffi_string8_array_val.dimensions_lengths = new metaffi_size[type.dimensions];
-			
-			auto res = copy_jvm_string_array(env, static_cast<jobjectArray>(val.l), c->cdt_val.metaffi_string8_array_val.dimensions_lengths, type.dimensions);
-			
-			c->cdt_val.metaffi_string8_array_val.vals = res.first;
-			c->cdt_val.metaffi_string8_array_val.vals_sizes = res.second;
-		
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_string8_array, metaffi_string8>(
+					c->cdt_val.metaffi_string8_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_string8, jstring_wrapper>());
 		} break;
-		case metaffi_int64_array_type:
+		case metaffi_char16_type:
+			c->cdt_val.metaffi_char16_val = (char16_t)jchar_wrapper(env, jval.c);
+			break;
+		case metaffi_char16_array_type:
 		{
-			c->type = metaffi_int64_array_type;
-			copy_jni_array(Long, "J", "longValue", c->cdt_val.metaffi_int64_array_val, jlong, metaffi_int64, type.dimensions);
-
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_char16_array, metaffi_char16>(
+					c->cdt_val.metaffi_char16_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_char16, jchar_wrapper>());
+		}
+		case metaffi_string16_type:
+		{
+			jstring_wrapper w(env, (jstring)jval.l);
+			c->cdt_val.metaffi_string16_val = (metaffi_string16)((const char16_t*)w);
 		} break;
-		case metaffi_int16_array_type:
+		case metaffi_string16_array_type:
 		{
-			c->type = metaffi_int16_array_type;
-			copy_jni_array(Short, "S", "shortValue", c->cdt_val.metaffi_int16_array_val, jshort, metaffi_int16, type.dimensions);
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_string16_array, metaffi_string16>(
+					c->cdt_val.metaffi_string16_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_string16, jstring_wrapper>());
 		} break;
-		case metaffi_uint8_array_type:
+		case metaffi_char32_type:
+			c->cdt_val.metaffi_char32_val = (char32_t)jchar_wrapper(env, jval.c);
+			break;
+		case metaffi_char32_array_type:
 		{
-			c->type = metaffi_uint8_array_type;
-			copy_jni_array(Byte, "B", "byteValue", c->cdt_val.metaffi_uint8_array_val, jbyte, metaffi_uint8, type.dimensions);
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_char32_array, metaffi_char32>(
+					c->cdt_val.metaffi_char32_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_char32, jchar_wrapper>());
+		}
+		case metaffi_string32_type:
+		{
+			jstring_wrapper w(env, (jstring)jval.l);
+			c->cdt_val.metaffi_string32_val = (metaffi_string32)((const char32_t*)w);
 		} break;
-		case metaffi_int8_array_type:
+		case metaffi_string32_array_type:
 		{
-			c->type = metaffi_int8_array_type;
-			copy_jni_array(Byte, "B", "byteValue", c->cdt_val.metaffi_int8_array_val, jbyte, metaffi_int8,type.dimensions);
-		} break;
-		case metaffi_bool_array_type:
-		{
-			c->type = metaffi_bool_array_type;
-			copy_jni_array(Boolean, "Z", "booleanValue", c->cdt_val.metaffi_bool_array_val, jboolean, metaffi_bool, type.dimensions);
-		} break;
-		case metaffi_float32_array_type:
-		{
-			c->type = metaffi_float32_array_type;
-			copy_jni_array(Float, "F", "floatValue", c->cdt_val.metaffi_float32_array_val, jfloat, metaffi_float32, type.dimensions);
-		} break;
-		case metaffi_float64_array_type:
-		{
-			c->type = metaffi_float64_array_type;
-			copy_jni_array(Double, "D", "doubleValue", c->cdt_val.metaffi_float64_array_val, jdouble, metaffi_float64, type.dimensions);
-		} break;
-		case metaffi_handle_array_type:
-		{
-			// TODO: Support multi-dimensional arrays
-			c->type = metaffi_handle_array_type;
-			jobjectArray arr = static_cast<jobjectArray>(val.l);
-			
-			check_and_throw_jvm_exception(env, true);
-			
-			c->cdt_val.metaffi_handle_array_val.dimensions = type.dimensions;
-			c->cdt_val.metaffi_handle_array_val.dimensions_lengths = new metaffi_size[type.dimensions];
-			c->cdt_val.metaffi_handle_array_val.vals = copy_jvm_object_array(env, arr, c->cdt_val.metaffi_handle_array_val.dimensions_lengths, type.dimensions);
+			auto other_array = std::make_pair(env, jval.l);
+			metaffi::runtime::construct_multidim_array<cdt_metaffi_string32_array, metaffi_string32>(
+					c->cdt_val.metaffi_string32_array_val,
+					type.dimensions,
+					&other_array,
+					get_get_array_callback(),
+					get_get_1d_array_callback<metaffi_string32, jstring_wrapper>());
 		} break;
 		case metaffi_any_type:
 		{
 			// returned type is an object, we need to *try* and switch it to primitive if it
 			// can be converted to primitive
-			c->cdt_val.metaffi_handle_val.val = val.l;
+			c->cdt_val.metaffi_handle_val.val = jval.l;
 			c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-			c->type = metaffi_handle_type;
 
 			switch_to_primitive(env, index);
 			
 			if(c->type == metaffi_handle_type)
 			{
-				if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, val.l))
+				if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, jval.l))
 				{
-					jni_metaffi_handle h(env, val.l);
+					jni_metaffi_handle h(env, jval.l);
 					c->cdt_val.metaffi_handle_val.val = h.get_handle();
 					c->cdt_val.metaffi_handle_val.runtime_id = h.get_runtime_id(); // mark as openjdk object
 					c->type = metaffi_handle_type;
 				}
 				else
 				{
-					c->cdt_val.metaffi_handle_val.val = env->NewGlobalRef(val.l);
+					c->cdt_val.metaffi_handle_val.val = env->NewGlobalRef(jval.l);
 					c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
 					c->type = metaffi_handle_type;
 				}
@@ -712,12 +1336,35 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (std::string)this->get_object_as_string(env, i));
-			env->DeleteGlobalRef(obj);
+			if(t == metaffi_any_type || t == metaffi_string8_type)
+			{
+				jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
+				this->set(i, jobject_wrapper(env, obj).get_as_string8());
+				env->DeleteGlobalRef(obj);
+			}
+			else if(t == metaffi_string16_type)
+			{
+				jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
+				this->set(i, jobject_wrapper(env, obj).get_as_string16());
+				env->DeleteGlobalRef(obj);
+			}
+			else if(t == metaffi_string32_type)
+			{
+				jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
+				this->set(i, jobject_wrapper(env, obj).get_as_string32());
+				env->DeleteGlobalRef(obj);
+			}
+			else
+			{
+				std::stringstream ss;
+				ss << "Expected metaffi type: " << t << " while received String";
+				throw std::runtime_error(ss.str());
+			}
+			
 		}
 		else
 		{
+			(*this)[i]->type = metaffi_handle_type;
 			return;
 		}
 	}
@@ -733,7 +1380,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int32)this->get_object_as_int32(env, i));
+			this->set(i, (metaffi_int32)jobject_wrapper(env, obj).get_as_int32());
 
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
@@ -752,7 +1399,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int64)this->get_object_as_int64(env, i));
+			this->set(i, (metaffi_int64)jobject_wrapper(env, obj).get_as_int64());
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -769,7 +1416,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int16)this->get_object_as_int16(env, i));
+			this->set(i, (metaffi_int16)jobject_wrapper(env, obj).get_as_int16());
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -787,7 +1434,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int8)this->get_object_as_int8(env, i));
+			this->set(i, (metaffi_int8)jobject_wrapper(env, obj).get_as_int8());
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -797,14 +1444,32 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 		
 		case 'C':
 		{
-			if(t != metaffi_any_type && t != metaffi_uint16_type)
+			if(t != metaffi_any_type && t != metaffi_char8_type && t != metaffi_char16_type && t != metaffi_char32_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Char";
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_uint16)this->get_object_as_uint16(env, i));
+			if(t == metaffi_any_type || t == metaffi_char8_type)
+			{
+				this->set(i, (char8_t)jobject_wrapper(env, obj).get_as_char8());
+			}
+			else if(t == metaffi_char16_type)
+			{
+				this->set(i, (char16_t)jobject_wrapper(env, obj).get_as_char16());
+			}
+			else if(t == metaffi_char32_type)
+			{
+				this->set(i, (char32_t)jobject_wrapper(env, obj).get_as_char32());
+			}
+			else
+			{
+				std::stringstream ss;
+				ss << "Expected metaffi type: " << t << " while received Char";
+				throw std::runtime_error(ss.str());
+			}
+			
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -821,7 +1486,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_float32)this->get_object_as_float32(env, i));
+			this->set(i, (metaffi_float32)jobject_wrapper(env, obj).get_as_float32());
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -838,7 +1503,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_float64)this->get_object_as_float64(env, i));
+			this->set(i, (metaffi_float64)jobject_wrapper(env, obj).get_as_float64());
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -855,7 +1520,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				throw std::runtime_error(ss.str());
 			}
 			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (bool)this->get_object_as_bool(env, i));
+			this->set(i, (bool)jobject_wrapper(env, obj).get_as_bool());
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -882,7 +1547,7 @@ char cdts_java_wrapper::get_jni_primitive_signature_from_object_form_of_primitiv
 		return 'L';
 	}
 	
-	if((*this)[index]->type != metaffi_handle_type){
+	if((*this)[index]->type != metaffi_handle_type && (*this)[index]->type != metaffi_any_type){
 		return 0;
 	}
 
@@ -1051,243 +1716,6 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_float64 val) 
 	c->cdt_val.metaffi_handle_val.val = obj;
 	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
 	c->type = metaffi_handle_type;
-}
-//--------------------------------------------------------------------
-metaffi_int32 cdts_java_wrapper::get_object_as_int32(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Integer"))){
-		throw std::runtime_error("expected java/lang/Integer type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "intValue", "()I");
-	check_and_throw_jvm_exception(env, true);
-	
-	jint res = env->CallIntMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res;
-}
-//--------------------------------------------------------------------
-bool cdts_java_wrapper::get_object_as_bool(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Boolean"))){
-		throw std::runtime_error("expected java/lang/Boolean type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "booleanValue", "()Z");
-	check_and_throw_jvm_exception(env, true);
-	
-	jboolean res = env->CallBooleanMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res != JNI_FALSE;
-}
-//--------------------------------------------------------------------
-metaffi_int8 cdts_java_wrapper::get_object_as_int8(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Byte"))){
-		throw std::runtime_error("expected java/lang/Byte type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "byteValue", "()B");
-	check_and_throw_jvm_exception(env, true);
-	
-	jbyte res = env->CallByteMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res;
-}
-//--------------------------------------------------------------------
-metaffi_uint16 cdts_java_wrapper::get_object_as_uint16(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Character"))){
-		throw std::runtime_error("expected java/lang/Character type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "booleanValue", "()V");
-	check_and_throw_jvm_exception(env, true);
-	
-	jchar res = env->CallCharMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res;
-}
-//--------------------------------------------------------------------
-metaffi_int16 cdts_java_wrapper::get_object_as_int16(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Short"))){
-		throw std::runtime_error("expected java/lang/Short type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "shortValue", "()S");
-	check_and_throw_jvm_exception(env, true);
-	
-	jshort res = env->CallShortMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res;
-}
-//--------------------------------------------------------------------
-metaffi_int64 cdts_java_wrapper::get_object_as_int64(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Long"))){
-		throw std::runtime_error("expected java/lang/Long type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "longValue", "()J");
-	check_and_throw_jvm_exception(env, true);
-	
-	jlong res = env->CallLongMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res;
-}
-//--------------------------------------------------------------------
-metaffi_float32 cdts_java_wrapper::get_object_as_float32(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Float"))){
-		throw std::runtime_error("expected java/lang/Float type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "floatValue", "()F");
-	check_and_throw_jvm_exception(env, true);
-	
-	jfloat res = env->CallFloatMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res;
-}
-//--------------------------------------------------------------------
-metaffi_float64 cdts_java_wrapper::get_object_as_float64(JNIEnv* env, int index) const
-{
-	cdt* c = (*this)[index];
-	if(c->type != metaffi_handle_type){
-		throw std::runtime_error("expected metaffi_handle type");
-	}
-	jobject obj = (jobject)c->cdt_val.metaffi_handle_val.val;
-	check_and_throw_jvm_exception(env, true);
-	
-	jclass cls = env->GetObjectClass(obj);
-	check_and_throw_jvm_exception(env, true);
-	
-	if (!env->IsInstanceOf(obj, env->FindClass("java/lang/Double"))){
-		throw std::runtime_error("expected java/lang/Double type");
-	}
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID mid = env->GetMethodID(cls, "doubleValue", "()D");
-	check_and_throw_jvm_exception(env, true);
-	
-	jdouble res = env->CallDoubleMethod(obj, mid);
-	check_and_throw_jvm_exception(env, true);
-	
-	return res;
-}
-//--------------------------------------------------------------------
-std::string cdts_java_wrapper::get_object_as_string(JNIEnv* env, int index) const
-{
-	if(!is_jstring(env, index)){
-		throw std::runtime_error("expected jstring type");
-	}
-	
-	cdt* c = (*this)[index];
-	jstring str = (jstring)c->cdt_val.metaffi_handle_val.val;
-	
-	jclass stringClass = env->GetObjectClass(str);
-	check_and_throw_jvm_exception(env, true);
-	
-	jmethodID getBytes = env->GetMethodID(stringClass, "getBytes", "(Ljava/lang/String;)[B");
-	check_and_throw_jvm_exception(env, true);
-	
-	auto stringJbytes = (jbyteArray) env->CallObjectMethod(str, getBytes, env->NewStringUTF("UTF-8"));
-	check_and_throw_jvm_exception(env, true);
-	
-	auto length = (size_t)env->GetArrayLength(stringJbytes);
-	check_and_throw_jvm_exception(env, true);
-	
-	jbyte* pBytes = env->GetByteArrayElements(stringJbytes, nullptr);
-	check_and_throw_jvm_exception(env, true);
-	
-	std::string ret = std::string((char*)pBytes, length);
-	env->ReleaseByteArrayElements(stringJbytes, pBytes, JNI_ABORT);
-	check_and_throw_jvm_exception(env, true);
-	
-	env->DeleteLocalRef(stringJbytes);
-	env->DeleteLocalRef(stringClass);
-	
-	check_and_throw_jvm_exception(env, true);
-	
-	return ret;
 }
 //--------------------------------------------------------------------
 bool cdts_java_wrapper::is_jobject(int i) const

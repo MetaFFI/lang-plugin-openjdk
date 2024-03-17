@@ -29,7 +29,5 @@ public:
 	
 	operator jclass(){ return cls; }
 	
-	std::string get_method_name(JNIEnv *env, jclass cls, jmethodID mid) const;
-	
 };
 

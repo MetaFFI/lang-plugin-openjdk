@@ -81,7 +81,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 		metaffi::utils::scope_guard sg([&]
 		                               { release_environment(); });
 		
-		openjdk_context *ctxt = (openjdk_context *) context;
+		openjdk_context *ctxt = (openjdk_context*) context;
 		if (ctxt->field) // if field
 		{
 			if (ctxt->is_getter)
@@ -120,7 +120,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 				else
 				{
 					cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
-					jobject thisobj = (jobject) params_wrapper.get_metaffi_handle(0);
+					jobject thisobj = (jobject)params_wrapper.get_metaffi_handle(0).val;
 					
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);

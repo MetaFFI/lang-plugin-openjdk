@@ -31,7 +31,8 @@ project(lang-plugin-openjdk VERSION 0.0.1)
 
 # Add required packages
 hunter_add_package(Catch)
-add_ctest_and_catch2_packages()
+hunter_add_package(doctest)
+add_ctest_and_unitest_libs()
 
 # set RPATH
 set(CMAKE_MACOSX_RPATH 1) # tell MacOS RPATH is in use
@@ -42,7 +43,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/compiler/)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/runtime/)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/xllr-openjdk-bridge/)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/api/)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/idl/)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/idl/)
 
 # cmake install (not cpack)
 set(CMAKE_INSTALL_PREFIX [[$ENV{METAFFI_HOME}]])

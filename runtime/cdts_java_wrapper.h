@@ -32,15 +32,5 @@ public:
 	void set_object(JNIEnv* env, int index, metaffi_float32 val) const;
 	void set_object(JNIEnv* env, int index, metaffi_float64 val) const;
 	
-	metaffi_int32 get_object_as_int32(JNIEnv* env, int index) const;
-	bool get_object_as_bool(JNIEnv* env, int index) const;
-	metaffi_int8 get_object_as_int8(JNIEnv* env, int index) const;
-	metaffi_uint16 get_object_as_uint16(JNIEnv* env, int index) const;
-	metaffi_int16 get_object_as_int16(JNIEnv* env, int index) const;
-	metaffi_int64 get_object_as_int64(JNIEnv* env, int index) const;
-	metaffi_float32 get_object_as_float32(JNIEnv* env, int index) const;
-	metaffi_float64 get_object_as_float64(JNIEnv* env, int index) const;
-	std::string get_object_as_string(JNIEnv* env, int index) const;
-	
 	bool is_jobject(int i) const;
 };
