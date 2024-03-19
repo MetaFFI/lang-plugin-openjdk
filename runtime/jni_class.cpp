@@ -233,7 +233,7 @@ void jni_class::write_cdts_to_field(int index, cdts_java_wrapper& wrapper, jobje
 			set_field(Object, l);
 			break;
 		case metaffi_callable_type:
-			throw std::runtime_error("Not implemented yet");
+			throw std::runtime_error("Not implemented yet - set Caller type to field");
 			break;
 		default:
 			std::stringstream ss;
