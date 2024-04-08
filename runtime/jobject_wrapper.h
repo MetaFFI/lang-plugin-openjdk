@@ -21,10 +21,6 @@ public:
 	double get_as_float64();
 	bool get_as_bool();
 	
-	char8_t get_as_char8();
-	char16_t get_as_char16();
-	char32_t get_as_char32();
-	
 	const char8_t* get_as_string8();
 	const char16_t* get_as_string16();
 	const char32_t* get_as_string32();

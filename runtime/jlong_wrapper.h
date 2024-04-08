@@ -30,4 +30,6 @@ public:
 		env->ReleaseLongArrayElements((jlongArray)jarr, elements, JNI_ABORT);
 		return c_array;
 	}
+	
+	jlong_wrapper(JNIEnv* p_env, jobject p_jobject);
 };

@@ -14,6 +14,9 @@ private:
 	jclass cls;
 
 public:
+	static std::string get_object_class_name(JNIEnv* env, jobject obj);
+	
+public:
 	jni_class(JNIEnv* env, jclass cls);
 	~jni_class() = default;
 	
@@ -24,8 +27,6 @@ public:
 	void write_cdts_to_field(int index, cdts_java_wrapper& wrapper, jobject obj, jfieldID field_id);
 	
 	void call(const cdts_java_wrapper& params_wrapper, const cdts_java_wrapper& retval_wrapper, const metaffi_type_info& retval_type, bool instance_required, bool is_constructor, const std::set<uint8_t>& any_type_indices, jmethodID method);
-	
-	void validate_valid_jobject(jobject obj);
 	
 	operator jclass(){ return cls; }
 	

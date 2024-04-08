@@ -16,6 +16,7 @@ def div_integers(x: int, y: int) -> float:
 
 
 def join_strings(arr) -> str:
+	print(arr)
 	res = ','.join(arr)
 	return res
 
@@ -44,7 +45,10 @@ class testmap:
 
 
 def call_callback_add(add_function):
+	print(f'Calling add_function {add_function}')
+	
 	res = add_function(1, 2)
+	print(f'returned from callback')
 	res = res[0]
 	if res != 3:
 		raise Exception('expected 3, got: {}'.format(res))

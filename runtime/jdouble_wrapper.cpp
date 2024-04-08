@@ -7,6 +7,13 @@ jdouble_wrapper::jdouble_wrapper(jdouble value) : value(value)
 jdouble_wrapper::jdouble_wrapper(const jdouble_wrapper& other) : value(other.value)
 {}
 
+jdouble_wrapper::jdouble_wrapper(JNIEnv* env, jobject obj)
+{
+	jclass doubleClass = env->FindClass("java/lang/Double");
+	jmethodID doubleValue = env->GetMethodID(doubleClass, "doubleValue", "()D");
+	value = env->CallDoubleMethod(obj, doubleValue);
+}
+
 jdouble_wrapper::operator jdouble()
 {
 	return value;
@@ -38,3 +45,4 @@ jdoubleArray jdouble_wrapper::new_1d_array(JNIEnv* env, jsize size, const jdoubl
 	
 	return array;
 }
+

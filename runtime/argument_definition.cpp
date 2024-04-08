@@ -3,12 +3,10 @@
 #include <algorithm>
 #include <sstream>
 
-argument_definition::argument_definition(metaffi_type_info type_alias)
+argument_definition::argument_definition(const metaffi_type_info& type_alias)
 {
 	type = type_alias;
-	if(type_alias.alias != nullptr){
-		alias = std::string(type_alias.alias, type_alias.alias_length);
-	}
+	alias = type.alias != nullptr ? type.alias : "";
 }
 
 std::string argument_definition::to_jni_signature_type() const
@@ -17,7 +15,7 @@ std::string argument_definition::to_jni_signature_type() const
 	
 	if(!alias.empty())
 	{
-		std::string tmp = alias;
+		std::string tmp(alias);
 		std::replace(tmp.begin(), tmp.end(), '.', '/');
 		
 		// if alias is array.
@@ -34,7 +32,7 @@ std::string argument_definition::to_jni_signature_type() const
 	}
 	
 	if(type.type & metaffi_array_type){
-		ss << std::string(type.dimensions, '[');
+		ss << std::string(type.fixed_dimensions, '[');
 	}
 	
 	metaffi_type tmp = type.type & (~metaffi_array_type);

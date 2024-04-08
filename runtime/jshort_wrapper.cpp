@@ -38,3 +38,13 @@ jshortArray jshort_wrapper::new_1d_array(JNIEnv* env, jsize size, const jshort* 
 	
 	return array;
 }
+
+jshort_wrapper::jshort_wrapper(JNIEnv* p_env, jobject p_jobject)
+{
+	// obj holds a java.lang.Short object, convert to jshort
+	// and set to value
+	jclass shortClass = p_env->FindClass("java/lang/Short");
+	jmethodID shortValue = p_env->GetMethodID(shortClass, "shortValue", "()S");
+	value = p_env->CallShortMethod(p_jobject, shortValue);
+	check_and_throw_jvm_exception(p_env, true);
+}

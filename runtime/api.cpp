@@ -8,7 +8,7 @@
 #include <sstream>
 #include <mutex>
 #include <utils/foreign_function.h>
-#include <runtime/cdt_capi_loader.h>
+#include <runtime/xllr_capi_loader.h>
 #include <map>
 #include "utils/scope_guard.hpp"
 #include "utils/function_path_parser.h"
@@ -89,22 +89,22 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 				if (!ctxt->instance_required)
 				{
 					jni_class cls(env, ctxt->cls);
-					cdts_java_wrapper wrapper(params_ret[1].pcdt, params_ret[1].len);
+					cdts_java_wrapper wrapper(&params_ret[1]);
 					cls.write_field_to_cdts(0, wrapper, nullptr, ctxt->field, ctxt->field_or_return_type);
 				}
 				else
 				{
 					// get "this"
-					cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
-					if (params_wrapper[0]->type != metaffi_handle_type)
+					cdts_java_wrapper params_wrapper(&params_ret[0]);
+					if (params_wrapper[0].type != metaffi_handle_type)
 					{
 						handle_err(out_err, out_err_len, "expecting \"this\" as first parameter");
 					}
 					
-					jobject thisobj = (jobject) params_wrapper[0]->cdt_val.metaffi_handle_val.val;
+					jobject thisobj = (jobject) params_wrapper[0].cdt_val.handle_val.val;
 					
 					jni_class cls(env, ctxt->cls);
-					cdts_java_wrapper retval_wrapper(params_ret[1].pcdt, params_ret[1].len);
+					cdts_java_wrapper retval_wrapper(&params_ret[1]);
 					cls.write_field_to_cdts(0, retval_wrapper, thisobj, ctxt->field, ctxt->field_or_return_type);
 				}
 			}
@@ -112,15 +112,15 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 			{
 				if (!ctxt->instance_required)
 				{
-					cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
+					cdts_java_wrapper params_wrapper(&params_ret[0]);
 					
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(0, params_wrapper, nullptr, ctxt->field);
 				}
 				else
 				{
-					cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
-					jobject thisobj = (jobject)params_wrapper.get_metaffi_handle(0).val;
+					cdts_java_wrapper params_wrapper(&params_ret[0]);
+					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val.val;
 					
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);
@@ -129,8 +129,8 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 		}
 		else // callable
 		{
-			cdts_java_wrapper params_wrapper(params_ret[0].pcdt, params_ret[0].len);
-			cdts_java_wrapper retvals_wrapper(params_ret[1].pcdt, params_ret[1].len);
+			cdts_java_wrapper params_wrapper(&params_ret[0]);
+			cdts_java_wrapper retvals_wrapper(&params_ret[1]);
 			jni_class cls(env, ctxt->cls);
 			cls.call(params_wrapper, retvals_wrapper, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
@@ -164,20 +164,20 @@ void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err, uint
 			{
 				if (!ctxt->instance_required)
 				{
-					cdts_java_wrapper params_wrapper(parameters[0].pcdt, parameters[0].len);
+					cdts_java_wrapper params_wrapper(&parameters[0]);
 					
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(0, params_wrapper, nullptr, ctxt->field);
 				}
 				else
 				{
-					cdts_java_wrapper params_wrapper(parameters[0].pcdt, parameters[0].len);
+					cdts_java_wrapper params_wrapper(&parameters[0]);
 					
-					if(params_wrapper[0]->type != metaffi_handle_type){
+					if(params_wrapper[0].type != metaffi_handle_type){
 						throw std::runtime_error("expected \"this\" in index 0");
 					}
 					
-					jobject thisobj = (jobject)params_wrapper[0]->cdt_val.metaffi_handle_val.val;
+					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val.val;
 					
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);
@@ -187,8 +187,8 @@ void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err, uint
 		}
 		else // callable
 		{
-			cdts_java_wrapper params_wrapper(parameters[0].pcdt, parameters[0].len);
-			cdts_java_wrapper dummy(parameters[1].pcdt, parameters[1].len);
+			cdts_java_wrapper params_wrapper(&parameters[0]);
+			cdts_java_wrapper dummy(&parameters[1]);
 			
 			jni_class cls(env, ctxt->cls);
 			cls.call(params_wrapper, dummy, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
@@ -222,7 +222,7 @@ void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err, u
 				if (!ctxt->instance_required)
 				{
 					jni_class cls(env, ctxt->cls);
-					cdts_java_wrapper wrapper(return_values[1].pcdt, return_values[1].len);
+					cdts_java_wrapper wrapper(&return_values[1]);
 					cls.write_field_to_cdts(0, wrapper, nullptr, ctxt->field, ctxt->field_or_return_type);
 				}
 				else
@@ -237,8 +237,8 @@ void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err, u
 		}
 		else // callable
 		{
-			cdts_java_wrapper dummy(return_values[0].pcdt, return_values[0].len);
-			cdts_java_wrapper retvals_wrapper(return_values[1].pcdt, return_values[1].len);
+			cdts_java_wrapper dummy(&return_values[0]);
+			cdts_java_wrapper retvals_wrapper(&return_values[1]);
 			
 			jni_class cls(env, ctxt->cls);
 			cls.call(dummy, retvals_wrapper, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
@@ -277,7 +277,7 @@ void xcall_no_params_no_ret(void* context, char** out_err, uint64_t* out_err_len
 		}
 		else // callable
 		{
-			cdts_java_wrapper dummy(nullptr, 0);
+			cdts_java_wrapper dummy(nullptr);
 
 			jni_class cls(env, ctxt->cls);
 			cls.call(dummy, dummy, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
@@ -294,7 +294,7 @@ void xcall_no_params_no_ret(void* context, char** out_err, uint64_t* out_err_len
 	}
 }
 //--------------------------------------------------------------------
-void** load_function(const char* module_path, uint32_t module_path_len, const char* function_path, uint32_t function_path_len, metaffi_type_infos_ptr params_types, metaffi_type_infos_ptr retvals_types, uint8_t params_count, uint8_t retval_count, char** err, uint32_t* err_len)
+void** load_function(const char* module_path, uint32_t module_path_len, const char* function_path, uint32_t function_path_len, metaffi_type_info* params_types, metaffi_type_info* retvals_types, uint8_t params_count, uint8_t retval_count, char** err, uint32_t* err_len)
 {
 	void** res = nullptr;
 	try
@@ -424,7 +424,7 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 	return res;
 }
 //--------------------------------------------------------------------
-void** make_callable(void* make_callable_context, metaffi_type_infos_ptr params_types, metaffi_type_infos_ptr retvals_types, uint8_t params_count, uint8_t retval_count, char** err, uint32_t* err_len)
+void** make_callable(void* make_callable_context, metaffi_type_info* params_types, metaffi_type_info* retvals_types, uint8_t params_count, uint8_t retval_count, char** err, uint32_t* err_len)
 {
 	void** res = nullptr;
 	try

@@ -11,7 +11,44 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.util.List;
 
+class DebugUtils
+{
+    public static void waitForDebugger()
+    {
+        RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
+        List<String> arguments = runtimeMxBean.getInputArguments();
+
+        boolean isDebug = false;
+        for (String arg : arguments)
+        {
+            if (arg.startsWith("-agentlib:jdwp"))
+            {
+                isDebug = true;
+                break;
+            }
+        }
+
+        if (!isDebug)
+        {
+            while (true)
+            {
+                try
+                {
+                    System.out.println("Waiting for debugger to attach...");
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
 
 class Tag
 {
@@ -213,6 +250,8 @@ public class BeautifulSoupTest
 		    for link in soup.find_all('a'):
 		        print(link.get('href'))
 	    */
+
+	    DebugUtils.waitForDebugger();
 
 		var req = new Requests();
 		var res = req.get("https://microsoft.com/");

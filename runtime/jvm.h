@@ -13,7 +13,7 @@
 #include <vector>
 #include <string>
 #include <functional>
-#include <runtime/cdt_structs.h>
+#include <runtime/cdt.h>
 #include <stdexcept>
 
 class jvm

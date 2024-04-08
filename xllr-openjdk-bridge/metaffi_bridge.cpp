@@ -2,7 +2,7 @@
 #include <corecrt.h> // https://www.reddit.com/r/cpp_questions/comments/qpo93t/error_c2039_invalid_parameter_is_not_a_member_of/
 #endif
 #include "metaffi_bridge.h"
-#include <runtime/cdt_capi_loader.h>
+#include <runtime/xllr_capi_loader.h>
 #include <utils/foreign_function.h>
 #include <utils/xllr_api_wrapper.h>
 #include <runtime/metaffi_primitives.h>
@@ -97,13 +97,13 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* 
 jclass MetaFFITypeInfoClass = nullptr;
 jfieldID typeFieldID = nullptr;
 jfieldID aliasFieldID = nullptr;
-metaffi_type_infos_ptr convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(JNIEnv* env, jobjectArray inputArray)
+metaffi_type_info* convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(JNIEnv* env, jobjectArray inputArray)
 {
 	// Get the length of the input array
 	jsize length = env->GetArrayLength(inputArray);
 	check_and_throw_jvm_exception(env, true);
 	// Allocate the output array
-	metaffi_type_infos_ptr outputArray = new metaffi_type_info[length];
+	metaffi_type_info* outputArray = new metaffi_type_info[length];
 
 	// Get the MetaFFITypeInfo class
 	if(!MetaFFITypeInfoClass)
@@ -144,17 +144,16 @@ metaffi_type_infos_ptr convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(
 			check_and_throw_jvm_exception(env, true);
 			jsize len = env->GetStringUTFLength(aliasJString);
 			check_and_throw_jvm_exception(env, true);
-			outputArray[i].alias = (char*)calloc(len + 1, 1);
+			outputArray[i].alias = new char[len + 1];
 			std::copy_n(aliasCString, len, outputArray[i].alias);
-			outputArray[i].alias_length = len;
-
+			outputArray[i].alias[len] = u8'\0';
+			
 			env->ReleaseStringUTFChars(aliasJString, aliasCString);
 			check_and_throw_jvm_exception(env, true);
 		}
 		else
 		{
 			outputArray[i].alias = nullptr;
-			outputArray[i].alias_length = 0;
 		}
 
 		// Set the output array values
@@ -162,7 +161,7 @@ metaffi_type_infos_ptr convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(
 	}
 
 	// Return the output array as a jlong (this is actually a pointer)
-	return reinterpret_cast<metaffi_type_infos_ptr>(outputArray);
+	return reinterpret_cast<metaffi_type_info*>(outputArray);
 }
 //--------------------------------------------------------------------
 jmethodID get_method_id_from_Method(JNIEnv* env, jclass methodClass, jobject methodObject, jstring jniSignature, jboolean& isStatic)
@@ -231,11 +230,11 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 		jsize retval_count = retval_types == nullptr ? 0 : env->GetArrayLength(retval_types);
 		check_and_throw_jvm_exception(env, true);
 
-		metaffi_type_infos_ptr pparams_types = parameters_types == nullptr ?
+		metaffi_type_info* pparams_types = parameters_types == nullptr ?
 													nullptr :
 													convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, parameters_types);
 
-		metaffi_type_infos_ptr pretval_types = retval_types == nullptr ?
+		metaffi_type_info* pretval_types = retval_types == nullptr ?
 		                                             nullptr :
 		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, retval_types);
 
@@ -258,7 +257,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 		{
 			for(int i=0 ; i<params_count ; i++)
 			{
-				if(pparams_types[i].alias_length > 0)
+				if(pparams_types[i].is_free_alias && pparams_types[i].alias)
 				{
 					free(pparams_types[i].alias);
 				}
@@ -270,7 +269,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 		{
 			for(int i=0 ; i<retval_count ; i++)
 			{
-				if(pretval_types[i].alias_length > 0)
+				if(pretval_types[i].is_free_alias && pretval_types[i].alias)
 				{
 					free(pretval_types[i].alias);
 				}
@@ -322,11 +321,11 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 		jsize retval_count = retval_types == nullptr ? 0 : env->GetArrayLength(retval_types);
 		check_and_throw_jvm_exception(env, true);
 
-		metaffi_type_infos_ptr pparams_types = parameters_types == nullptr ?
+		metaffi_type_info* pparams_types = parameters_types == nullptr ?
 													nullptr :
 													convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, parameters_types);
 
-		metaffi_type_infos_ptr pretval_types = retval_types == nullptr ?
+		metaffi_type_info* pretval_types = retval_types == nullptr ?
 		                                             nullptr :
 		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, retval_types);
 
@@ -347,7 +346,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 		{
 			for(int i=0 ; i<params_count ; i++)
 			{
-				if(pparams_types[i].alias_length > 0)
+				if(pparams_types[i].is_free_alias && pparams_types[i].alias)
 				{
 					free(pparams_types[i].alias);
 				}
@@ -359,7 +358,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 		{
 			for(int i=0 ; i<retval_count ; i++)
 			{
-				if(pretval_types[i].alias_length > 0)
+				if(pretval_types[i].is_free_alias && pretval_types[i].alias)
 				{
 					free(pretval_types[i].alias);
 				}
@@ -518,7 +517,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt(JNIEnv* env, jclass
 {
 	try
 	{
-		return reinterpret_cast<jlong>(reinterpret_cast<cdts*>(pcdts)[index].pcdt);
+		return reinterpret_cast<jlong>(&((cdts*)(pcdts))[index]);
 	}
 	catch(std::exception& err)
 	{
@@ -569,7 +568,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 	try
 	{
 		jsize l = env->GetArrayLength(parameters);
-		cdts_java_wrapper wrapper((cdt*)pcdts, l);
+		cdts_java_wrapper wrapper((cdts*)pcdts);
 
 		jlong* types_elements = env->GetLongArrayElements(types, nullptr);
 		check_and_throw_jvm_exception(env, types_elements);
@@ -583,13 +582,12 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 			check_and_throw_jvm_exception(env, true);
 			metaffi_type_info type_to_expect = (types_elements[i] & metaffi_array_type) == 0 ?
 												(types_elements[i] == metaffi_callable_type ? metaffi_type_info{metaffi_callable_type} : metaffi_type_info{metaffi_handle_type}) :
-                                               metaffi_type_info{(uint64_t)types_elements[i], nullptr, 0, get_array_dimensions(env, (jobjectArray)cur_object.l)};
-			wrapper.from_jvalue(env, cur_object, type_to_expect, i);
+                                               metaffi_type_info{(uint64_t)types_elements[i], nullptr, false, get_array_dimensions(env, (jobjectArray)cur_object.l)};
+			wrapper.from_jvalue(env, cur_object, 'L', type_to_expect, i);
 			wrapper.switch_to_primitive(env, i, types_elements[i]);
 		}
 		
-
-		return (jlong)wrapper.get_cdts();
+		return (jlong)(cdts*)wrapper;
 	}
 	catch(std::exception& exp)
 	{
@@ -602,7 +600,7 @@ JNIEXPORT jobjectArray JNICALL Java_metaffi_MetaFFIBridge_cdts_1to_1java(JNIEnv*
 {
 	try
 	{
-		cdts_java_wrapper wrapper((cdt*)pcdts, length);
+		cdts_java_wrapper wrapper((cdts*)pcdts);
 		jobjectArray arr = env->NewObjectArray(length, env->FindClass("Ljava/lang/Object;"), nullptr);
 		for (int i=0 ; i<length ; i++)
 		{

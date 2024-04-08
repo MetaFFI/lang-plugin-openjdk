@@ -1,1335 +1,2040 @@
 #include "cdts_java_wrapper.h"
-#include <algorithm>
-#include <utility>
-#include "runtime_id.h"
-#include "jni_metaffi_handle.h"
 #include "exception_macro.h"
-#include "utils/tracer.h"
-#include "jni_caller.h"
+#include "jarray_wrapper.h"
+#include "jboolean_wrapper.h"
 #include "jbyte_wrapper.h"
-#include "jobjectArray_wrapper.h"
-#include "jshort_wrapper.h"
+#include "jchar_wrapper.h"
+#include "jdouble_wrapper.h"
+#include "jfloat_wrapper.h"
 #include "jint_wrapper.h"
 #include "jlong_wrapper.h"
-#include "jfloat_wrapper.h"
-#include "jdouble_wrapper.h"
-#include "jboolean_wrapper.h"
-#include "jchar_wrapper.h"
-#include "jstring_wrapper.h"
+#include "jni_caller.h"
+#include "jni_class.h"
+#include "jni_metaffi_handle.h"
 #include "jobject_wrapper.h"
+#include "jshort_wrapper.h"
+#include "jstring_wrapper.h"
+#include "runtime_id.h"
+#include "utils/tracer.h"
+#include <algorithm>
+#include <iostream>
+#include <runtime/cdts_traverse_construct.h>
+#include <utility>
+
 
 //--------------------------------------------------------------------
-cdts_java_wrapper::cdts_java_wrapper(cdt *cdts, metaffi_size cdts_length):metaffi::runtime::cdts_wrapper(cdts, cdts_length, false)
-{
-}
-//--------------------------------------------------------------------
-auto get_on_int8_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "B", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "B", array_length, current_dimensions));
-	};
-}
 
-template<typename metaffi_type_t>
-auto get_on_int8_1d_array()
+void on_traverse_float64(const metaffi_size* index, metaffi_size index_size, metaffi_float64 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = *((std::pair<JNIEnv*, jobject*>*)other_array)->second;
-		
-		jbyteArray newarr = jbyte_wrapper::new_1d_array(env, length, (const jbyte*)arr);
-		
-		if(!multidim_array)
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.d = val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jobject obj = pair->second.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[D")))// if jobject is jdoubleArray
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			jdoubleArray array = static_cast<jdoubleArray>(obj);
+			env->SetDoubleArrayRegion(array, index[index_size - 1], 1, &val);
+		}
+
+		// if context is a pair of JNIEnv* and jobject, where jobject is jdoubleArray
+		// set the float in the array by the given indices
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Double;")) ||
+		        env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Object;")))
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass doubleClass = env->FindClass("java/lang/Double");
+			jmethodID constructor = env->GetMethodID(doubleClass, "<init>", "(D)V");
+			jobject doubleObject = env->NewObject(doubleClass, constructor, val);
+			env->SetObjectArrayElement(array, index[index_size - 1], doubleObject);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			throw std::invalid_argument("Expected jobject to be either jdoubleArray or jobjectArray of Double");
 		}
-	};
+	}
 }
 
-auto get_on_int16_array()
+void on_traverse_float32(const metaffi_size* index, metaffi_size index_size, metaffi_float32 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "S", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "S", array_length, current_dimensions));
-	};
-}
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.f = val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
 
-template<typename metaffi_type_t>
-auto get_on_int16_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jshortArray newarr = jshort_wrapper::new_1d_array(env, length, (const jshort*)arr);
-		
-		if(!multidim_array)
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[F")))// if jobject is jfloatArray
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			jfloatArray array = static_cast<jfloatArray>(obj);
+			env->SetFloatArrayRegion(array, index[index_size - 1], 1, &val);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Float;")) ||// if jobject is jobjectArray of Float
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass floatClass = env->FindClass("java/lang/Float");
+			jmethodID constructor = env->GetMethodID(floatClass, "<init>", "(F)V");
+			jobject floatObject = env->NewObject(floatClass, constructor, val);
+			env->SetObjectArrayElement(array, index[index_size - 1], floatObject);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			throw std::invalid_argument("Expected jobject to be either jfloatArray or jobjectArray of Float or Object");
 		}
-	};
+	}
 }
 
-auto get_on_int32_array()
+void on_traverse_int8(const metaffi_size* index, metaffi_size index_size, metaffi_int8 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "I", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "I", array_length, current_dimensions));
-	};
-}
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.b = val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
 
-template<typename metaffi_type_t>
-auto get_on_int32_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jintArray newarr = jint_wrapper::new_1d_array(env, length, (const jint*)arr);
-		
-		if(!multidim_array)
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[B")))// if jobject is jbyteArray
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			jbyteArray array = static_cast<jbyteArray>(obj);
+			env->SetByteArrayRegion(array, index[index_size - 1], 1, &val);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Byte;")) ||// if jobject is jobjectArray of Byte
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass byteClass = env->FindClass("java/lang/Byte");
+			jmethodID constructor = env->GetMethodID(byteClass, "<init>", "(B)V");
+			jobject byteObject = env->NewObject(byteClass, constructor, val);
+			env->SetObjectArrayElement(array, index[index_size - 1], byteObject);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			throw std::invalid_argument("Expected jobject to be either jbyteArray or jobjectArray of Byte or Object");
 		}
-	};
+	}
 }
 
-auto get_on_int64_array()
+void on_traverse_uint8(const metaffi_size* index, metaffi_size index_size, metaffi_uint8 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "J", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "J", array_length, current_dimensions));
-	};
-}
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.b = (jbyte) val;// Cast to signed byte
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
 
-template<typename metaffi_type_t>
-auto get_on_int64_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_type_t* arr, metaffi_size length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jlongArray newarr = jlong_wrapper::new_1d_array(env, length, (const jlong*)arr);
-		
-		if(!multidim_array)
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[B")))// if jobject is jbyteArray
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			jbyteArray array = static_cast<jbyteArray>(obj);
+			jbyte jval = (jbyte) val;// Cast to signed byte
+			env->SetByteArrayRegion(array, index[index_size - 1], 1, &jval);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Byte;")) ||// if jobject is jobjectArray of Byte
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass byteClass = env->FindClass("java/lang/Byte");
+			jmethodID constructor = env->GetMethodID(byteClass, "<init>", "(B)V");
+			jobject byteObject = env->NewObject(byteClass, constructor, (jbyte) val);// Cast to signed byte
+			env->SetObjectArrayElement(array, index[index_size - 1], byteObject);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			throw std::invalid_argument("Expected jobject to be either jbyteArray or jobjectArray of Byte or Object");
 		}
-	};
+	}
 }
 
-auto get_on_float32_array()
+void on_traverse_int16(const metaffi_size* index, metaffi_size index_size, metaffi_int16 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "F", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "F", array_length, current_dimensions));
-	};
-}
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.s = val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
 
-auto get_on_float32_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_float32* arr, metaffi_size length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jfloatArray newarr = jfloat_wrapper::new_1d_array(env, length, (const jfloat*)arr);
-		
-		if(!multidim_array)
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[S")))// if jobject is jshortArray
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			jshortArray array = static_cast<jshortArray>(obj);
+			env->SetShortArrayRegion(array, index[index_size - 1], 1, &val);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Short;")) ||// if jobject is jobjectArray of Short
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass shortClass = env->FindClass("java/lang/Short");
+			jmethodID constructor = env->GetMethodID(shortClass, "<init>", "(S)V");
+			jobject shortObject = env->NewObject(shortClass, constructor, val);
+			env->SetObjectArrayElement(array, index[index_size - 1], shortObject);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			throw std::invalid_argument("Expected jobject to be either jshortArray or jobjectArray of Short or Object");
 		}
-	};
+	}
 }
 
-auto get_on_float64_array()
+void on_traverse_uint16(const metaffi_size* index, metaffi_size index_size, metaffi_uint16 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "D", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "D", array_length, current_dimensions));
-	};
-}
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		pair->second.s = (jshort) val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
 
-auto get_on_float64_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_float64* arr, metaffi_size length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jdoubleArray newarr = jdouble_wrapper::new_1d_array(env, length, (const jdouble*)arr);
-		
-		if(!multidim_array)
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[S")))// if jobject is jshortArray
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			jshortArray array = static_cast<jshortArray>(obj);
+			jshort jval = (jshort) val;// Cast to signed short
+			env->SetShortArrayRegion(array, index[index_size - 1], 1, &jval);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Short;")) ||// if jobject is jobjectArray of Short
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass shortClass = env->FindClass("java/lang/Short");
+			jmethodID constructor = env->GetMethodID(shortClass, "<init>", "(S)V");
+			jobject shortObject = env->NewObject(shortClass, constructor, (jshort) val);// Cast to signed short
+			env->SetObjectArrayElement(array, index[index_size - 1], shortObject);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			throw std::invalid_argument("Expected jobject to be either jshortArray or jobjectArray of Short or Object");
 		}
-	};
+	}
 }
 
-auto get_on_bool_array()
+void on_traverse_int32(const metaffi_size* index, metaffi_size index_size, metaffi_int32 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "Z", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "Z", array_length, current_dimensions));
-	};
-}
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.i = val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
 
-auto get_on_bool_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_bool* arr, metaffi_size length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jbooleanArray newarr = jboolean_wrapper::new_1d_array(env, length, (const jboolean*)arr);
-		
-		if(!multidim_array)
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[I")))// if jobject is jintArray
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			jintArray array = static_cast<jintArray>(obj);
+			env->SetIntArrayRegion(array, index[index_size - 1], 1, (jint*) &val);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Integer;")) ||
+		        // if jobject is jobjectArray of Integer
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass integerClass = env->FindClass("java/lang/Integer");
+			jmethodID constructor = env->GetMethodID(integerClass, "<init>", "(I)V");
+			jobject integerObject = env->NewObject(integerClass, constructor, val);
+			env->SetObjectArrayElement(array, index[index_size - 1], integerObject);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			throw std::invalid_argument("Expected jobject to be either jintArray or jobjectArray of Integer or Object");
 		}
-	};
+	}
 }
 
-auto get_on_metaffi_handle_array()
+void on_traverse_uint32(const metaffi_size* index, metaffi_size index_size, metaffi_uint32 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		pair->second.i = (jint) val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[I")))// if jobject is jintArray
 		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "Ljava/lang/Object;", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
+			jintArray array = (jintArray) obj;
+			jint jval = (jint) val;// Cast to signed int
+			env->SetIntArrayRegion(array, index[index_size - 1], 1, &jval);
 		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Integer;")) ||
+		        // if jobject is jobjectArray of Integer
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
 		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
+			jobjectArray array = (jobjectArray) obj;
+			jclass integerClass = env->FindClass("java/lang/Integer");
+			jmethodID constructor = env->GetMethodID(integerClass, "<init>", "(I)V");
+			jobject integerObject = env->NewObject(integerClass, constructor, (jint) val);// Cast to signed int
+			env->SetObjectArrayElement(array, index[index_size - 1], integerObject);
 		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "Ljava/lang/Object;", array_length, current_dimensions));
-	};
+		else
+		{
+			throw std::invalid_argument("Expected jobject to be either jintArray or jobjectArray of Integer or Object");
+		}
+	}
 }
 
-auto get_on_metaffi_handle_1d_array()
+void on_traverse_int64(const metaffi_size* index, metaffi_size index_size, metaffi_int64 val, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, cdt_metaffi_handle* arr, metaffi_size length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jobjectArray_wrapper newarr(env, jobjectArray_wrapper::create_array(env, "Ljava/lang/Object;", length, 1));
-		
-		for(int i=0 ; i<length ; i++)
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.j = val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[J")))// if jobject is jlongArray
 		{
-			cdt_metaffi_handle* curitem = (arr + i);
-			if(curitem->runtime_id != OPENJDK_RUNTIME_ID)
+			jlongArray array = static_cast<jlongArray>(obj);
+			env->SetLongArrayRegion(array, index[index_size - 1], 1, &val);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Long;")) ||// if jobject is jobjectArray of Long
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass longClass = env->FindClass("java/lang/Long");
+			jmethodID constructor = env->GetMethodID(longClass, "<init>", "(J)V");
+			jobject longObject = env->NewObject(longClass, constructor, val);
+			env->SetObjectArrayElement(array, index[index_size - 1], longObject);
+		}
+		else
+		{
+			throw std::invalid_argument("Expected jobject to be either jlongArray or jobjectArray of Long or Object");
+		}
+	}
+}
+
+void on_traverse_uint64(const metaffi_size* index, metaffi_size index_size, metaffi_uint64 val, void* context)
+{
+	if(index_size == 0)
+	{
+		auto* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.j = (jlong) val;// Cast to signed long
+	}
+	else// if is part of an array
+	{
+		auto* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[J")))// if jobject is jlongArray
+		{
+			auto array = (jlongArray) obj;
+			auto jval = (jlong) val;// Cast to signed long
+			env->SetLongArrayRegion(array, index[index_size - 1], 1, &jval);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Long;")) ||// if jobject is jobjectArray of Long
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			auto array = (jobjectArray) obj;
+			jclass longClass = env->FindClass("java/lang/Long");
+			jmethodID constructor = env->GetMethodID(longClass, "<init>", "(J)V");
+			jobject longObject = env->NewObject(longClass, constructor, (jlong) val);// Cast to signed long
+			env->SetObjectArrayElement(array, index[index_size - 1], longObject);
+		}
+		else
+		{
+			throw std::invalid_argument("Expected jobject to be either jlongArray or jobjectArray of Long or Object");
+		}
+	}
+}
+
+void on_traverse_bool(const metaffi_size* index, metaffi_size index_size, metaffi_bool val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.z = val;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[Z")))// if jobject is jbooleanArray
+		{
+			jbooleanArray array = static_cast<jbooleanArray>(obj);
+			jboolean jval = val ? JNI_TRUE : JNI_FALSE;
+			env->SetBooleanArrayRegion(array, index[index_size - 1], 1, &jval);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Boolean;")) ||
+		        // if jobject is jobjectArray of Boolean
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jclass booleanClass = env->FindClass("java/lang/Boolean");
+			jmethodID constructor = env->GetMethodID(booleanClass, "<init>", "(Z)V");
+			jobject booleanObject = env->NewObject(booleanClass, constructor, val);
+			env->SetObjectArrayElement(array, index[index_size - 1], booleanObject);
+		}
+		else
+		{
+			throw std::invalid_argument(
+			        "Expected jobject to be either jbooleanArray or jobjectArray of Boolean or Object");
+		}
+	}
+}
+
+void on_traverse_char8(const metaffi_size* index, metaffi_size index_size, metaffi_char8 val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		jvalue jval = (jvalue) pair->second;
+		jchar_wrapper wrapper(pair->first, val);
+		jval.c = (jchar) wrapper;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[C")))// if jobject is jcharArray
+		{
+			jcharArray array = static_cast<jcharArray>(obj);
+			jchar_wrapper wrapper(env, val);
+			jchar jval = static_cast<jchar>(wrapper);
+			env->SetCharArrayRegion(array, index[index_size - 1], 1, &jval);
+		}
+		else if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Character;")) ||
+		        // if jobject is jobjectArray of Character
+		        env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jobjectArray array = static_cast<jobjectArray>(obj);
+			jchar_wrapper wrapper(env, val);
+			jchar jval = static_cast<jchar>(wrapper);
+			jclass characterClass = env->FindClass("java/lang/Character");
+			jmethodID constructor = env->GetMethodID(characterClass, "<init>", "(C)V");
+			jobject characterObject = env->NewObject(characterClass, constructor, jval);
+			env->SetObjectArrayElement(array, index[index_size - 1], characterObject);
+		}
+		else
+		{
+			throw std::invalid_argument(
+			        "Expected jobject to be either jcharArray or jobjectArray of Character or Object");
+		}
+	}
+}
+
+void on_traverse_string8(const metaffi_size* index, metaffi_size index_size, metaffi_string8 val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		jstring_wrapper wrapper(pair->first, val);
+		pair->second.l = static_cast<jstring>(wrapper);
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/String;")))// if jobject is jobjectArray of String
+		{
+			jobjectArray jarr = (jobjectArray) obj;
+			jstring_wrapper wrapper(env, val);
+			jstring jstr = static_cast<jstring>(wrapper);
+			env->SetObjectArrayElement(jarr, index[0], jstr);
+		}
+	}
+}
+
+void on_traverse_char16(const metaffi_size* index, metaffi_size index_size, metaffi_char16 val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		pair->second.c = (jchar) val.c[0];
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[C")))// if jobject is jcharArray
+		{
+			jcharArray jarr = (jcharArray) obj;
+			jchar jch = static_cast<jchar>(val.c[0]);
+			env->SetCharArrayRegion(jarr, index[0], 1, &jch);
+		}
+		else if(env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Character;")))// if jobject is jobjectArray of Character
+		{
+			jobjectArray jarr = (jobjectArray) obj;
+			jclass charClass = env->FindClass("java/lang/Character");
+			jmethodID charConstructor = env->GetMethodID(charClass, "<init>", "(C)V");
+			jobject jcharObj = env->NewObject(charClass, charConstructor, static_cast<jchar>(val.c[0]));
+			env->SetObjectArrayElement(jarr, index[0], jcharObj);
+		}
+	}
+}
+
+void on_traverse_string16(const metaffi_size* index, metaffi_size index_size, metaffi_string16 val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		jstring_wrapper wrapper(pair->first, val);
+		pair->second.l = static_cast<jstring>(wrapper);
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/String;")))// if jobject is jobjectArray of String
+		{
+			jobjectArray jarr = (jobjectArray) obj;
+			jstring_wrapper wrapper(env, val);
+			jstring jstr = static_cast<jstring>(wrapper);
+			env->SetObjectArrayElement(jarr, index[0], jstr);
+		}
+	}
+}
+
+void on_traverse_char32(const metaffi_size* index, metaffi_size index_size, metaffi_char32 val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		pair->second.c = (jchar) val.c;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[C")))// if jobject is jcharArray
+		{
+			jcharArray jarr = (jcharArray) obj;
+			jchar jch = static_cast<jchar>(val.c);
+			env->SetCharArrayRegion(jarr, index[0], 1, &jch);
+		}
+		else if(env->IsInstanceOf(obj,
+		                          env->FindClass("[Ljava/lang/Character;")))// if jobject is jobjectArray of Character
+		{
+			jobjectArray jarr = (jobjectArray) obj;
+			jclass charClass = env->FindClass("java/lang/Character");
+			jmethodID charConstructor = env->GetMethodID(charClass, "<init>", "(C)V");
+			jobject jcharObj = env->NewObject(charClass, charConstructor, static_cast<jchar>(val.c));
+			env->SetObjectArrayElement(jarr, index[0], jcharObj);
+		}
+	}
+}
+
+void on_traverse_string32(const metaffi_size* index, metaffi_size index_size, metaffi_string32 val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		jstring_wrapper wrapper(pair->first, val);
+		pair->second.l = static_cast<jstring>(wrapper);
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/String;")))// if jobject is jobjectArray of String
+		{
+			jobjectArray jarr = (jobjectArray) obj;
+			jstring_wrapper wrapper(env, val);
+			jstring jstr = static_cast<jstring>(wrapper);
+			env->SetObjectArrayElement(jarr, index[0], jstr);
+		}
+	}
+}
+
+void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, const cdt_metaffi_handle& val, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+
+		if(val.runtime_id != OPENJDK_RUNTIME_ID)
+		{
+			jni_metaffi_handle h(env, val.val, val.runtime_id);
+			pair->second.l = h.new_jvm_object(env);
+		}
+		else
+		{
+			pair->second.l = (jobject) val.val;
+		}
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Object;")))// if jobject is jobjectArray of Object
+		{
+			jobjectArray jarr = (jobjectArray) obj;
+			jobject jobj = nullptr;
+			if(val.runtime_id != OPENJDK_RUNTIME_ID)
 			{
-				jni_metaffi_handle h(env, curitem->val, curitem->runtime_id);
-				newarr.set(i, h.new_jvm_object(env));
+				jni_metaffi_handle h(env, val.val, val.runtime_id);
+				jobj = h.new_jvm_object(env);
 			}
 			else
 			{
-				newarr.set(i, static_cast<jobject>(curitem->val));
+				jobj = (jobject) val.val;
 			}
-		}
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = (jobjectArray)newarr;
+
+			env->SetObjectArrayElement(jarr, index[0], jobj);
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
+			throw std::invalid_argument("Expected jobject to be jobjectArray of Object");
+		}
+	}
+}
+
+void on_traverse_callable(const metaffi_size* index, metaffi_size index_size, const cdt_metaffi_callable& val, void* context)
+{
+	auto pcreate_caller = [](JNIEnv* env, const cdt_metaffi_callable& val) -> jobject {
+		jclass load_callable_cls = env->FindClass("metaffi/Caller");
+		check_and_throw_jvm_exception(env, true);
+
+		jmethodID create_caller = env->GetStaticMethodID(load_callable_cls, "createCaller",
+		                                                 "(J[J[J)Lmetaffi/Caller;");
+		check_and_throw_jvm_exception(env, true);
+
+		// Convert parameters_types to Java long[]
+		jlongArray jParametersTypesArray = env->NewLongArray(val.params_types_length);
+		env->SetLongArrayRegion(jParametersTypesArray, 0, val.params_types_length,
+		                        (const jlong*) val.parameters_types);
+
+		// Convert retval_types to Java long[]
+		jlongArray jRetvalsTypesArray = env->NewLongArray(val.retval_types_length);
+		env->SetLongArrayRegion(jRetvalsTypesArray, 0, val.retval_types_length,
+		                        (const jlong*) val.retval_types);
+
+
+		jobject o = env->CallStaticObjectMethod(load_callable_cls, create_caller,
+		                                        val.val,
+		                                        jParametersTypesArray,
+		                                        jRetvalsTypesArray);
+		check_and_throw_jvm_exception(env, true);
+
+		if(env->GetObjectRefType(jParametersTypesArray) == JNILocalRefType)
+		{
+			env->DeleteLocalRef(jParametersTypesArray);
+		}
+
+		if(env->GetObjectRefType(jRetvalsTypesArray) == JNILocalRefType)
+		{
+			env->DeleteLocalRef(jRetvalsTypesArray);
+		}
+
+		return o;
+	};
+
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		pair->second.l = pcreate_caller(pair->first, val);
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		if(env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Object;")))// if jobject is jobjectArray of String
+		{
+			jobjectArray jarr = (jobjectArray) obj;
+			jobject jobj = pcreate_caller(env, val);
+			env->SetObjectArrayElement(jarr, index[0], jobj);
+		}
+	}
+}
+
+void on_traverse_null(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	if(index_size == 0)
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		pair->second.l = nullptr;
+	}
+	else// if is part of an array
+	{
+		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+		JNIEnv* env = pair->first;
+		jarray root = (jarray) pair->second.l;
+
+		// traverse to the array holding this value
+
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
+
+		pair->first->SetObjectArrayElement((jobjectArray) obj, index[0], nullptr);
+	}
+}
+
+metaffi_bool on_traverse_array(const metaffi_size* index, metaffi_size index_size, const cdts& val, metaffi_int64 fixed_dimensions, metaffi_type common_type, void* context)
+{
+	// traverse to the last dimension based on the indices array in "index" and "index_size"
+	// and create another array of "common_type" and set it to the jobject "context"
+	std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
+	JNIEnv* env = pair->first;
+	jobject obj = pair->second.l;
+
+	if(obj && env->IsInstanceOf(obj, env->FindClass("[Ljava/lang/Object;")))// if jobject is jobjectArray of Object
+	{
+		jvalue new_arr;
+		new_arr.l = jarray_wrapper::create_jni_array(env, common_type, fixed_dimensions, val.length);
+
+		jarray hosting_array = (jarray) obj;
+		if(index_size > 1)
+		{
+			auto elem = jarray_wrapper::get_element(env, (jarray) obj, index, index_size - 1);
+			hosting_array = (jarray) elem.first.l;
+		}
+
+		jarray_wrapper jarr(env, (jarray) hosting_array, metaffi_array_type);
+		jarr.set(index[index_size - 1], new_arr);
+	}
+	else if(!obj)
+	{
+		pair->second.l = jarray_wrapper::create_jni_array(env, common_type, fixed_dimensions, val.length);
+	}
+	else
+	{
+		throw std::invalid_argument("Expected jobject to be jarray of Object");
+	}
+
+	return 1;
+}
+
+metaffi::runtime::traverse_cdts_callbacks get_traverse_cdts_callback(void* context)
+{
+	metaffi::runtime::traverse_cdts_callbacks tcc = {
+	        context,
+	        &on_traverse_float64,
+	        &on_traverse_float32,
+	        &on_traverse_int8,
+	        &on_traverse_uint8,
+	        &on_traverse_int16,
+	        &on_traverse_uint16,
+	        &on_traverse_int32,
+	        &on_traverse_uint32,
+	        &on_traverse_int64,
+	        &on_traverse_uint64,
+	        &on_traverse_bool,
+	        &on_traverse_char8,
+	        &on_traverse_string8,
+	        &on_traverse_char16,
+	        &on_traverse_string16,
+	        &on_traverse_char32,
+	        &on_traverse_string32,
+	        &on_traverse_handle,
+	        &on_traverse_callable,
+	        &on_traverse_null,
+	        &on_traverse_array};
+
+	return tcc;
+}
+
+#define JNIEnv_context(ctxt) std::get<0>(*(static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(ctxt)))
+#define jvalue_context(ctxt) std::get<1>(*(static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(ctxt)))
+#define jvalue_type_context(ctxt) std::get<2>(*(static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(ctxt)))
+#define metaffi_type_info_context(ctxt) std::get<3>(*(static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(ctxt)))
+
+metaffi_size on_construct_array_metadata(const metaffi_size* index, metaffi_size index_length, metaffi_bool* is_fixed_dimension, metaffi_bool* is_1d_array, metaffi_type* common_type, metaffi_bool* is_manually_construct_array, void* context)
+{
+	auto elem = jarray_wrapper::get_element(JNIEnv_context(context), (jarray) jvalue_context(context).l, index, index_length);
+	if(elem.second != 'L') { throw std::invalid_argument("Expected jobject to be an array"); }
+
+	auto res = jarray_wrapper::get_array_info(JNIEnv_context(context), (jarray) elem.first.l, metaffi_type_info_context(context));
+
+	*common_type = res.first.type;
+	*is_fixed_dimension = true; // JVM only supports fixed dimensions
+	*is_1d_array = res.first.fixed_dimensions == 1;
+	*is_manually_construct_array = 0;
+
+	return res.second;
+}
+
+metaffi_size on_get_root_elements_count(void* context)
+{
+
+	return JNIEnv_context(context)->GetArrayLength((jarray) jvalue_context(context).l);
+}
+
+metaffi_type_info on_get_type_info(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	auto type_info_from_jvalue = [](JNIEnv* env, jvalue& jval, char jval_type, metaffi_type_info root_type_info) -> metaffi_type_info {
+		if(jval_type == 'L')
+		{
+			if(jarray_wrapper::is_array(env, (jarray) jval.l))
 			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+				auto mtype = jarray_wrapper::get_array_info(env, (jarray) jval.l, root_type_info);
+				return mtype.first;
 			}
-			
-			higher_dim_array.set(index[index_size-1], (jobjectArray)newarr);
-		}
-	};
-}
-
-auto get_on_char_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "C", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "C", array_length, current_dimensions));
-	};
-}
-
-template<typename char_t>
-auto get_on_char_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, char_t* arr, metaffi_size length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jcharArray newarr = jchar_wrapper::new_1d_array(env, (const char_t*)arr, length);
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			else
+			{
+				std::string clsname = jni_class::get_object_class_name(env, jval.l);
+				if(clsname == "java.lang.Byte")
+				{
+					return {metaffi_int8_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.Short")
+				{
+					return {metaffi_int16_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.Integer")
+				{
+					return {metaffi_int32_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.Long")
+				{
+					return {metaffi_int64_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.Float")
+				{
+					return {metaffi_float32_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.Double")
+				{
+					return {metaffi_float64_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.Boolean")
+				{
+					return {metaffi_bool_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.Character")
+				{
+					return {metaffi_char8_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else if(clsname == "java.lang.String")
+				{
+					return {metaffi_string8_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+				else
+				{
+					return {metaffi_handle_type, clsname.c_str(), true, MIXED_OR_UNKNOWN_DIMENSIONS};
+				}
+			}
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
+			switch(jval_type)
 			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
+				case 'D':
+					return {metaffi_float64_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				case 'F':
+					return {metaffi_float32_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				case 'B':
+					if(root_type_info.type & metaffi_uint8_type)
+						return {metaffi_uint8_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else if(root_type_info.type & metaffi_int8_type)
+						return {metaffi_int8_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else
+					{
+						std::stringstream ss;
+						ss << "Expected metaffi_uint8_type or metaffi_int8_type. Got: " << root_type_info.type;
+						throw std::invalid_argument(ss.str());
+					}
+				case 'S':
+					if(root_type_info.type & metaffi_uint16_type)
+						return {metaffi_uint16_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else if(root_type_info.type & metaffi_int16_type)
+						return {metaffi_int16_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else
+					{
+						std::stringstream ss;
+						ss << "Expected metaffi_uint16_type or metaffi_int16_type. Got: " << root_type_info.type;
+						throw std::invalid_argument(ss.str());
+					}
+				case 'I':
+					if(root_type_info.type & metaffi_uint32_type)
+						return {metaffi_uint32_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else if(root_type_info.type & metaffi_int32_type)
+						return {metaffi_int32_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else
+					{
+						std::stringstream ss;
+						ss << "Expected metaffi_uint32_type or metaffi_int32_type. Got: " << root_type_info.type;
+						throw std::invalid_argument(ss.str());
+					}
+				case 'J':
+					if(root_type_info.type & metaffi_uint64_type)
+						return {metaffi_uint64_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else if(root_type_info.type & metaffi_int64_type)
+						return {metaffi_int64_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+					else
+					{
+						std::stringstream ss;
+						ss << "Expected metaffi_uint64_type or metaffi_int64_type. Got: " << root_type_info.type;
+						throw std::invalid_argument(ss.str());
+					}
+				case 'Z':
+					return {metaffi_bool_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				case 'C':
+					return {metaffi_char8_type, nullptr, false, MIXED_OR_UNKNOWN_DIMENSIONS};
+				default: {
+					std::stringstream ss;
+					ss << "Unexpected JNI type: " << jval_type;
+					throw std::invalid_argument(ss.str());
+				}
 			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
 		}
 	};
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+	const metaffi_type_info& root_type_info = metaffi_type_info_context(context);
+
+	if(index_size == 0)// asking for "root" type info
+	{
+		if(root_type_info.type != metaffi_any_type)
+		{
+			return root_type_info;
+		}
+
+		// metaffi_any_type - we need to check what is the type of the jobject
+		char jval_type = jvalue_type_context(context);
+
+		return type_info_from_jvalue(env, jval, jval_type, root_type_info);
+	}
+
+	auto res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+	return type_info_from_jvalue(env, res.first, res.second, root_type_info);
 }
 
-auto get_on_string_array()
+metaffi_float64 on_construct_float64(const metaffi_size* index, metaffi_size index_size, void* context)
 {
-	return [](metaffi_size* index, metaffi_size index_size, metaffi_size current_dimensions, metaffi_size array_length, void* other_array)
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		if(!multidim_array)
-		{
-			// create the array in the given indices
-			jobjectArray arr = jobjectArray_wrapper::create_array(env, "Ljava/lang/String;", array_length, current_dimensions);
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = arr;
-			return;
-		}
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		
-		// traverse by the indices
-		for(int i=0 ; i<index_size-1 ; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		arr.set(index[index_size-1], jobjectArray_wrapper::create_array(env, "Ljava/lang/String;", array_length, current_dimensions));
-	};
-}
 
-template<typename string_t>
-auto get_on_string_1d_array()
-{
-	return [](metaffi_size* index, metaffi_size index_size, string_t* arr, metaffi_size length, void* other_array)
+	if(index_size == 0)
 	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject&>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject&>*)other_array)->second;
-		
-		jobjectArray newarr = jstring_wrapper::new_1d_array(env, (const string_t*)arr, length);
-		
-		if(!multidim_array)
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+
+		jvalue& jval = jvalue_context(context);
+		if(JNIEnv_context(context)->IsInstanceOf(jval.l, JNIEnv_context(context)->FindClass("java/lang/Double")))
 		{
-			// create the array in the given indices
-			((std::pair<JNIEnv*, jobject&>*)other_array)->second = newarr;
+			return (metaffi_float64) ((jdouble) jdouble_wrapper(JNIEnv_context(context), jval.l));
 		}
 		else
 		{
-			jobjectArray_wrapper higher_dim_array(env, (jobjectArray)multidim_array);
-			
-			// traverse by the indices
-			for(int i=0 ; i<index_size-1 ; i++)
-			{
-				higher_dim_array = jobjectArray_wrapper(env, (jobjectArray)higher_dim_array.get(index[i]));
-			}
-			
-			higher_dim_array.set(index[index_size-1], newarr);
+			return jval.d;
 		}
-	};
+	}
+	else
+	{
+		JNIEnv* env = JNIEnv_context(context);
+		jobject obj = jvalue_context(context).l;
+
+		auto res = jarray_wrapper::get_element(env, (jarray) obj, index, index_size);
+
+		jvalue jval = res.first;
+
+		if(res.second == 'D')
+		{
+			return (metaffi_float64) std::get<0>(res).d;
+		}
+		else if(env->IsInstanceOf(jval.l, env->FindClass("Ljava/lang/Double;")) ||
+		        // if jobject is jobjectArray of Double
+		        env->IsInstanceOf(jval.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_float64) jdouble_wrapper(env, jval.l);
+		}
+		else
+		{
+			throw std::invalid_argument(
+			        "Expected jobject to be either jdoubleArray or jobjectArray of Double or Object");
+		}
+	}
 }
+
+metaffi_float32 on_construct_float32(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Float")))
+		{
+			return (metaffi_float32) ((jfloat) jfloat_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'F')
+		{
+			return jval.f;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a float or Float instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'F')
+		{
+			return (metaffi_float32) val.f;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Float;")) ||// if jobject is jobjectArray of Float
+		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;"))) // or if jobject is jobjectArray of Object
+		{
+			return (metaffi_float32) jfloat_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Float or Object instance");
+		}
+	}
+}
+
+metaffi_int8 on_construct_int8(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+		{
+			return (metaffi_int8) ((jbyte) jbyte_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a byte or Byte instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'B')
+		{
+			return (metaffi_int8) val.b;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Byte;")) ||// if jobject is jobjectArray of Byte
+		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_int8) jbyte_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Byte or Object instance");
+		}
+	}
+}
+
+metaffi_uint8 on_construct_uint8(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+		{
+			return (metaffi_uint8) ((jbyte) jbyte_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a byte or Byte instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'B')
+		{
+			return (metaffi_uint8) val.b;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Byte;")) ||// if jobject is jobjectArray of Byte
+		        env->IsInstanceOf(val.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_uint8) jbyte_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Byte or Object instance");
+		}
+	}
+}
+
+metaffi_int16 on_construct_int16(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+		{
+			return (metaffi_int16) ((jshort) jshort_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'S')
+		{
+			return jval.s;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a short or Short instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'S')
+		{
+			return (metaffi_int16) val.s;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Short;")) ||// if jobject is jobjectArray of Short
+		        env->IsInstanceOf(val.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_int16) jshort_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Short or Object instance");
+		}
+	}
+}
+
+metaffi_uint16 on_construct_uint16(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+		{
+			return (metaffi_uint16) ((jshort) jshort_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'S')
+		{
+			return jval.s;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a short or Short instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'S')
+		{
+			return (metaffi_uint16) val.s;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Short;")) ||// if jobject is jobjectArray of Short
+		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;"))) // or if jobject is jobjectArray of Object
+		{
+			return (metaffi_uint16) jshort_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Short or Object instance");
+		}
+	}
+}
+
+metaffi_int32 on_construct_int32(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+		{
+			return (metaffi_int32) ((jint) jint_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'I')
+		{
+			return jval.i;
+		}
+		else
+		{
+			throw std::runtime_error("Expected an int or Integer instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'I')
+		{
+			return (metaffi_int32) val.i;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Integer;")) ||
+		        // if jobject is jobjectArray of Integer
+		        env->IsInstanceOf(val.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_int32) jint_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected an Integer or Object instance");
+		}
+	}
+}
+
+metaffi_uint32 on_construct_uint32(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+		{
+			return (metaffi_uint32) ((jint) jint_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'I')
+		{
+			return jval.i;
+		}
+		else
+		{
+			throw std::runtime_error("Expected an int or Integer instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'I')
+		{
+			return (metaffi_uint32) val.i;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Integer;")) ||
+		        // if jobject is jobjectArray of Integer
+		        env->IsInstanceOf(val.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_uint32) jint_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected an Integer or Object instance");
+		}
+	}
+}
+
+metaffi_int64 on_construct_int64(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Long")))
+		{
+			return (metaffi_int64) ((jlong) jlong_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'J')
+		{
+			return jval.j;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a long or Long instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'J')
+		{
+			return (metaffi_int64) val.j;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Long;")) ||// if jobject is jobjectArray of Long
+		        env->IsInstanceOf(val.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_int64) jlong_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Long or Object instance");
+		}
+	}
+}
+
+metaffi_uint64 on_construct_uint64(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Long")))
+		{
+			return (metaffi_uint64) ((jlong) jlong_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'J')
+		{
+			return jval.j;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a long or Long instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'J')
+		{
+			return (metaffi_uint64) val.j;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Long;")) ||// if jobject is jobjectArray of Long
+		        env->IsInstanceOf(val.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_uint64) jlong_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Long or Object instance");
+		}
+	}
+}
+
+metaffi_bool on_construct_bool(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Boolean")))
+		{
+			return (metaffi_bool) ((jboolean) jboolean_wrapper(env, jval.l));
+		}
+		else if(jvalue_type == 'Z')
+		{
+			return jval.z;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a boolean or Boolean instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'Z')
+		{
+			return (metaffi_bool) val.z;
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Boolean;")) ||
+		        // if jobject is jobjectArray of Boolean
+		        env->IsInstanceOf(val.l,
+		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			jclass booleanClass = env->FindClass("java/lang/Boolean");
+			jmethodID booleanValue = env->GetMethodID(booleanClass, "booleanValue", "()Z");
+			jboolean jbool = env->CallBooleanMethod(val.l, booleanValue);
+			return (metaffi_bool) jbool;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Boolean or Object instance");
+		}
+	}
+}
+
+metaffi_char8 on_construct_char8(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Character")))
+		{
+			return (metaffi_char8) jchar_wrapper(env, jval.l);
+		}
+		else if(jvalue_type == 'C')
+		{
+			return (metaffi_char8) jchar_wrapper(env, jval.c);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a char instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'C')
+		{
+			return (metaffi_char8) jchar_wrapper(env, val.c);
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Character;")) ||
+		        // if jobject is jobjectArray of Character
+		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_char8) jchar_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Character or Object instance");
+		}
+	}
+}
+
+metaffi_string8 on_construct_string8(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/String")))
+		{
+			return (metaffi_string8) jstring_wrapper(env, (jstring) jval.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a char instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/String;")) ||// if jobject is jobjectArray of String
+		   env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))  // or if jobject is jobjectArray of Object
+		{
+			jstring_wrapper wrapper(env, (jstring) val.l);
+			return (metaffi_string8) wrapper;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a String or Object instance");
+		}
+	}
+}
+
+metaffi_char16 on_construct_char16(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Character")))
+		{
+			return (metaffi_char16) jchar_wrapper(env, jval.l);
+		}
+		else if(jvalue_type == 'C')
+		{
+			return (metaffi_char16) jchar_wrapper(env, jval.c);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a char instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'C')
+		{
+			return (metaffi_char16) jchar_wrapper(env, val.c);
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Character;")) ||
+		        // if jobject is jobjectArray of Character
+		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_char16) jchar_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Character or Object instance");
+		}
+	}
+}
+
+metaffi_string16 on_construct_string16(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = std::get<0>(*context_data);
+	jvalue& jval = std::get<1>(*context_data);
+
+	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+	jvalue val = res.first;
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/String")))
+		{
+			return (metaffi_string16) jstring_wrapper(env, (jstring) jval.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a char instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/String;")) ||// if jobject is jobjectArray of String
+		   env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))  // or if jobject is jobjectArray of Object
+		{
+			jstring_wrapper wrapper(env, (jstring) val.l);
+			return (metaffi_string16) wrapper;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a String or Object instance");
+		}
+	}
+}
+
+metaffi_char32 on_construct_char32(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = JNIEnv_context(context);
+	jvalue& jval = jvalue_context(context);
+
+	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+	jvalue val = res.first;
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Character")))
+		{
+			return (metaffi_char32) jchar_wrapper(env, jval.l);
+		}
+		else if(jvalue_type == 'C')
+		{
+			return (metaffi_char32) jchar_wrapper(env, jval.c);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a char instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(res.second == 'C')
+		{
+			return (metaffi_char32) jchar_wrapper(env, val.c);
+		}
+		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Character;")) ||
+		        // if jobject is jobjectArray of Character
+		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		{
+			return (metaffi_char32) jchar_wrapper(env, val.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a Character or Object instance");
+		}
+	}
+}
+
+metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = std::get<0>(*context_data);
+	jvalue& jval = std::get<1>(*context_data);
+
+	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+	jvalue val = res.first;
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/String")))
+		{
+			return (metaffi_string32) jstring_wrapper(env, (jstring) jval.l);
+		}
+		else
+		{
+			throw std::runtime_error("Expected a char instance");
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/String;")) ||// if jobject is jobjectArray of String
+		   env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))  // or if jobject is jobjectArray of Object
+		{
+			jstring_wrapper wrapper(env, (jstring) val.l);
+			return (metaffi_string32) wrapper;
+		}
+		else
+		{
+			throw std::runtime_error("Expected a String or Object instance");
+		}
+	}
+}
+
+cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = std::get<0>(*context_data);
+	jvalue& jval = std::get<1>(*context_data);
+
+	if(index_size == 0)
+	{
+		// jvalue is expected to be either double or Double.
+		// extract the value and return it.
+		char jvalue_type = jvalue_type_context(context);
+		if(jvalue_type == 'L' && jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, jval.l))
+		{
+			return (cdt_metaffi_handle) jni_metaffi_handle(env, jval.l);
+		}
+		else
+		{
+			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, jval.l);
+		}
+	}
+	else
+	{
+		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+		jvalue val = res.first;
+
+		if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, val.l))
+		{
+			jni_metaffi_handle wrapper(env, val.l);
+			return (cdt_metaffi_handle) wrapper;
+		}
+		else// if jobject is jobjectArray of Object
+		{
+			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, val.l);
+		}
+	}
+}
+
+cdt_metaffi_callable on_construct_callable(const metaffi_size* index, metaffi_size index_size, void* context)
+{
+	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
+	JNIEnv* env = std::get<0>(*context_data);
+	jvalue& jval = std::get<1>(*context_data);
+
+	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
+	jvalue val = res.first;
+
+	cdt_metaffi_callable callable{};
+	fill_callable_cdt(env, val.l, callable.val, callable.parameters_types, callable.params_types_length,
+	                  callable.retval_types, callable.retval_types_length);
+
+	return callable;
+}
+
+metaffi::runtime::construct_cdts_callbacks get_construct_cdts_callbacks(void* context)
+{
+	metaffi::runtime::construct_cdts_callbacks callbacks{};
+	callbacks.context = context;
+	callbacks.get_array_metadata = &on_construct_array_metadata;
+	callbacks.construct_cdt_array = nullptr;
+	callbacks.get_root_elements_count = &on_get_root_elements_count;
+	callbacks.get_type_info = &on_get_type_info;
+	callbacks.get_float64 = &on_construct_float64;
+	callbacks.get_float32 = &on_construct_float32;
+	callbacks.get_int8 = &on_construct_int8;
+	callbacks.get_uint8 = &on_construct_uint8;
+	callbacks.get_int16 = &on_construct_int16;
+	callbacks.get_uint16 = &on_construct_uint16;
+	callbacks.get_int32 = &on_construct_int32;
+	callbacks.get_uint32 = &on_construct_uint32;
+	callbacks.get_int64 = &on_construct_int64;
+	callbacks.get_uint64 = &on_construct_uint64;
+	callbacks.get_bool = &on_construct_bool;
+	callbacks.get_char8 = &on_construct_char8;
+	callbacks.get_string8 = &on_construct_string8;
+	callbacks.get_char16 = &on_construct_char16;
+	callbacks.get_string16 = &on_construct_string16;
+	callbacks.get_char32 = &on_construct_char32;
+	callbacks.get_string32 = &on_construct_string32;
+	callbacks.get_handle = &on_construct_handle;
+	callbacks.get_callable = &on_construct_callable;
+
+	return callbacks;
+}
+
+//--------------------------------------------------------------------
+cdts_java_wrapper::cdts_java_wrapper(cdts* pcdts)
+{
+	this->pcdts = pcdts;
+}
+//--------------------------------------------------------------------
 
 jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 {
 	jvalue jval{};
-	cdt* c = (*this)[index];
+	cdt& c = this->pcdts->at(index);
 
-	switch (c->type)
-	{
-		case metaffi_int8_type:
-			jval.b = c->cdt_val.metaffi_int8_val;
-			break;
-		case metaffi_int8_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int8_array, metaffi_int8>(
-					c->cdt_val.metaffi_int8_array_val,
-					&other_array,
-					get_on_int8_array(),
-					get_on_int8_1d_array<metaffi_int8>());
-		}break;
-		case metaffi_uint8_type:
-			jval.b = c->cdt_val.metaffi_uint8_val;
-			break;
-		case metaffi_uint8_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint8_array, metaffi_uint8>(
-					c->cdt_val.metaffi_uint8_array_val,
-					&other_array,
-					get_on_int8_array(),
-					get_on_int8_1d_array<metaffi_uint8>());
-		}break;
-		case metaffi_int16_type:
-			jval.s = c->cdt_val.metaffi_int16_val;
-			break;
-		case metaffi_int16_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int16_array, metaffi_int16>(
-					c->cdt_val.metaffi_int16_array_val,
-					&other_array,
-					get_on_int16_array(),
-					get_on_int16_1d_array<metaffi_int16>());
-		}break;
-		case metaffi_uint16_type:
-			jval.s = c->cdt_val.metaffi_uint16_val;
-			break;
-		case metaffi_uint16_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint16_array, metaffi_uint16>(
-					c->cdt_val.metaffi_uint16_array_val,
-					&other_array,
-					get_on_int16_array(),
-					get_on_int16_1d_array<metaffi_uint16>());
-		}break;
-		case metaffi_int32_type:
-			jval.i = c->cdt_val.metaffi_int32_val;
-			break;
-		case metaffi_int32_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int32_array, metaffi_int32>(
-					c->cdt_val.metaffi_int32_array_val,
-					&other_array,
-					get_on_int32_array(),
-					get_on_int32_1d_array<metaffi_int32>());
-		}break;
-		case metaffi_uint32_type:
-			jval.i = c->cdt_val.metaffi_uint32_val;
-			break;
-		case metaffi_uint32_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint32_array, metaffi_uint32>(
-					c->cdt_val.metaffi_uint32_array_val,
-					&other_array,
-					get_on_int32_array(),
-					get_on_int32_1d_array<metaffi_uint32>());
-		}break;
-		case metaffi_int64_type:
-			jval.j = c->cdt_val.metaffi_int64_val;
-			break;
-		case metaffi_int64_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_int64_array, metaffi_int64>(
-					c->cdt_val.metaffi_int64_array_val,
-					&other_array,
-					get_on_int64_array(),
-					get_on_int64_1d_array<metaffi_int64>());
-		}break;
-		case metaffi_uint64_type:
-			jval.j = c->cdt_val.metaffi_uint64_val;
-			break;
-		case metaffi_uint64_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_uint64_array, metaffi_uint64>(
-					c->cdt_val.metaffi_uint64_array_val,
-					&other_array,
-					get_on_int64_array(),
-					get_on_int64_1d_array<metaffi_uint64>());
-		}break;
-		case metaffi_float32_type:
-			jval.f = c->cdt_val.metaffi_float32_val;
-			break;
-		case metaffi_float32_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_float32_array, metaffi_float32>(
-					c->cdt_val.metaffi_float32_array_val,
-					&other_array,
-					get_on_float32_array(),
-					get_on_float32_1d_array());
-		}break;
-		case metaffi_float64_type:
-			jval.d = c->cdt_val.metaffi_float64_val;
-			break;
-		case metaffi_float64_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_float64_array, metaffi_float64>(
-					c->cdt_val.metaffi_float64_array_val,
-					&other_array,
-					get_on_float64_array(),
-					get_on_float64_1d_array());
-		}break;
-		case metaffi_bool_type:
-			jval.z = c->cdt_val.metaffi_bool_val ? JNI_TRUE : JNI_FALSE;
-			break;
-		case metaffi_bool_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_bool_array, metaffi_bool>(
-					c->cdt_val.metaffi_bool_array_val,
-					&other_array,
-					get_on_bool_array(),
-					get_on_bool_1d_array());
-		}break;
-		case metaffi_handle_type:
-			// if runtime_id is NOT openjdk, wrap in MetaFFIHandle
-			if(c->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID)
-			{
-				jni_metaffi_handle h(env, c->cdt_val.metaffi_handle_val.val, c->cdt_val.metaffi_handle_val.runtime_id);
-				jval.l = h.new_jvm_object(env);
-			}
-			else
-			{
-				jval.l = static_cast<jobject>(c->cdt_val.metaffi_handle_val.val);
-			}
-			break;
-		case metaffi_handle_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_handle_array, cdt_metaffi_handle>(
-					c->cdt_val.metaffi_handle_array_val,
-					&other_array,
-					get_on_metaffi_handle_array(),
-					get_on_metaffi_handle_1d_array());
-		}break;
-		case metaffi_char8_type:
-		{
-			jval.c = (jchar)jchar_wrapper(env, c->cdt_val.metaffi_char8_val);
-		}break;
-		case metaffi_char8_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_char8_array, metaffi_char8>(
-					c->cdt_val.metaffi_char8_array_val,
-					&other_array,
-					get_on_char_array(),
-					get_on_char_1d_array<metaffi_char8>());
-		}break;
-		case metaffi_string8_type:
-		{
-			jstring str = env->NewStringUTF((const char*)c->cdt_val.metaffi_string8_val);
-			check_and_throw_jvm_exception(env, true);
-			jval.l = str;
-		}break;
-		case metaffi_string8_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_string8_array, metaffi_string8>(
-					c->cdt_val.metaffi_string8_array_val,
-					&other_array,
-					get_on_string_array(),
-					get_on_string_1d_array<metaffi_string8>());
-		}break;
-		case metaffi_char16_type:
-			jval.c = (jchar)jchar_wrapper(env, c->cdt_val.metaffi_char16_val);
-			break;
-		case metaffi_char16_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_char16_array, metaffi_char16>(
-					c->cdt_val.metaffi_char16_array_val,
-					&other_array,
-					get_on_char_array(),
-					get_on_char_1d_array<metaffi_char16>());
-		}break;
-		case metaffi_string16_type:
-		{
-			jstring_wrapper w(env, c->cdt_val.metaffi_string16_val);
-			jval.l = (jstring)w;
-		}break;
-		case metaffi_string16_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_string16_array, metaffi_string16>(
-					c->cdt_val.metaffi_string16_array_val,
-					&other_array,
-					get_on_string_array(),
-					get_on_string_1d_array<metaffi_string16>());
-		}break;
-		case metaffi_char32_type:
-			jval.c = (jchar)jchar_wrapper(env, c->cdt_val.metaffi_char32_val);
-			break;
-		case metaffi_char32_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_char32_array, metaffi_char32>(
-					c->cdt_val.metaffi_char32_array_val,
-					&other_array,
-					get_on_char_array(),
-					get_on_char_1d_array<metaffi_char32>());
-		}break;
-		case metaffi_string32_type:
-		{
-			jstring str = (jstring)jstring_wrapper(env, c->cdt_val.metaffi_string32_val);
-			jval.l = str;
-		}break;
-		case metaffi_string32_array_type:
-		{
-			std::pair<JNIEnv*, jobject&> other_array = {env, jval.l};
-			metaffi::runtime::traverse_multidim_array<cdt_metaffi_string32_array, metaffi_string32>(
-					c->cdt_val.metaffi_string32_array_val,
-					&other_array,
-					get_on_string_array(),
-					get_on_string_1d_array<metaffi_string32>());
-		}break;
-		case metaffi_callable_type:
-		{
-			// return LoadCallable.CallableWithArgs instance by calling LoadCallable.load()
-
-			jclass load_callable_cls = env->FindClass("metaffi/Caller");
-			check_and_throw_jvm_exception(env, true);
-
-			jmethodID create_caller = env->GetStaticMethodID(load_callable_cls, "createCaller", "(J[J[J)Lmetaffi/Caller;");
-			check_and_throw_jvm_exception(env, true);
-
-			// Convert parameters_types to Java long[]
-			jlongArray jParametersTypesArray = env->NewLongArray(c->cdt_val.metaffi_callable_val.params_types_length);
-			env->SetLongArrayRegion(jParametersTypesArray, 0, c->cdt_val.metaffi_callable_val.params_types_length, (const jlong*)c->cdt_val.metaffi_callable_val.parameters_types);
-
-			// Convert retval_types to Java long[]
-			jlongArray jRetvalsTypesArray = env->NewLongArray(c->cdt_val.metaffi_callable_val.retval_types_length);
-			env->SetLongArrayRegion(jRetvalsTypesArray, 0, c->cdt_val.metaffi_callable_val.retval_types_length, (const jlong*)c->cdt_val.metaffi_callable_val.retval_types);
-
-
-			jval.l = env->CallStaticObjectMethod(load_callable_cls, create_caller,
-												c->cdt_val.metaffi_callable_val.val,
-												jParametersTypesArray,
-												jRetvalsTypesArray);
-			check_and_throw_jvm_exception(env, true);
-
-			if(env->GetObjectRefType(jParametersTypesArray) == JNILocalRefType)
-			{
-				env->DeleteLocalRef(jParametersTypesArray);
-			}
-
-			if(env->GetObjectRefType(jRetvalsTypesArray) == JNILocalRefType)
-			{
-				env->DeleteLocalRef(jRetvalsTypesArray);
-			}
-
-		}break;
-
-		default:
-			std::stringstream ss;
-			ss << "Unsupported type to convert to Java: " << c->type;
-			throw std::runtime_error(ss.str());
-	}
-	
+	auto context = std::pair<JNIEnv*, jvalue&>(env, jval);
+	metaffi::runtime::traverse_cdt(c, get_traverse_cdts_callback(&context));
 	return jval;
 }
-//--------------------------------------------------------------------
-auto get_get_array_callback()
-{
-	return [](metaffi_size* index, metaffi_size index_length, void* other_array)->metaffi_size
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject>*)other_array)->second;
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		for (metaffi_size i = 0; i < index_length; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		return arr.size();
-	};
-}
-
-template<typename metaffi_type_t, typename jwrapper_t>
-auto get_get_1d_array_callback()
-{
-	return [](metaffi_size* index, metaffi_size index_length, metaffi_size& out_1d_array_length, void* other_array)->metaffi_type_t*
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject>*)other_array)->second;
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		for (metaffi_size i = 0; i < index_length; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		out_1d_array_length = arr.size();
-		
-		return jwrapper_t::to_c_array<metaffi_type_t>(env, (jarray)((jobject)arr));
-	};
-}
-
-auto get_get_1d_object_array_callback()
-{
-	return [](metaffi_size* index, metaffi_size index_length, metaffi_size& out_1d_array_length, void* other_array)->cdt_metaffi_handle*
-	{
-		JNIEnv* env = ((std::pair<JNIEnv*, jobject>*)other_array)->first;
-		jobject multidim_array = ((std::pair<JNIEnv*, jobject>*)other_array)->second;
-		
-		jobjectArray_wrapper arr(env, (jobjectArray)multidim_array);
-		for (metaffi_size i = 0; i < index_length; i++)
-		{
-			arr = jobjectArray_wrapper(env, (jobjectArray)arr.get(index[i]));
-		}
-		
-		out_1d_array_length = arr.size();
-		
-		cdt_metaffi_handle* mffi_arr = new cdt_metaffi_handle[out_1d_array_length]{};
-		
-		for(int i=0 ; i<out_1d_array_length ; i++)
-		{
-			jobject obj = arr.get(i);
-			if(obj)
-			{
-				mffi_arr[i].runtime_id = OPENJDK_RUNTIME_ID;
-				mffi_arr[i].val = obj;
-			}
-			
-			if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, obj))
-			{
-				jni_metaffi_handle h(env, obj);
-				mffi_arr[i].val = h.get_handle();
-				mffi_arr[i].runtime_id = h.get_runtime_id(); // mark as openjdk object
-			}
-			else
-			{
-				// mffi_arr[i].val = env->NewGlobalRef(obj); // Is that required here?!
-				mffi_arr[i].val = obj;
-				mffi_arr[i].runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
-			}
-		}
-		
-		return mffi_arr;
-	};
-}
 
 //--------------------------------------------------------------------
-void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue jval, const metaffi_type_info& type, int index) const
+void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue jval, char jval_type, const metaffi_type_info& type, int index) const
 {
-	cdt* c = (*this)[index];
-	c->type = type.type;
-	switch (c->type)
-	{
-		case metaffi_int8_type:
-			c->cdt_val.metaffi_int8_val = jbyte_wrapper(jval.b);
-			break;
-		case metaffi_int8_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_int8_array, metaffi_int8>(
-					c->cdt_val.metaffi_int8_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_int8, jbyte_wrapper>());
-		} break;
-		case metaffi_uint8_type:
-			c->cdt_val.metaffi_uint8_val = jbyte_wrapper(jval.b);
-			break;
-		case metaffi_uint8_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint8_array, metaffi_uint8>(
-					c->cdt_val.metaffi_uint8_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_uint8, jbyte_wrapper>());
-		} break;
-		case metaffi_int16_type:
-			c->cdt_val.metaffi_int16_val = jval.s;
-			break;
-		case metaffi_int16_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_int16_array, metaffi_int16>(
-					c->cdt_val.metaffi_int16_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_int16, jshort_wrapper>());
-		} break;
-		case metaffi_uint16_type:
-			c->cdt_val.metaffi_uint16_val = jval.s;
-			break;
-		case metaffi_uint16_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint16_array, metaffi_uint16>(
-					c->cdt_val.metaffi_uint16_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_uint16, jshort_wrapper>());
-		} break;
-		case metaffi_int32_type:
-			c->cdt_val.metaffi_int32_val = jval.i;
-			break;
-		case metaffi_int32_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_int32_array, metaffi_int32>(
-					c->cdt_val.metaffi_int32_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_int32, jint_wrapper>());
-		} break;
-		case metaffi_uint32_type:
-			c->cdt_val.metaffi_uint32_val = jval.i;
-			break;
-		case metaffi_uint32_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint32_array, metaffi_uint32>(
-					c->cdt_val.metaffi_uint32_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_uint32, jint_wrapper>());
-		} break;
-		case metaffi_int64_type:
-			c->cdt_val.metaffi_int64_val = jval.j;
-			break;
-		case metaffi_int64_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_int64_array, metaffi_int64>(
-					c->cdt_val.metaffi_int64_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_int64, jlong_wrapper>());
-		} break;
-		case metaffi_uint64_type:
-			c->cdt_val.metaffi_uint64_val = jval.j;
-			break;
-		case metaffi_uint64_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_uint64_array, metaffi_uint64>(
-					c->cdt_val.metaffi_uint64_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_uint64, jlong_wrapper>());
-		} break;
-		case metaffi_float32_type:
-			c->cdt_val.metaffi_float32_val = jval.f;
-			break;
-		case metaffi_float32_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_float32_array, metaffi_float32>(
-					c->cdt_val.metaffi_float32_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_float32, jfloat_wrapper>());
-		}break;
-		case metaffi_float64_type:
-			c->cdt_val.metaffi_float64_val = jval.d;
-			break;
-		case metaffi_float64_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_float64_array, metaffi_float64>(
-					c->cdt_val.metaffi_float64_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_float64, jdouble_wrapper>());
-		}break;
-		case metaffi_handle_type:
-			// if val.l is MetaFFIHandle - get its inner data
-			if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, jval.l))
-			{
-				jni_metaffi_handle h(env, jval.l);
-				c->cdt_val.metaffi_handle_val.val = h.get_handle();
-				c->cdt_val.metaffi_handle_val.runtime_id = h.get_runtime_id(); // mark as openjdk object
-				c->type = metaffi_handle_type;
-			}
-			else
-			{
-				c->cdt_val.metaffi_handle_val.val = env->NewGlobalRef(jval.l);
-				c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
-				c->type = metaffi_handle_type;
-			}
-			break;
-		case metaffi_handle_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_handle_array, cdt_metaffi_handle>(
-					c->cdt_val.metaffi_handle_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_object_array_callback());
-		}break;
-		case metaffi_callable_type:
-			// get from val.l should be Caller class
-			if(!is_caller_class(env, jval.l))
-			{
-				throw std::runtime_error("caller_type expects metaffi.Caller object");
-			}
-			fill_callable_cdt(env, jval.l, c->cdt_val.metaffi_callable_val.val,
-								c->cdt_val.metaffi_callable_val.parameters_types, c->cdt_val.metaffi_callable_val.params_types_length,
-								c->cdt_val.metaffi_callable_val.retval_types, c->cdt_val.metaffi_callable_val.retval_types_length);
-			break;
-		case metaffi_bool_type:
-			c->cdt_val.metaffi_bool_val = jval.z;
-			break;
-		case metaffi_bool_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_bool_array, metaffi_bool>(
-					c->cdt_val.metaffi_bool_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_bool, jboolean_wrapper>());
-		}break;
-		case metaffi_char8_type:
-			c->cdt_val.metaffi_char8_val = ((std::u8string)jchar_wrapper(env, jval.c))[0];
-			break;
-		case metaffi_char8_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_char8_array, metaffi_char8>(
-					c->cdt_val.metaffi_char8_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_char8, jchar_wrapper>());
-		}
-		case metaffi_string8_type:
-		{
-			jstring_wrapper w(env, (jstring)jval.l);
-			c->cdt_val.metaffi_string8_val = (metaffi_string8)((const char8_t*)w);
-		} break;
-		case metaffi_string8_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_string8_array, metaffi_string8>(
-					c->cdt_val.metaffi_string8_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_string8, jstring_wrapper>());
-		} break;
-		case metaffi_char16_type:
-			c->cdt_val.metaffi_char16_val = (char16_t)jchar_wrapper(env, jval.c);
-			break;
-		case metaffi_char16_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_char16_array, metaffi_char16>(
-					c->cdt_val.metaffi_char16_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_char16, jchar_wrapper>());
-		}
-		case metaffi_string16_type:
-		{
-			jstring_wrapper w(env, (jstring)jval.l);
-			c->cdt_val.metaffi_string16_val = (metaffi_string16)((const char16_t*)w);
-		} break;
-		case metaffi_string16_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_string16_array, metaffi_string16>(
-					c->cdt_val.metaffi_string16_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_string16, jstring_wrapper>());
-		} break;
-		case metaffi_char32_type:
-			c->cdt_val.metaffi_char32_val = (char32_t)jchar_wrapper(env, jval.c);
-			break;
-		case metaffi_char32_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_char32_array, metaffi_char32>(
-					c->cdt_val.metaffi_char32_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_char32, jchar_wrapper>());
-		}
-		case metaffi_string32_type:
-		{
-			jstring_wrapper w(env, (jstring)jval.l);
-			c->cdt_val.metaffi_string32_val = (metaffi_string32)((const char32_t*)w);
-		} break;
-		case metaffi_string32_array_type:
-		{
-			auto other_array = std::make_pair(env, jval.l);
-			metaffi::runtime::construct_multidim_array<cdt_metaffi_string32_array, metaffi_string32>(
-					c->cdt_val.metaffi_string32_array_val,
-					type.dimensions,
-					&other_array,
-					get_get_array_callback(),
-					get_get_1d_array_callback<metaffi_string32, jstring_wrapper>());
-		} break;
-		case metaffi_any_type:
-		{
-			// returned type is an object, we need to *try* and switch it to primitive if it
-			// can be converted to primitive
-			c->cdt_val.metaffi_handle_val.val = jval.l;
-			c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	cdt& c = this->pcdts->at(index);
 
-			switch_to_primitive(env, index);
-			
-			if(c->type == metaffi_handle_type)
-			{
-				if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, jval.l))
-				{
-					jni_metaffi_handle h(env, jval.l);
-					c->cdt_val.metaffi_handle_val.val = h.get_handle();
-					c->cdt_val.metaffi_handle_val.runtime_id = h.get_runtime_id(); // mark as openjdk object
-					c->type = metaffi_handle_type;
-				}
-				else
-				{
-					c->cdt_val.metaffi_handle_val.val = env->NewGlobalRef(jval.l);
-					c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID; // mark as openjdk object
-					c->type = metaffi_handle_type;
-				}
-			}
-			
-		}break;
-		default:
-			std::stringstream ss;
-			ss << "The metaffi return type " << type.type << " is not handled";
-			throw std::runtime_error(ss.str());
-	}
+	auto context = std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>(env, jval, jval_type, type);
+	metaffi::runtime::construct_cdt(c, get_construct_cdts_callbacks(&context));
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::switch_to_object(JNIEnv* env, int i) const
 {
-	cdt* c = (*this)[i];
-	
-	switch (c->type)
+	cdt& c = this->pcdts->at(i);
+
+	switch(c.type)
 	{
-		case metaffi_int32_type:
-		{
+		case metaffi_int32_type: {
 			jvalue v = this->to_jvalue(env, i);
 			this->set_object(env, i, (metaffi_int32) v.i);
-		}break;
-		case metaffi_int64_type:
-		{
+		}
+		break;
+		case metaffi_int64_type: {
 			jvalue v = this->to_jvalue(env, i);
-			this->set_object(env, i, (metaffi_int64)v.j);
-		}break;
-		case metaffi_int16_type:
-		{
+			this->set_object(env, i, (metaffi_int64) v.j);
+		}
+		break;
+		case metaffi_int16_type: {
 			jvalue v = this->to_jvalue(env, i);
-			this->set_object(env, i, (metaffi_int16)v.s);
-		}break;
-		case metaffi_int8_type:
-		{
+			this->set_object(env, i, (metaffi_int16) v.s);
+		}
+		break;
+		case metaffi_int8_type: {
 			jvalue v = this->to_jvalue(env, i);
 			this->set_object(env, i, (metaffi_int8) v.b);
-		}break;
-		case metaffi_float32_type:
-		{
+		}
+		break;
+		case metaffi_float32_type: {
 			jvalue v = this->to_jvalue(env, i);
 			this->set_object(env, i, (metaffi_float32) v.f);
-		}break;
-		case metaffi_float64_type:
-		{
+		}
+		break;
+		case metaffi_float64_type: {
 			jvalue v = this->to_jvalue(env, i);
 			this->set_object(env, i, (metaffi_float32) v.d);
-		}break;
-		case metaffi_bool_type:
-		{
+		}
+		break;
+		case metaffi_bool_type: {
 			jvalue v = this->to_jvalue(env, i);
 			this->set_object(env, i, v.z != JNI_FALSE);
-		} break;
+		}
+		break;
 	}
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /*= metaffi_any_type*/) const
 {
 	char jni_sig = get_jni_primitive_signature_from_object_form_of_primitive(env, i);
-	if(jni_sig == 0){
+	if(jni_sig == 0)
+	{
 		return;
 	}
-	
+
 	if(jni_sig == 'L')
 	{
-		if(is_jstring(env, i))
+		if(t & metaffi_array_type)
 		{
-			if(t != metaffi_any_type && t != metaffi_string8_type && t != metaffi_string16_type && t != metaffi_string32_type)
+			return;
+		}
+		else if(is_jstring(env, i))
+		{
+			if(t != metaffi_any_type && t != metaffi_string8_type && t != metaffi_string16_type &&
+			   t != metaffi_string32_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received String";
@@ -1338,20 +2043,20 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 
 			if(t == metaffi_any_type || t == metaffi_string8_type)
 			{
-				jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-				this->set(i, jobject_wrapper(env, obj).get_as_string8());
+				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+				this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_string8())));
 				env->DeleteGlobalRef(obj);
 			}
 			else if(t == metaffi_string16_type)
 			{
-				jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-				this->set(i, jobject_wrapper(env, obj).get_as_string16());
+				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+				this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_string16())));
 				env->DeleteGlobalRef(obj);
 			}
 			else if(t == metaffi_string32_type)
 			{
-				jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-				this->set(i, jobject_wrapper(env, obj).get_as_string32());
+				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+				this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_string32())));
 				env->DeleteGlobalRef(obj);
 			}
 			else
@@ -1360,108 +2065,105 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received String";
 				throw std::runtime_error(ss.str());
 			}
-			
 		}
 		else
 		{
-			(*this)[i]->type = metaffi_handle_type;
+			(*this->pcdts)[i].type = metaffi_handle_type;
 			return;
 		}
 	}
-	
+
 	switch(jni_sig)
 	{
-		case 'I':
-		{
-			if(t != metaffi_any_type && t != metaffi_int32_type && t != metaffi_uint32_type && t != metaffi_int64_type && t != metaffi_uint64_type)
+		case 'I': {
+			if(t != metaffi_any_type && t != metaffi_int32_type && t != metaffi_uint32_type &&
+			   t != metaffi_int64_type && t != metaffi_uint64_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Integer";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int32)jobject_wrapper(env, obj).get_as_int32());
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int32())));
 
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
 			}
-
 		}
 		break;
-		
-		case 'J':
-		{
+
+		case 'J': {
 			if(t != metaffi_any_type && t != metaffi_int64_type && t != metaffi_uint64_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Long";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int64)jobject_wrapper(env, obj).get_as_int64());
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int64())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
 			}
-		}break;
+		}
+		break;
 
-		case 'S':
-		{
-			if(t != metaffi_any_type && t != metaffi_int16_type && t != metaffi_uint16_type && t != metaffi_int32_type && t != metaffi_uint32_type &&
-				t != metaffi_int64_type && t != metaffi_uint64_type)
+		case 'S': {
+			if(t != metaffi_any_type && t != metaffi_int16_type && t != metaffi_uint16_type &&
+			   t != metaffi_int32_type && t != metaffi_uint32_type &&
+			   t != metaffi_int64_type && t != metaffi_uint64_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Short";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int16)jobject_wrapper(env, obj).get_as_int16());
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int16())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
 			}
 		}
 		break;
-		
-		case 'B':
-		{
-			if(t != metaffi_any_type && t != metaffi_int8_type && t != metaffi_uint8_type && t != metaffi_int16_type && t != metaffi_uint16_type && t != metaffi_int32_type && t != metaffi_uint32_type &&
-				t != metaffi_int64_type && t != metaffi_uint64_type)
+
+		case 'B': {
+			if(t != metaffi_any_type && t != metaffi_int8_type && t != metaffi_uint8_type && t != metaffi_int16_type &&
+			   t != metaffi_uint16_type && t != metaffi_int32_type && t != metaffi_uint32_type &&
+			   t != metaffi_int64_type && t != metaffi_uint64_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Byte";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_int8)jobject_wrapper(env, obj).get_as_int8());
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int8())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
 			}
 		}
 		break;
-		
-		case 'C':
-		{
+
+		case 'C': {
 			if(t != metaffi_any_type && t != metaffi_char8_type && t != metaffi_char16_type && t != metaffi_char32_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Char";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
 			if(t == metaffi_any_type || t == metaffi_char8_type)
 			{
-				this->set(i, (char8_t)jobject_wrapper(env, obj).get_as_char8());
+				this->pcdts->set(i, std::move(cdt((metaffi_char8) jchar_wrapper(env, obj))));
 			}
 			else if(t == metaffi_char16_type)
 			{
-				this->set(i, (char16_t)jobject_wrapper(env, obj).get_as_char16());
+				this->pcdts->set(i, std::move(cdt((metaffi_char16) jchar_wrapper(env, obj))));
 			}
 			else if(t == metaffi_char32_type)
 			{
-				this->set(i, (char32_t)jobject_wrapper(env, obj).get_as_char32());
+				this->pcdts->set(i, std::move(cdt((metaffi_char32) jchar_wrapper(env, obj))));
 			}
 			else
 			{
@@ -1469,58 +2171,55 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Char";
 				throw std::runtime_error(ss.str());
 			}
-			
+
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
 			}
 		}
 		break;
-		
-		case 'F':
-		{
+
+		case 'F': {
 			if(t != metaffi_any_type && t != metaffi_float32_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Float";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_float32)jobject_wrapper(env, obj).get_as_float32());
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_float32())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
 			}
 		}
 		break;
-		
-		case 'D':
-		{
+
+		case 'D': {
 			if(t != metaffi_any_type && t != metaffi_float64_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Double";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (metaffi_float64)jobject_wrapper(env, obj).get_as_float64());
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_float64())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
 			}
 		}
 		break;
-		
-		case 'Z':
-		{
+
+		case 'Z': {
 			if(t != metaffi_any_type && t != metaffi_bool_type)
 			{
 				std::stringstream ss;
 				ss << "Expected metaffi type: " << t << " while received Boolean";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject)(*this)[i]->cdt_val.metaffi_handle_val.val;
-			this->set(i, (bool)jobject_wrapper(env, obj).get_as_bool());
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_bool())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
 				env->DeleteGlobalRef(obj);
@@ -1528,200 +2227,251 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 		}
 		break;
 	}
-	
 }
+
 //--------------------------------------------------------------------
 bool cdts_java_wrapper::is_jstring(JNIEnv* env, int index) const
 {
-	if((*this)[index]->type != metaffi_handle_type){
+	if(this->pcdts->at(index).type != metaffi_handle_type)
+	{
 		return false;
 	}
-	
-	jobject obj = (jobject)((*this)[index]->cdt_val.metaffi_handle_val.val);
+
+	jobject obj = (jobject) (this->pcdts->at(index).cdt_val.handle_val.val);
 	return env->IsInstanceOf(obj, env->FindClass("java/lang/String")) != JNI_FALSE;
 }
+
 //--------------------------------------------------------------------
-char cdts_java_wrapper::get_jni_primitive_signature_from_object_form_of_primitive(JNIEnv *env, int index) const
+char cdts_java_wrapper::get_jni_primitive_signature_from_object_form_of_primitive(JNIEnv* env, int index) const
 {
-	if((*this)[index]->type & metaffi_array_type){
+	if(this->pcdts->at(index).type & metaffi_array_type)
+	{
 		return 'L';
 	}
-	
-	if((*this)[index]->type != metaffi_handle_type && (*this)[index]->type != metaffi_any_type){
+
+	if(this->pcdts->at(index).type != metaffi_handle_type && this->pcdts->at(index).type != metaffi_any_type)
+	{
 		return 0;
 	}
 
-	if((*this)[index]->type == metaffi_handle_type && (*this)[index]->cdt_val.metaffi_handle_val.runtime_id != OPENJDK_RUNTIME_ID){
+	if(this->pcdts->at(index).type == metaffi_handle_type &&
+	   this->pcdts->at(index).cdt_val.handle_val.runtime_id != OPENJDK_RUNTIME_ID)
+	{
 		return 0;
 	}
-	
-	jobject obj = (jobject)((*this)[index]->cdt_val.metaffi_handle_val.val);
-	
+
+	jobject obj = (jobject) (this->pcdts->at(index).cdt_val.handle_val.val);
+
 	// Check if the object is an instance of a primitive type
-	if (env->IsInstanceOf(obj, env->FindClass("java/lang/Integer"))) {
+	if(env->IsInstanceOf(obj, env->FindClass("java/lang/Integer")))
+	{
 		return 'I';
-	} else if (env->IsInstanceOf(obj, env->FindClass("java/lang/Long"))) {
+	}
+	else if(env->IsInstanceOf(obj, env->FindClass("java/lang/Long")))
+	{
 		return 'J';
-	} else if (env->IsInstanceOf(obj, env->FindClass("java/lang/Short"))) {
+	}
+	else if(env->IsInstanceOf(obj, env->FindClass("java/lang/Short")))
+	{
 		return 'S';
-	} else if (env->IsInstanceOf(obj, env->FindClass("java/lang/Byte"))) {
+	}
+	else if(env->IsInstanceOf(obj, env->FindClass("java/lang/Byte")))
+	{
 		return 'B';
-	} else if (env->IsInstanceOf(obj, env->FindClass("java/lang/Character"))) {
+	}
+	else if(env->IsInstanceOf(obj, env->FindClass("java/lang/Character")))
+	{
 		return 'C';
-	} else if (env->IsInstanceOf(obj, env->FindClass("java/lang/Float"))) {
+	}
+	else if(env->IsInstanceOf(obj, env->FindClass("java/lang/Float")))
+	{
 		return 'F';
-	} else if (env->IsInstanceOf(obj, env->FindClass("java/lang/Double"))) {
+	}
+	else if(env->IsInstanceOf(obj, env->FindClass("java/lang/Double")))
+	{
 		return 'D';
-	} else if (env->IsInstanceOf(obj, env->FindClass("java/lang/Boolean"))) {
+	}
+	else if(env->IsInstanceOf(obj, env->FindClass("java/lang/Boolean")))
+	{
 		return 'Z';
-	} else {
+	}
+	else
+	{
 		// If it's not a primitive type, it's an object
 		return 'L';
 	}
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int32 val) const
 {
 	jclass cls = env->FindClass("java/lang/Integer");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(I)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, bool val) const
 {
 	jclass cls = env->FindClass("java/lang/Boolean");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(Z)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-//	obj = env->NewGlobalRef(obj);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	//	obj = env->NewGlobalRef(obj);
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int8 val) const
 {
 	jclass cls = env->FindClass("java/lang/Byte");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(B)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_uint16 val) const
 {
 	jclass cls = env->FindClass("java/lang/Character");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(C)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int16 val) const
 {
 	jclass cls = env->FindClass("java/lang/Short");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(S)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int64 val) const
 {
 	jclass cls = env->FindClass("java/lang/Long");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(J)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_float32 val) const
 {
 	jclass cls = env->FindClass("java/lang/Float");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(F)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_float64 val) const
 {
 	jclass cls = env->FindClass("java/lang/Double");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jmethodID constructor = env->GetMethodID(cls, "<init>", "(D)V");
 	check_and_throw_jvm_exception(env, true);
-	
+
 	jobject obj = env->NewObject(cls, constructor, val);
 	check_and_throw_jvm_exception(env, true);
-	
-	cdt* c = (*this)[index];
-	c->cdt_val.metaffi_handle_val.val = obj;
-	c->cdt_val.metaffi_handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c->type = metaffi_handle_type;
+
+	cdt& c = this->pcdts->at(index);
+	c.cdt_val.handle_val.val = obj;
+	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.type = metaffi_handle_type;
 }
+
 //--------------------------------------------------------------------
 bool cdts_java_wrapper::is_jobject(int i) const
 {
-	cdt* c = (*this)[i];
-	return c->type == metaffi_handle_type || c->type == metaffi_string8_type ||
-			c->type == metaffi_string16_type || (c->type & metaffi_array_type) != 0;
+	cdt& c = this->pcdts->at(i);
+	return c.type == metaffi_handle_type || c.type == metaffi_string8_type ||
+	       c.type == metaffi_string16_type || (c.type & metaffi_array_type) != 0;
+}
+
+//--------------------------------------------------------------------
+cdt& cdts_java_wrapper::operator[](int index) const
+{
+	return this->pcdts->at(index);
+}
+
+//--------------------------------------------------------------------
+metaffi_size cdts_java_wrapper::length() const
+{
+
+	return this->pcdts == nullptr ? 0 : this->pcdts->length;
+}
+
+//--------------------------------------------------------------------
+cdts_java_wrapper::operator cdts*() const
+{
+	return this->pcdts;
 }
 //--------------------------------------------------------------------

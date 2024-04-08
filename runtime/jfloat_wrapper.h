@@ -11,6 +11,7 @@ private:
 public:
 	jfloat_wrapper(jfloat value);
 	jfloat_wrapper(const jfloat_wrapper& other);
+	jfloat_wrapper(JNIEnv* env, jobject obj);
 	
 	operator jfloat();
 	

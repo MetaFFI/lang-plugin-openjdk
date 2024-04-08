@@ -9,10 +9,11 @@ private:
 	jdouble value;
 
 public:
-	jdouble_wrapper(jdouble value);
+	explicit jdouble_wrapper(jdouble value);
 	jdouble_wrapper(const jdouble_wrapper& other);
+	jdouble_wrapper(JNIEnv* env, jobject obj);
 	
-	operator jdouble();
+	explicit operator jdouble();
 	
 	jdouble_wrapper& operator=(jdouble val);
 	

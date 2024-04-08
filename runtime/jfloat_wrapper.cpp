@@ -38,3 +38,13 @@ jfloatArray jfloat_wrapper::new_1d_array(JNIEnv* env, jsize size, const jfloat* 
 	
 	return array;
 }
+
+jfloat_wrapper::jfloat_wrapper(JNIEnv* env, jobject obj)
+{
+	// obj holds a java.lang.Float object, convert to jfloat
+	// and set to value
+	jclass floatClass = env->FindClass("java/lang/Float");
+	jmethodID floatValue = env->GetMethodID(floatClass, "floatValue", "()F");
+	value = env->CallFloatMethod(obj, floatValue);
+	check_and_throw_jvm_exception(env, true);
+}

@@ -11,6 +11,7 @@ private:
 public:
 	explicit jbyte_wrapper(jbyte value);
 	jbyte_wrapper(const jbyte_wrapper& other);
+	jbyte_wrapper(JNIEnv* env, jobject obj);
 	
 	operator jbyte() const;
 	explicit operator metaffi_uint8() const;

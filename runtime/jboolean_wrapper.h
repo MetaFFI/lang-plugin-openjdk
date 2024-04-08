@@ -11,6 +11,7 @@ private:
 public:
 	jboolean_wrapper(jboolean value);
 	jboolean_wrapper(const jboolean_wrapper& other);
+	jboolean_wrapper(JNIEnv* env, jobject obj);
 	
 	operator jboolean();
 	

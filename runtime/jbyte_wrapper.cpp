@@ -45,3 +45,14 @@ jbyteArray jbyte_wrapper::new_1d_array(JNIEnv* env, jsize size, const jbyte* par
 	
 	return array;
 }
+
+jbyte_wrapper::jbyte_wrapper(JNIEnv* env, jobject obj)
+{
+	// obj holds a java.lang.Byte object, convert to jbyte
+	// and set to value
+	jclass byteClass = env->FindClass("java/lang/Byte");
+	jmethodID byteValue = env->GetMethodID(byteClass, "byteValue", "()B");
+	value = env->CallByteMethod(obj, byteValue);
+	check_and_throw_jvm_exception(env, true);
+	
+}

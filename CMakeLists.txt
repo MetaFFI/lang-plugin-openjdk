@@ -17,6 +17,7 @@ endif()
 # Add SDK
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/plugin-sdk/)
 set(METAFFI_SDK ${CMAKE_CURRENT_LIST_DIR}/plugin-sdk)
+prepend_dir_to_files(METAFFI_SDK_CPP_SOURCES "${METAFFI_SDK}/runtime" "cdts_traverse_construct.cpp xllr_capi_loader.c cdt.cpp metaffi_primitives.cpp cdts_wrapper.cpp")
 set(CMAKE_SCRIPTS_DIR ${CMAKE_CURRENT_LIST_DIR}/plugin-sdk/cmake)
 
 # Load hunter package manager

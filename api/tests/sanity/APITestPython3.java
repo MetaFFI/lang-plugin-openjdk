@@ -78,8 +78,16 @@ public class APITestPython3
 	public void testJoinStrings()
 	{
 		metaffi.Caller pff = module.load("callable=join_strings",
-				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8Array) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8Array, 1) },
 				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8) });
+
+		try {
+            // Pause for 30 seconds
+            Thread.sleep(30000);
+        } catch (InterruptedException e) {
+            // Handle the exception
+            e.printStackTrace();
+        }
 
 		Object res = pff.call((Object)new String[]{"one", "two", "three"});
 
@@ -169,6 +177,8 @@ public class APITestPython3
 
 	public static int add(int x, int y)
 	{
+		System.out.println("Callback add called with " + x + " and " + y);
 		return x+y;
 	}
+
 }

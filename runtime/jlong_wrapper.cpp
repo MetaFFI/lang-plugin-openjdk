@@ -38,3 +38,12 @@ jlongArray jlong_wrapper::new_1d_array(JNIEnv* env, jsize size, const jlong* par
 	
 	return array;
 }
+
+jlong_wrapper::jlong_wrapper(JNIEnv* p_env, jobject p_jobject)
+{
+	// obj holds a java.lang.Long object, convert to jlong
+	// and set to value
+	jclass longClass = p_env->FindClass("java/lang/Long");
+	jmethodID longValue = p_env->GetMethodID(longClass, "longValue", "()J");
+	value = p_env->CallLongMethod(p_jobject, longValue);
+}

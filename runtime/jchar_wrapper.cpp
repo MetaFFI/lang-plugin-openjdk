@@ -1,20 +1,38 @@
 #include "jchar_wrapper.h"
 #include "runtime/metaffi_primitives.h"
+#include "exception_macro.h"
 
-jchar_wrapper::jchar_wrapper(JNIEnv* env, char8_t c) : env(env)
+
+jchar_wrapper::jchar_wrapper(JNIEnv* env, metaffi_char8 c8) : env(env)
 {
-	value = static_cast<jchar>(c);
+	metaffi_char16 c16 = (metaffi_char16)c8;
+	if(c16.is_surrogate())
+	{
+		throw std::invalid_argument("Java char does not support UTF-16 surrogate pair of characters");
+	}
+	
+	value = (jchar)c16.c[0];
 }
 
-jchar_wrapper::jchar_wrapper(JNIEnv* env, char16_t c) : env(env)
+jchar_wrapper::jchar_wrapper(JNIEnv* env, metaffi_char16 c) : env(env)
 {
-	value = static_cast<jchar>(c);
+	if(c.is_surrogate())
+	{
+		throw std::invalid_argument("Java char does not support UTF-16 surrogate pair of characters");
+	}
+	
+	value = static_cast<jchar>(c.c[0]);
 }
 
-jchar_wrapper::jchar_wrapper(JNIEnv* env, char32_t c) : env(env)
+jchar_wrapper::jchar_wrapper(JNIEnv* env, metaffi_char32 c) : env(env)
 {
-	std::u16string u16(1, static_cast<char16_t>(c));
-	value = static_cast<jchar>(u16[0]);
+	metaffi_char16 c16 = (metaffi_char16)c;
+	if(c16.is_surrogate())
+	{
+		throw std::invalid_argument("Java char does not support UTF-16 surrogate pair of characters");
+	}
+	
+	value = static_cast<jchar>(c16.c[0]);
 }
 
 jchar_wrapper::operator jchar() const
@@ -22,27 +40,24 @@ jchar_wrapper::operator jchar() const
 	return value;
 }
 
-jchar_wrapper::operator std::u8string() const
+jchar_wrapper::operator metaffi_char8() const
 {
-	char utf8[4] = {};
+	metaffi_char8 utf8 = {};
 	std::mbstate_t state = std::mbstate_t();
-	c16rtomb(utf8, value, &state);
-	return reinterpret_cast<char8_t*>(utf8);
+	c16rtomb((char*)utf8.c, value, &state);
+	return utf8;
 }
 
-jchar_wrapper::operator char16_t() const
+jchar_wrapper::operator metaffi_char16() const
 {
-	return static_cast<char16_t>(value);
+	metaffi_char16 utf16 = {};
+	utf16.c[0] = value; // Java doesn't support surrogate pairs
+	return utf16;
 }
 
-jchar_wrapper::operator char32_t() const
+jchar_wrapper::operator metaffi_char32() const
 {
-	char32_t utf32;
-	std::mbstate_t state = std::mbstate_t();
-	const char16_t* from_next;
-	char32_t* to_next;
-	c16rtomb(reinterpret_cast<char*>(&utf32), value, &state);
-	return utf32;
+	return static_cast<metaffi_char32>(value);
 }
 
 jcharArray jchar_wrapper::new_1d_array(JNIEnv* env, const char8_t* s, metaffi_size length)
@@ -80,4 +95,12 @@ jcharArray jchar_wrapper::new_1d_array(JNIEnv* env, const char32_t* s, metaffi_s
 	}
 	env->ReleaseCharArrayElements(array, elements, 0);
 	return array;
+}
+
+jchar_wrapper::jchar_wrapper(JNIEnv* env, jobject obj)
+{
+	jclass charClass = env->FindClass("java/lang/Character");
+	jmethodID charValue = env->GetMethodID(charClass, "charValue", "()C");
+	value = env->CallCharMethod(obj, charValue);
+	check_and_throw_jvm_exception(env, true);
 }

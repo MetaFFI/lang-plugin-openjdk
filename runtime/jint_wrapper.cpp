@@ -38,3 +38,13 @@ jintArray jint_wrapper::new_1d_array(JNIEnv* env, jsize size, const jint* parr)
 	
 	return array;
 }
+
+jint_wrapper::jint_wrapper(JNIEnv* p_env, jobject p_jobject)
+{
+	// obj holds a java.lang.Integer object, convert to jint
+	// and set to value
+	jclass intClass = p_env->FindClass("java/lang/Integer");
+	jmethodID intValue = p_env->GetMethodID(intClass, "intValue", "()I");
+	value = p_env->CallIntMethod(p_jobject, intValue);
+	check_and_throw_jvm_exception(p_env, true);
+}

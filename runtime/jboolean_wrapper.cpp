@@ -38,3 +38,11 @@ jbooleanArray jboolean_wrapper::new_1d_array(JNIEnv* env, jsize size, const jboo
 	
 	return array;
 }
+
+jboolean_wrapper::jboolean_wrapper(JNIEnv* env, jobject obj)
+{
+	jclass booleanClass = env->FindClass("java/lang/Boolean");
+	jmethodID booleanValue = env->GetMethodID(booleanClass, "booleanValue", "()Z");
+	value = env->CallBooleanMethod(obj, booleanValue);
+	check_and_throw_jvm_exception(env, true);
+}

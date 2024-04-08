@@ -139,30 +139,3 @@ bool jobject_wrapper::get_as_bool()
 	}
 	return result != JNI_FALSE;
 }
-
-char8_t jobject_wrapper::get_as_char8()
-{
-	jchar jchar_val = env->CallCharMethod(obj, env->GetMethodID(env->GetObjectClass(obj), "charValue", "()C"));
-	check_and_throw_jvm_exception(env, true);
-	jchar_wrapper wrapper(env, static_cast<jchar>(jchar_val));
-	char8_t result = ((std::u8string)wrapper)[0];
-	return result;
-}
-
-char16_t jobject_wrapper::get_as_char16()
-{
-	jchar jchar_val = env->CallCharMethod(obj, env->GetMethodID(env->GetObjectClass(obj), "charValue", "()C"));
-	check_and_throw_jvm_exception(env, true);
-	jchar_wrapper wrapper(env, static_cast<jchar>(jchar_val));
-	char16_t result = (char16_t)wrapper;
-	return result;
-}
-
-char32_t jobject_wrapper::get_as_char32()
-{
-	jchar jchar_val = env->CallCharMethod(obj, env->GetMethodID(env->GetObjectClass(obj), "charValue", "()C"));
-	check_and_throw_jvm_exception(env, true);
-	jchar_wrapper wrapper(env, static_cast<jchar>(jchar_val));
-	char32_t result = (char32_t)wrapper;
-	return result;
-}

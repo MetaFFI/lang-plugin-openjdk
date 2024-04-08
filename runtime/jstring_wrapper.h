@@ -9,15 +9,15 @@ private:
 	jstring value;
 
 public:
-	jstring_wrapper(JNIEnv* env, const char* s);
+	jstring_wrapper(JNIEnv* env, const char8_t* s);
 	jstring_wrapper(JNIEnv* env, const char16_t* s);
 	jstring_wrapper(JNIEnv* env, const char32_t* s);
 	jstring_wrapper(JNIEnv* env, jstring s);
 	
 	explicit operator jstring();
-	explicit operator const char8_t*();
-	explicit operator const char16_t*();
-	explicit operator const char32_t*();
+	explicit operator metaffi_string8();
+	explicit operator metaffi_string16();
+	explicit operator metaffi_string32();
 	
 	static jobjectArray new_1d_array(JNIEnv* env, const metaffi_string8* s, jsize length);
 	static jobjectArray new_1d_array(JNIEnv* env, const metaffi_string16* s, jsize length);

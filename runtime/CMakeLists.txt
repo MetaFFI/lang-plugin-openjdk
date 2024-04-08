@@ -15,7 +15,7 @@ get_dir_sources(${CMAKE_CURRENT_LIST_DIR} ${target_name}_sources)
 get_sdk_utils_sources(utils_srcs)
 get_sdk_runtime_sources(runtime_srcs)
 
-add_library(${target_name} SHARED ${${target_name}_sources} ${utils_srcs} ${runtime_srcs})
+add_library(${target_name} SHARED ${${target_name}_sources} ${utils_srcs} ${METAFFI_SDK_CPP_SOURCES})
 target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
 set_target_properties(${target_name} PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON LINK_FLAGS "-Wl,-Bsymbolic")
 target_link_libraries(${target_name} PRIVATE Boost::filesystem ${JNI_LIBRARIES})
@@ -42,7 +42,7 @@ set_target_properties( ${target_name}
 
 # unitests
 add_executable(openjdk_api_test "openjdk_api_test.cpp" ${utils_srcs} ${runtime_srcs})
-target_link_libraries(openjdk_api_test PRIVATE Catch2::Catch2 ${target_name} Boost::filesystem ${JNI_LIBRARIES})
+target_link_libraries(openjdk_api_test PRIVATE doctest::doctest ${target_name} Boost::filesystem ${JNI_LIBRARIES})
 add_test(NAME "OpenJDK Runtime API" COMMAND openjdk_api_test)
 target_include_directories(openjdk_api_test PRIVATE ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
 if(NOT WIN32)

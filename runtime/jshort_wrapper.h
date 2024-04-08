@@ -30,4 +30,6 @@ public:
 		env->ReleaseShortArrayElements((jshortArray)jarr, elements, JNI_ABORT);
 		return c_array;
 	}
+	
+	jshort_wrapper(JNIEnv* p_env, jobject p_jobject);
 };

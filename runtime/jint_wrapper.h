@@ -30,4 +30,6 @@ public:
 		env->ReleaseIntArrayElements((jintArray)jarr, elements, JNI_ABORT);
 		return c_array;
 	}
+	
+	jint_wrapper(JNIEnv* p_env, jobject p_jobject);
 };
