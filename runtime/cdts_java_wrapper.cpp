@@ -35,7 +35,12 @@ void on_traverse_float64(const metaffi_size* index, metaffi_size index_size, met
 	{
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
 		JNIEnv* env = pair->first;
-		jobject obj = pair->second.l;
+		jarray root = (jarray)pair->second.l;
+		
+		// for 1D arrays, there's no "previous" index to hold the result, but the previous is "root"
+		auto element = jarray_wrapper::get_element(env, root, index, index_size == 1 ? index_size : index_size - 1);
+		check_and_throw_jvm_exception(env, true);
+		jarray obj = index_size == 1 ? root : (jarray) element.first.l;
 
 		if(env->IsInstanceOf(obj, env->FindClass("[D")))// if jobject is jdoubleArray
 		{
