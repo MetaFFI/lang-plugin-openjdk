@@ -270,6 +270,10 @@ std::pair<metaffi_type_info, jint> jarray_wrapper::get_array_info(JNIEnv* env, j
 	{
 		tinfo.type = metaffi_float64_type | metaffi_array_type;
 	}
+	else if(clsname.ends_with("[Ljava.lang.String;"))
+	{
+		tinfo.type = metaffi_string8_type | metaffi_array_type;
+	}
 	else if(clsname.ends_with("[metaffi/Caller"))
 	{
 		tinfo.type = metaffi_callable_type | metaffi_array_type;

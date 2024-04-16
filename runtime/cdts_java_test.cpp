@@ -384,4 +384,10 @@ TEST_CASE("Construct 3D array")
 	REQUIRE(pcdts[0].cdt_val.array_val.arr[1].cdt_val.array_val[2].cdt_val.array_val[0].cdt_val.float32_val == 12.0f);
 	
 }
+
+TEST_CASE("create_new_object")
+{
+	// TODO
+}
+
 }

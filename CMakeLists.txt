@@ -51,17 +51,17 @@ set(CMAKE_INSTALL_PREFIX [[$ENV{METAFFI_HOME}]])
 set(CMAKE_SKIP_INSTALL_RPATH ON)
 
 # package notes
-set(INSTALL_NOTES "JVM and JNI must be installed to use this plugin.
-Make sure JAVA_HOME environment variable is set.
-
-Building with plugin: The file xllr.openjdk.bridge.jar, which is part of the plugin,
-must be added to the classpath during build and execution.
-
-Loading JVM module (using load()) expects the paths of the
-generated native library and generated jar library delimited by semicolon.
-")
-
-file(WRITE ${PROJECT_BINARY_DIR}/notes.txt ${INSTALL_NOTES})
+#set(INSTALL_NOTES "JVM and JNI must be installed to use this plugin.
+#Make sure JAVA_HOME environment variable is set.di
+#
+#Building with plugin: The file xllr.openjdk.bridge.jar, which is part of the plugin,
+#must be added to the classpath during build and execution.
+#
+#Loading JVM module (using load()) expects the paths of the
+#generated native library and generated jar library delimited by semicolon.
+#")
+#
+#file(WRITE ${PROJECT_BINARY_DIR}/notes.txt ${INSTALL_NOTES})
 
 #-----------------------------------------------------------------------------------------------
 

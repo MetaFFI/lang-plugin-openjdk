@@ -1,3 +1,4 @@
+import os
 import time
 import sys
 
@@ -25,7 +26,7 @@ five_seconds = 5
 
 
 def wait_a_bit(secs: int):
-	time.sleep(secs)
+	print(f'"waiting" {secs} seconds')
 	return None
 
 

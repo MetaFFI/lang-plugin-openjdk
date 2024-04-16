@@ -213,7 +213,7 @@ class ExtendedTest
         this.plist_args_without_default_and_varargs = module.load("callable=extended_test.list_args,instance_required,varargs",
 	                new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
 	                                            new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
-	                                            new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+	                                            new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAnyArray)},
 	                new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.pdict_args = module.load("callable=extended_test.dict_args,instance_required",
@@ -270,13 +270,13 @@ class ExtendedTest
 		this.parg_positional_arg_named_without_default_with_varargs = module.load("callable=extended_test.arg_positional_arg_named,instance_required,varargs",
 				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
 						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
-						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+						new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAnyArray)},
 				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.parg_positional_arg_named_without_default_with_varargs_and_kwargs = module.load("callable=extended_test.arg_positional_arg_named,instance_required,varargs,named_args",
                  new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
                                              new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8),
-                                             new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle),
+                                             new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAnyArray),
                                              new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
                  new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 	}
@@ -310,82 +310,32 @@ class ExtendedTest
 
 	public String[] ListArgs()
 	{
-		var lstHandle = (MetaFFIHandle)this.plist_args.call(this.instance)[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.plist_args.call(this.instance)[0];
 	}
 
 	public String[] ListArgs(String noneDefault, String... lst)
 	{
-		PyList pylst = null;
-		if(lst.length > 0)
+		//PyList pylist;
+		if(lst.length == 0)
 		{
-			pylst = new PyList(runtime);
-			for(String s :lst){
-				pylst.append(s);
-			}
-
-		}
-
-		PyList pylist;
-		if(pylst == null)
-		{
-			var lstHandle = (MetaFFIHandle)this.plist_args_without_default.call(this.instance, noneDefault)[0];
-			pylist = new PyList(runtime, lstHandle);
+			return (String[])this.plist_args_without_default.call(this.instance, noneDefault)[0];
 		}
 		else
 		{
-			var lstHandle = (MetaFFIHandle)this.plist_args_without_default_and_varargs.call(this.instance, noneDefault, pylst.getHandle())[0];
-			pylist = new PyList(runtime, lstHandle);
+			var res = this.plist_args_without_default_and_varargs.call(this.instance, noneDefault, lst);
+			return (String[])res[0];
 		}
 
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)(pylist.get(i));
-		}
-
-		return res;
 	}
 
 	public String[] DictArgs()
 	{
-		var lstHandle = (MetaFFIHandle)this.pdict_args.call(this.instance)[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.pdict_args.call(this.instance)[0];
 	}
 
 	public String[] DictArgs(String noneDefault)
 	{
-		var lstHandle = (MetaFFIHandle)this.pdict_args_without_default.call(this.instance, noneDefault)[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.pdict_args_without_default.call(this.instance, noneDefault)[0];
 	}
 
 	public String[] DictArgs(String noneDefault, Map<String,String> named)
@@ -397,17 +347,7 @@ class ExtendedTest
 			dict.set(e.getKey(), e.getValue());
 		}
 
-		var lstHandle = (MetaFFIHandle)this.pdict_args_without_default_and_kwargs.call(this.instance, noneDefault, dict.getHandle())[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.pdict_args_without_default_and_kwargs.call(this.instance, noneDefault, dict.getHandle())[0];
 	}
 
 	public String NamedOnly(Map<String, String> named)
@@ -437,32 +377,12 @@ class ExtendedTest
 
 	public String[] ArgPositionalArgNamed()
 	{
-		var lstHandle = (MetaFFIHandle)this.parg_positional_arg_named.call(this.instance)[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.parg_positional_arg_named.call(this.instance)[0];
 	}
 
 	public String[] ArgPositionalArgNamed(String val)
 	{
-		var lstHandle = (MetaFFIHandle)this.parg_positional_arg_named_without_default.call(this.instance, val)[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.parg_positional_arg_named_without_default.call(this.instance, val)[0];
 	}
 
 	public String[] ArgPositionalArgNamed(Map<String, String> named)
@@ -474,42 +394,12 @@ class ExtendedTest
 			dict.set(e.getKey(), e.getValue());
 		}
 
-		var lstHandle = (MetaFFIHandle)this.parg_positional_arg_named_with_kwargs.call(this.instance, dict.getHandle())[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.parg_positional_arg_named_with_kwargs.call(this.instance, dict.getHandle())[0];
 	}
 
 	public String[] ArgPositionalArgNamed(String val, String... lst)
 	{
-		PyList pylst = null;
-		if(lst.length > 0)
-		{
-			pylst = new PyList(runtime);
-			for(String s :lst){
-				pylst.append(s);
-			}
-
-		}
-
-		var lstHandle = (MetaFFIHandle)this.parg_positional_arg_named_without_default_with_varargs.call(this.instance, val, pylst.getHandle())[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.parg_positional_arg_named_without_default_with_varargs.call(this.instance, val, lst)[0];
 	}
 
 	public String[] ArgPositionalArgNamed(String val, Map<String, String> named)
@@ -521,43 +411,18 @@ class ExtendedTest
 			dict.set(e.getKey(), e.getValue());
 		}
 
-		var lstHandle = (MetaFFIHandle)this.parg_positional_arg_named_without_default_with_kwargs.call(this.instance, val, dict.getHandle())[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.parg_positional_arg_named_without_default_with_kwargs.call(this.instance, val, dict.getHandle())[0];
 	}
 
 	public String[] ArgPositionalArgNamed(String val, Map<String, String> named, String... lst)
 	{
-		PyList pylst = new PyList(runtime);
-		for(String s :lst){
-			pylst.append(s);
-		}
-
 		PyDict dict = new PyDict(runtime);
 		for(Map.Entry<String,String> e : named.entrySet())
 		{
 			dict.set(e.getKey(), e.getValue());
 		}
 
-		var lstHandle = (MetaFFIHandle)this.parg_positional_arg_named_without_default_with_varargs_and_kwargs.call(this.instance, val, dict.getHandle(), pylst.getHandle())[0];
-		PyList pylist = new PyList(runtime, lstHandle);
-
-		long len = pylist.len();
-		String[] res = new String[(int)len];
-		for(int i=0 ; i<len ; i++)
-		{
-			res[i] = (String)pylist.get(i);
-		}
-
-		return res;
+		return (String[])this.parg_positional_arg_named_without_default_with_varargs_and_kwargs.call(this.instance, val, lst, dict.getHandle())[0];
 	}
 }
 

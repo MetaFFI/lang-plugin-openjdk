@@ -581,7 +581,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_java_1to_1cdts(JNIEnv* env, j
 			cur_object.l = env->GetObjectArrayElement(parameters, i);
 			check_and_throw_jvm_exception(env, true);
 			metaffi_type_info type_to_expect = (types_elements[i] & metaffi_array_type) == 0 ?
-												(types_elements[i] == metaffi_callable_type ? metaffi_type_info{metaffi_callable_type} : metaffi_type_info{metaffi_handle_type}) :
+												(types_elements[i] == metaffi_callable_type ? metaffi_type_info{metaffi_callable_type} : metaffi_type_info{(metaffi_type)types_elements[i]}) :
                                                metaffi_type_info{(uint64_t)types_elements[i], nullptr, false, get_array_dimensions(env, (jobjectArray)cur_object.l)};
 			wrapper.from_jvalue(env, cur_object, 'L', type_to_expect, i);
 			wrapper.switch_to_primitive(env, i, types_elements[i]);

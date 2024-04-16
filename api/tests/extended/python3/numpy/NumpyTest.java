@@ -21,7 +21,7 @@ class NumpyArray
 	{
 		MetaFFIModule np = NumpyTest.runtime.loadModule("numpy");
 		Caller constructor = np.load("callable=array",
-				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64Array)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64Array, 1)},
 				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.pmean = np.load("callable=ndarray.mean,instance_required",
@@ -41,7 +41,7 @@ class NumpyArray
 
 	public float mean()
 	{
-		return (float)this.pmean.call(this.instance)[0];
+		return (float) (this.pmean.call(this.instance)[0]);
 	}
 }
 

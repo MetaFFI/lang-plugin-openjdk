@@ -5,6 +5,7 @@ import os
 import sys
 from colorama import init, Fore
 import platform
+import glob
 
 # Initialize colorama
 init()
@@ -36,9 +37,9 @@ def run_script(script_path):
 	
 	process = subprocess.Popen(command, cwd=script_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 	
-	while process.poll() is None:
-		print(process.stdout.read(), end='')
-		print(process.stderr.read(), file=sys.stderr, end='')
+	stdout, stderr = process.communicate()
+	print(stdout, end='')
+	print(stderr, file=sys.stderr, end='')
 	
 	if process.returncode != 0:
 		raise subprocess.CalledProcessError(process.returncode, command)
@@ -85,8 +86,9 @@ def run_unittest(script_path):
 	
 	# If it's a Java unittest, delete the compiled .class file
 	if script_path.endswith('.java'):
-		os.remove(f'{os.path.splitext(script_path)[0]}.class')
-
+		class_files = glob.glob(os.path.join(script_dir, "*.class"))
+		for file in class_files:
+			os.remove(file)
 
 # --------------------------------------------
 
@@ -145,7 +147,7 @@ run_unittest(test_extended_py_collections_path)
 test_extended_py_complex_primitives_path = os.path.join(current_path, 'extended', 'python3', 'complex-primitives', 'ComplexPrimitivesTest.java')
 run_unittest(test_extended_py_complex_primitives_path)
 
-test_extended_numpy_path = os.path.join(current_path, 'extended', 'python3', 'numpy', 'ComplexPrimitivesTest.java')
+test_extended_numpy_path = os.path.join(current_path, 'extended', 'python3', 'numpy', 'NumpyTest.java')
 run_unittest(test_extended_numpy_path)
 
 test_extended_pandas_path = os.path.join(current_path, 'extended', 'python3', 'pandas', 'PandasTest.java')

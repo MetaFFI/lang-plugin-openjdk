@@ -88,7 +88,7 @@ public class APITestGo
 	public void testJoinStrings()
 	{
 		metaffi.Caller pff = module.load("callable=JoinStrings",
-				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8Array) },
+				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8Array, 1) },
 				new MetaFFITypeInfo[]{ new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8) });
 
 		Object res = pff.call((Object)new String[]{"one", "two", "three"});

@@ -21,7 +21,9 @@ jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env)
 	{
 		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/xllr.openjdk.bridge.jar";
 		jni_class_loader clsloader(env, openjdk_bridge_url);
-		metaffi_handle_class = (jclass)clsloader.load_class("metaffi/MetaFFIHandle");
+		auto tmp = (jclass)clsloader.load_class("metaffi/MetaFFIHandle");
+		metaffi_handle_class = (jclass)env->NewGlobalRef(tmp);
+		env->DeleteLocalRef(tmp);
 	}
 	
 	if(!get_handle_id)

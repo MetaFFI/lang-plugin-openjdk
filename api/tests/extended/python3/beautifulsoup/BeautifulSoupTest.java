@@ -15,41 +15,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.List;
 
-class DebugUtils
-{
-    public static void waitForDebugger()
-    {
-        RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
-        List<String> arguments = runtimeMxBean.getInputArguments();
-
-        boolean isDebug = false;
-        for (String arg : arguments)
-        {
-            if (arg.startsWith("-agentlib:jdwp"))
-            {
-                isDebug = true;
-                break;
-            }
-        }
-
-        if (!isDebug)
-        {
-            while (true)
-            {
-                try
-                {
-                    System.out.println("Waiting for debugger to attach...");
-                    Thread.sleep(1000);
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-}
-
 class Tag
 {
 	private MetaFFIHandle instance = null;
@@ -165,18 +130,15 @@ class BeautifulSoup
 
 	public Tag[] FindAll(String tag)
 	{
-		MetaFFIHandle h = (MetaFFIHandle)this.find_all.call(this.instance, tag)[0];
-		var lst = new PyListClass(h);
+		var handles = (Object[])this.find_all.call(this.instance, tag)[0];
 
-		ArrayList<Tag> al = new ArrayList<>();
-		for(int i=0 ; i<lst.len() ; i++)
+		Tag[] tags = new Tag[handles.length];
+		for(int i=0 ; i<handles.length ; i++)
 		{
-			var tagHandle = (MetaFFIHandle)lst.get(i);
-			Tag t = new Tag(tagHandle);
-			al.add(t);
+			tags[i] = new Tag((MetaFFIHandle)handles[i]);
 		}
 
-		return al.toArray(al.toArray(new Tag[0]));
+		return tags;
 	}
 }
 
@@ -250,8 +212,6 @@ public class BeautifulSoupTest
 		    for link in soup.find_all('a'):
 		        print(link.get('href'))
 	    */
-
-	    DebugUtils.waitForDebugger();
 
 		var req = new Requests();
 		var res = req.get("https://microsoft.com/");

@@ -8,7 +8,7 @@ import java.util.Arrays;
 public class BytesPrinter
 {
 	@Test
-	public void testGoMCache() throws Exception
+	public void testBytesPrinter() throws Exception
 	{
 		api.MetaFFIRuntime runtime = new MetaFFIRuntime("go");
 		runtime.loadRuntimePlugin();
@@ -31,16 +31,16 @@ public class BytesPrinter
 
         MetaFFIModule bprinter = runtime.loadModule(filename);
 
-		var PrintBytesArrays = bprinter.load("callable=PrintBytesArrays", new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIUInt8Array, 2) },
-															null);
+		var PrintBytesArrays = bprinter.load("callable=PrintBytesArrays",
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIUInt8Array, 2) },
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIUInt8Array, 2) });
 
 
 		byte[][] arr = new byte[][]{ new byte[]{1, 2, 3, 4, 5}, new byte[]{6, 7, 8, 9, 10} };
 
-		var result = PrintBytesArrays.call((Object)arr);
+		byte[][] result = (byte[][])PrintBytesArrays.call((Object)arr)[0];
 
-		System.out.printf("Returned back to java: " + ((Arrays)result[0]).toString());
-		System.out.printf("Returned back to java: " + ((Arrays)result[1]).toString());
+		System.out.printf("Returned back to java: " + Arrays.deepToString(result));
 
 	}
 

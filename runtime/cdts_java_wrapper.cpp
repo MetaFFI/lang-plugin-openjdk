@@ -1196,9 +1196,16 @@ metaffi_int8 on_construct_int8(const metaffi_size* index, metaffi_size index_siz
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int8) ((jbyte) jbyte_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int8) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'B')
 		{
@@ -1206,26 +1213,33 @@ metaffi_int8 on_construct_int8(const metaffi_size* index, metaffi_size index_siz
 		}
 		else
 		{
-			throw std::runtime_error("Expected a byte or Byte instance");
+			throw std::runtime_error("Expected a byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
-
-		if(res.second == 'B')
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
+		
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int8) val.b;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int8) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a byte/Byte instance");
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Byte;")) ||// if jobject is jobjectArray of Byte
-		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'B')
 		{
-			return (metaffi_int8) jbyte_wrapper(env, val.l);
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected a Byte or Object instance");
+			throw std::runtime_error("Expected a byte/Byte instance");
 		}
 	}
 }
@@ -1241,9 +1255,16 @@ metaffi_uint8 on_construct_uint8(const metaffi_size* index, metaffi_size index_s
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint8) ((jbyte) jbyte_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint8) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'B')
 		{
@@ -1251,27 +1272,33 @@ metaffi_uint8 on_construct_uint8(const metaffi_size* index, metaffi_size index_s
 		}
 		else
 		{
-			throw std::runtime_error("Expected a byte or Byte instance");
+			throw std::runtime_error("Expected a byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
 
-		if(res.second == 'B')
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint8) val.b;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint8) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a byte/Byte instance");
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Byte;")) ||// if jobject is jobjectArray of Byte
-		        env->IsInstanceOf(val.l,
-		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'B')
 		{
-			return (metaffi_uint8) jbyte_wrapper(env, val.l);
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected a Byte or Object instance");
+			throw std::runtime_error("Expected a byte/Byte instance");
 		}
 	}
 }
@@ -1288,37 +1315,66 @@ metaffi_int16 on_construct_int16(const metaffi_size* index, metaffi_size index_s
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int16) ((jshort) jshort_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_int16) ((jshort) jshort_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int16) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a short/Short/byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'S')
 		{
 			return jval.s;
 		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
 		else
 		{
-			throw std::runtime_error("Expected a short or Short instance");
+			throw std::runtime_error("Expected a short/Short/byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
 
-		if(res.second == 'S')
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int16) val.s;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_int16) ((jshort) jshort_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int16) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a short/Short/byte/Byte instance");
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Short;")) ||// if jobject is jobjectArray of Short
-		        env->IsInstanceOf(val.l,
-		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'S')
 		{
-			return (metaffi_int16) jshort_wrapper(env, val.l);
+			return elem.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected a Short or Object instance");
+			throw std::runtime_error("Expected a short/Short/byte/Byte instance");
 		}
 	}
 }
@@ -1334,36 +1390,66 @@ metaffi_uint16 on_construct_uint16(const metaffi_size* index, metaffi_size index
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint16) ((jshort) jshort_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_uint16) ((jshort) jshort_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint16) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'S')
 		{
 			return jval.s;
 		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
 		else
 		{
-			throw std::runtime_error("Expected a short or Short instance");
+			throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
 
-		if(res.second == 'S')
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint16) val.s;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_uint16) ((jshort) jshort_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint16) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a short/Short/byte/Byte instance");
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Short;")) ||// if jobject is jobjectArray of Short
-		        env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Object;"))) // or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'S')
 		{
-			return (metaffi_uint16) jshort_wrapper(env, val.l);
+			return elem.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected a Short or Object instance");
+			throw std::runtime_error("Expected a short/Short/byte/Byte instance");
 		}
 	}
 }
@@ -1380,38 +1466,82 @@ metaffi_int32 on_construct_int32(const metaffi_size* index, metaffi_size index_s
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int32) ((jint) jint_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_int32) ((jint) jint_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_int32) ((jshort) jshort_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int32) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'I')
 		{
 			return jval.i;
 		}
+		else if(jvalue_type == 'S')
+		{
+			return jval.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
 		else
 		{
-			throw std::runtime_error("Expected an int or Integer instance");
+			throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
 
-		if(res.second == 'I')
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int32) val.i;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_int32) ((jint) jint_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_int32) ((jshort) jshort_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int32) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Integer;")) ||
-		        // if jobject is jobjectArray of Integer
-		        env->IsInstanceOf(val.l,
-		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'I')
 		{
-			return (metaffi_int32) jint_wrapper(env, val.l);
+			return elem.i;
+		}
+		else if(jvalue_type == 'S')
+		{
+			return elem.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected an Integer or Object instance");
+			throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 }
@@ -1427,38 +1557,82 @@ metaffi_uint32 on_construct_uint32(const metaffi_size* index, metaffi_size index
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint32) ((jint) jint_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_uint32) ((jint) jint_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_uint32) ((jshort) jshort_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint32) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'I')
 		{
 			return jval.i;
 		}
+		else if(jvalue_type == 'S')
+		{
+			return jval.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
 		else
 		{
-			throw std::runtime_error("Expected an int or Integer instance");
+			throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
 
-		if(res.second == 'I')
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint32) val.i;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_uint32) ((jint) jint_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_uint32) ((jshort) jshort_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint32) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Integer;")) ||
-		        // if jobject is jobjectArray of Integer
-		        env->IsInstanceOf(val.l,
-		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'I')
 		{
-			return (metaffi_uint32) jint_wrapper(env, val.l);
+			return elem.i;
+		}
+		else if(jvalue_type == 'S')
+		{
+			return elem.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected an Integer or Object instance");
+			throw std::runtime_error("Expected a int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 }
@@ -1471,40 +1645,101 @@ metaffi_int64 on_construct_int64(const metaffi_size* index, metaffi_size index_s
 
 	if(index_size == 0)
 	{
-		// jvalue is expected to be either double or Double.
-		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Long")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int64) ((jlong) jlong_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Long")))
+			{
+				return (metaffi_int64) ((jlong) jlong_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_int64) ((jint) jint_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_int64) ((jshort) jshort_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int64) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a long/Long/int/Integer/short/Short/byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'J')
 		{
 			return jval.j;
 		}
+		else if(jvalue_type == 'I')
+		{
+			return jval.i;
+		}
+		else if(jvalue_type == 'S')
+		{
+			return jval.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
 		else
 		{
-			throw std::runtime_error("Expected a long or Long instance");
+			throw std::runtime_error("Expected a long/Long/int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
 
-		if(res.second == 'J')
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_int64) val.j;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Long")))
+			{
+				return (metaffi_int64) ((jlong) jlong_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_int64) ((jint) jint_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_int64) ((jshort) jshort_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_int64) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				std::stringstream ss;
+				ss << "Expected a long/Long/int/Integer/short/Short/byte/Byte instance. Got: " << jni_class::get_object_class_name(env, jval.l);
+				throw std::runtime_error(ss.str());
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Long;")) ||// if jobject is jobjectArray of Long
-		        env->IsInstanceOf(val.l,
-		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'J')
 		{
-			return (metaffi_int64) jlong_wrapper(env, val.l);
+			return elem.j;
+		}
+		else if(jvalue_type == 'I')
+		{
+			return elem.i;
+		}
+		else if(jvalue_type == 'S')
+		{
+			return elem.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected a Long or Object instance");
+			throw std::runtime_error("Expected a long/Long/int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 }
@@ -1520,37 +1755,98 @@ metaffi_uint64 on_construct_uint64(const metaffi_size* index, metaffi_size index
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);
-		if(jvalue_type == 'L' && env->IsInstanceOf(jval.l, env->FindClass("java/lang/Long")))
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint64) ((jlong) jlong_wrapper(env, jval.l));
+			if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Long")))
+			{
+				return (metaffi_uint64) ((jlong) jlong_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_uint64) ((jint) jint_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_uint64) ((jshort) jshort_wrapper(env, jval.l));
+			}
+			else if(env->IsInstanceOf(jval.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint64) ((jbyte) jbyte_wrapper(env, jval.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a long/Long/int/Integer/short/Short/byte/Byte instance");
+			}
 		}
 		else if(jvalue_type == 'J')
 		{
 			return jval.j;
 		}
+		else if(jvalue_type == 'I')
+		{
+			return jval.i;
+		}
+		else if(jvalue_type == 'S')
+		{
+			return jval.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return jval.b;
+		}
 		else
 		{
-			throw std::runtime_error("Expected a long or Long instance");
+			throw std::runtime_error("Expected a long/Long/int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 	else
 	{
 		std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
-		jvalue val = res.first;
+		jvalue elem = res.first;
+		char jvalue_type = res.second;
 
-		if(res.second == 'J')
+		if(jvalue_type == 'L')
 		{
-			return (metaffi_uint64) val.j;
+			if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Long")))
+			{
+				return (metaffi_uint64) ((jlong) jlong_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Integer")))
+			{
+				return (metaffi_uint64) ((jint) jint_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Short")))
+			{
+				return (metaffi_uint64) ((jshort) jshort_wrapper(env, elem.l));
+			}
+			else if(env->IsInstanceOf(elem.l, env->FindClass("java/lang/Byte")))
+			{
+				return (metaffi_uint64) ((jbyte) jbyte_wrapper(env, elem.l));
+			}
+			else
+			{
+				throw std::runtime_error("Expected a long/Long/int/Integer/short/Short/byte/Byte instance");
+			}
 		}
-		else if(env->IsInstanceOf(val.l, env->FindClass("Ljava/lang/Long;")) ||// if jobject is jobjectArray of Long
-		        env->IsInstanceOf(val.l,
-		                          env->FindClass("Ljava/lang/Object;")))// or if jobject is jobjectArray of Object
+		else if(jvalue_type == 'J')
 		{
-			return (metaffi_uint64) jlong_wrapper(env, val.l);
+			return elem.j;
+		}
+		else if(jvalue_type == 'I')
+		{
+			return elem.i;
+		}
+		else if(jvalue_type == 'S')
+		{
+			return elem.s;
+		}
+		else if(jvalue_type == 'B')
+		{
+			return elem.b;
 		}
 		else
 		{
-			throw std::runtime_error("Expected a Long or Object instance");
+			throw std::runtime_error("Expected a long/Long/int/Integer/short/Short/byte/Byte instance");
 		}
 	}
 }
