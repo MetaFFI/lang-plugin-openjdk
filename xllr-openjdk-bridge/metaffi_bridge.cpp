@@ -2,7 +2,6 @@
 #include <corecrt.h> // https://www.reddit.com/r/cpp_questions/comments/qpo93t/error_c2039_invalid_parameter_is_not_a_member_of/
 #endif
 #include "metaffi_bridge.h"
-#include <runtime/xllr_capi_loader.h>
 #include <utils/foreign_function.h>
 #include <utils/xllr_api_wrapper.h>
 #include <runtime/metaffi_primitives.h>

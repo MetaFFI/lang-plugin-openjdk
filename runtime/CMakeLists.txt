@@ -40,6 +40,17 @@ set_target_properties( ${target_name}
 		RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
 		)
 
+
+# Add a custom command to compile the Java files.
+add_custom_command(
+	TARGET ${target_name}
+	POST_BUILD
+	COMMAND ${Java_JAVAC_EXECUTABLE} -d "${CMAKE_CURRENT_LIST_DIR}/test/" "${CMAKE_CURRENT_LIST_DIR}/test/*.java"
+	DEPENDS ${JAVA_SOURCES}
+	COMMENT "Compiling Java sources"
+)
+
+
 # unitests
 add_executable(openjdk_api_test "openjdk_api_test.cpp" ${utils_srcs} ${runtime_srcs})
 target_link_libraries(openjdk_api_test PRIVATE doctest::doctest ${target_name} Boost::filesystem ${JNI_LIBRARIES})

@@ -28,7 +28,7 @@ def run_script(script_path):
 	
 	if script_path.endswith('.py'):
 		# Python script
-		python_command = 'py' if platform.system() == 'Windows' else 'python3'
+		python_command = 'py' if platform.system() == 'Windows' else 'python3.11'
 		command = [python_command, script_path]
 	else:
 		raise ValueError(f'Unsupported script file type: {script_path}')
@@ -50,7 +50,7 @@ def run_unittest(script_path):
 	
 	if script_path.endswith('.py'):
 		# Python unittest
-		python_command = 'py' if platform.system() == 'Windows' else 'python3'
+		python_command = 'py' if platform.system() == 'Windows' else 'python3.11'
 		command = [python_command, '-m', 'unittest', script_path]
 	elif script_path.endswith('.java'):
 		# Java JUnit test

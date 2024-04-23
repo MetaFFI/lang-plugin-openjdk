@@ -61,42 +61,49 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	jclass throwable_class = penv->FindClass("java/lang/Throwable");
 	if(!throwable_class)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("failed to FindClass java/lang/Throwable");
 	}
 	
 	jclass StringWriter_class = penv->FindClass("java/io/StringWriter");
 	if(!StringWriter_class)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("failed to FindClass java/io/StringWriter");
 	}
 	
 	jclass PrintWriter_class = penv->FindClass("java/io/PrintWriter");
 	if(!PrintWriter_class)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("failed to FindClass java/io/PrintWriter");
 	}
 	
 	jmethodID throwable_printStackTrace = penv->GetMethodID(throwable_class,"printStackTrace","(Ljava/io/PrintWriter;)V");
 	if(!throwable_printStackTrace)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("failed to GetMethodID throwable_printStackTrace");
 	}
 	
 	jmethodID StringWriter_Constructor = penv->GetMethodID(StringWriter_class,"<init>","()V");
 	if(!StringWriter_Constructor)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("failed to GetMethodID StringWriter_Constructor");
 	}
 	
 	jmethodID PrintWriter_Constructor = penv->GetMethodID(PrintWriter_class,"<init>","(Ljava/io/Writer;)V");
 	if(!PrintWriter_Constructor)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("failed to GetMethodID PrintWriter_Constructor");
 	}
 	
 	jmethodID StringWriter_toString = penv->GetMethodID(StringWriter_class,"toString","()Ljava/lang/String;");
 	if(!StringWriter_toString)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("failed to GetMethodID StringWriter_toString");
 	}
 	
@@ -104,6 +111,7 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	jobject sw = penv->NewObject(StringWriter_class, StringWriter_Constructor);
 	if(!sw)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("Failed to create StringWriter object");
 	}
 	
@@ -111,6 +119,7 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	jobject pw = penv->NewObject(PrintWriter_class, PrintWriter_Constructor, sw);
 	if(!pw)
 	{
+		penv->ExceptionDescribe();
 		throw std::runtime_error("Failed to create PrintWriter object");
 	}
 	
@@ -118,6 +127,8 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	jobject st = penv->CallObjectMethod(throwable, throwable_printStackTrace, pw);
 	if(!st)
 	{
+		penv->ExceptionDescribe();
+		penv->DeleteLocalRef(pw);
 		throw std::runtime_error("Failed to call printStackTrace");
 	}
 	
@@ -125,6 +136,9 @@ std::string get_exception_description(JNIEnv* penv, jthrowable throwable)
 	jobject str = penv->CallObjectMethod(sw, StringWriter_toString);
 	if(!str)
 	{
+		penv->ExceptionDescribe();
+		penv->DeleteLocalRef(pw);
+		penv->DeleteLocalRef(sw);
 		throw std::runtime_error("Failed to call printStackTrace");
 	}
 	

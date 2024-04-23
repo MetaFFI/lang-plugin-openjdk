@@ -34,7 +34,7 @@ class GoMCache
 			throw new Exception("OS not supported");
 		}
 
-		MetaFFIModule mcache = GoMCacheTest.runtime.loadModule("mcache_MetaFFIGuest.dll");
+		MetaFFIModule mcache = GoMCacheTest.runtime.loadModule(filename);
 
 		this.pinfinity = mcache.load("global=TTL_FOREVER,getter",
 				null,
