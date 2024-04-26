@@ -1,8 +1,9 @@
 #include "jstring_wrapper.h"
-
+#include <iostream>
 
 jstring_wrapper::jstring_wrapper(JNIEnv* env, const char8_t* s) : env(env)
 {
+	
 	value = env->NewStringUTF((const char*)s);
 }
 

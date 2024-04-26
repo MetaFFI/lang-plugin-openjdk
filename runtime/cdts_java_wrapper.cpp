@@ -549,11 +549,12 @@ void on_traverse_char8(const metaffi_size* index, metaffi_size index_size, metaf
 
 void on_traverse_string8(const metaffi_size* index, metaffi_size index_size, metaffi_string8 val, void* context)
 {
+	
 	if(index_size == 0)
 	{
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
 		jstring_wrapper wrapper(pair->first, val);
-		pair->second.l = static_cast<jstring>(wrapper);
+		pair->second.l = (jstring)wrapper;
 	}
 	else// if is part of an array
 	{
@@ -1949,12 +1950,13 @@ metaffi_char8 on_construct_char8(const metaffi_size* index, metaffi_size index_s
 
 metaffi_string8 on_construct_string8(const metaffi_size* index, metaffi_size index_size, void* context)
 {
-
+	
 	JNIEnv* env = JNIEnv_context(context);
 	jvalue& jval = jvalue_context(context);
 
 	if(index_size == 0)
 	{
+		
 		// jvalue is expected to be either double or Double.
 		// extract the value and return it.
 		char jvalue_type = jvalue_type_context(context);

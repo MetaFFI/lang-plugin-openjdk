@@ -45,7 +45,7 @@ jvm::jvm()
 #endif
 
 	std::stringstream ss;
-	ss << "-Djava.class.path=." << SEPARATOR << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << SEPARATOR;
+	ss << "-Djava.class.path=." << SEPARATOR << ".." << SEPARATOR << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << SEPARATOR;
 	const char* classpath = std::getenv("CLASSPATH");
 	if(classpath){
 		ss << classpath << SEPARATOR;
