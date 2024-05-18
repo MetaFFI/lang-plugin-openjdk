@@ -70,7 +70,8 @@ jvm::jvm()
 	// https://github.com/golang/go/issues/58542
 
 	jint res = JNI_CreateJavaVM(&this->pjvm, (void**) &penv, &vm_args);
-
+	delete[] vm_args.options;
+	vm_args.options = nullptr;
 	check_throw_error(res);
 	is_destroy = true;
 }
@@ -189,7 +190,10 @@ std::string jvm::get_exception_description(JNIEnv* penv, jthrowable throwable)
 	check_and_throw_jvm_exception(penv, str);
 
 	scope_guard sg([&](){ penv->DeleteLocalRef(str); });
-	std::string res(penv->GetStringUTFChars((jstring)str, nullptr));
+	
+	const char* cstr = penv->GetStringUTFChars((jstring)str, nullptr);
+	std::string res(cstr);
+	penv->ReleaseStringUTFChars((jstring)str, cstr);
 
 	return res;
 }

@@ -7,8 +7,8 @@ toolchain go1.22.0
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/MetaFFI/lang-plugin-openjdk/idl v0.0.0-20231116161737-5ab7c32c5996
-	github.com/MetaFFI/plugin-sdk v0.0.0-20240418113454-40cb0644f6c7
-	golang.org/x/text v0.14.0
+	github.com/MetaFFI/plugin-sdk v0.1.2
+	golang.org/x/text v0.15.0
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
 )
 
 replace github.com/MetaFFI/plugin-sdk => ../plugin-sdk

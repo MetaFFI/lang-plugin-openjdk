@@ -79,11 +79,11 @@ jstring_wrapper::operator jstring()
 jstring_wrapper::operator metaffi_string8()
 {
 	const char* original = env->GetStringUTFChars(value, nullptr);
-	std::string temp(original);
+	jsize len = env->GetStringUTFLength(value);
+	char8_t* copy = new char8_t[len + 1];
+	std::copy(original, original + len, copy);
+	copy[len] = '\0'; // null terminate the string
 	env->ReleaseStringUTFChars(value, original);
-	char8_t* copy = new char8_t[temp.length() + 1];
-	std::copy(temp.begin(), temp.end(), copy);
-	copy[temp.length()] = '\0'; // null terminate the string
 	return copy;
 }
 

@@ -3,20 +3,14 @@
 #include <memory>
 #include <set>
 #include "jvm.h"
-#include <boost/algorithm/string.hpp>
 #include <runtime/runtime_plugin_api.h>
 #include <sstream>
 #include <mutex>
-#include <utils/foreign_function.h>
 #include <runtime/xllr_capi_loader.h>
-#include <map>
 #include "utils/scope_guard.hpp"
 #include "utils/function_path_parser.h"
-#include "utils/library_loader.h"
 #include "class_loader.h"
-#include <utils/scope_guard.hpp>
 #include "cdts_java_wrapper.h"
-#include "runtime_id.h"
 #include "contexts.h"
 
 
@@ -26,13 +20,13 @@
 std::shared_ptr<jvm> pjvm;
 std::once_flag once_flag;
 
-#define handle_err(err, err_len, desc) \
-	*err_len = strlen( desc ); \
-	*err = (char*)malloc(*err_len + 1); \
+#define handle_err(err, desc) \
+	{auto err_len = strlen( desc ); \
+	*err = (char*)malloc(err_len + 1); \
 	strcpy(*err, desc ); \
-	memset((*err+*err_len), 0, 1);
+	memset((*err+err_len), 0, 1);}
 
-#define catch_and_fill(err, err_len, ...)\
+#define catch_and_fill(err, ...)\
 catch(std::exception& exp) \
 {                                \
     __VA_ARGS__; \
@@ -40,7 +34,6 @@ catch(std::exception& exp) \
 	char* errbuf = (char*)calloc(len+1, sizeof(char));\
 	strcpy(errbuf, exp.what());\
 	*err = errbuf;\
-	*err_len = len;\
 }\
 catch(...)\
 {                                        \
@@ -49,17 +42,20 @@ catch(...)\
 	char* errbuf = (char*)calloc(len+1, sizeof(char));\
 	strcpy(errbuf, "Unknown Error");\
 	*err = errbuf;\
-	*err_len = len;\
 }
 
 
 //--------------------------------------------------------------------
-void load_runtime(char** /*err*/, uint32_t* /*err_len*/)
+void load_runtime(char** err)
 {
-	pjvm = std::make_shared<jvm>();
+	try
+	{
+		pjvm = std::make_shared<jvm>();
+	}
+	catch_and_fill(err);
 }
 //--------------------------------------------------------------------
-void free_runtime(char** err, uint32_t* err_len)
+void free_runtime(char** err)
 {
 	try
 	{
@@ -69,10 +65,10 @@ void free_runtime(char** err, uint32_t* err_len)
 			pjvm = nullptr;
 		}
 	}
-	catch_and_fill(err, err_len);
+	catch_and_fill(err);
 }
 //--------------------------------------------------------------------
-void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_t* out_err_len)
+void xcall_params_ret(void* context, cdts params_ret[2], char** out_err)
 {
 	try
 	{
@@ -98,7 +94,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 					cdts_java_wrapper params_wrapper(&params_ret[0]);
 					if (params_wrapper[0].type != metaffi_handle_type)
 					{
-						handle_err(out_err, out_err_len, "expecting \"this\" as first parameter");
+						handle_err(out_err, "expecting \"this\" as first parameter");
 					}
 					
 					jobject thisobj = (jobject) params_wrapper[0].cdt_val.handle_val.val;
@@ -137,15 +133,15 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err, uint64_
 	}
 	catch(std::runtime_error& err)
 	{
-		handle_err(out_err, out_err_len, err.what());
+		handle_err(out_err, err.what());
 	}
 	catch(...)
 	{
-		handle_err(out_err, out_err_len, "Unknown error occurred");
+		handle_err(out_err, "Unknown error occurred");
 	}
 }
 //--------------------------------------------------------------------
-void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err, uint64_t* out_err_len)
+void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err)
 {
 	try
 	{
@@ -196,15 +192,15 @@ void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err, uint
 	}
 	catch(std::runtime_error& err)
 	{
-		handle_err(out_err, out_err_len, err.what());
+		handle_err(out_err, err.what());
 	}
 	catch(...)
 	{
-		handle_err(out_err, out_err_len, "Unknown error occurred");
+		handle_err(out_err, "Unknown error occurred");
 	}
 }
 //--------------------------------------------------------------------
-void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err, uint64_t* out_err_len)
+void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err)
 {
 	try
 	{
@@ -246,15 +242,15 @@ void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err, u
 	}
 	catch(std::runtime_error& err)
 	{
-		handle_err(out_err, out_err_len, err.what());
+		handle_err(out_err, err.what());
 	}
 	catch(...)
 	{
-		handle_err(out_err, out_err_len, "Unknown error occurred");
+		handle_err(out_err, "Unknown error occurred");
 	}
 }
 //--------------------------------------------------------------------
-void xcall_no_params_no_ret(void* context, char** out_err, uint64_t* out_err_len)
+void xcall_no_params_no_ret(void* context, char** out_err)
 {
 	try
 	{
@@ -286,20 +282,20 @@ void xcall_no_params_no_ret(void* context, char** out_err, uint64_t* out_err_len
 	}
 	catch(std::runtime_error& err)
 	{
-		handle_err(out_err, out_err_len, err.what());
+		handle_err(out_err, err.what());
 	}
 	catch(...)
 	{
-		handle_err(out_err, out_err_len, "Unknown error occurred");
+		handle_err(out_err, "Unknown error occurred");
 	}
 }
 //--------------------------------------------------------------------
-void** load_function(const char* module_path, uint32_t module_path_len, const char* function_path, uint32_t function_path_len, metaffi_type_info* params_types, metaffi_type_info* retvals_types, uint8_t params_count, uint8_t retval_count, char** err, uint32_t* err_len)
+xcall* load_entity(const char* module_path, const char* function_path, metaffi_type_info* params_types, int8_t params_count, metaffi_type_info* retvals_types, int8_t retval_count, char** err)
 {
-	void** res = nullptr;
+	xcall* res = nullptr;
 	try
 	{
-		metaffi::utils::function_path_parser fp(std::string(function_path, function_path_len));
+		metaffi::utils::function_path_parser fp(function_path);
 		if(!fp.contains("class"))
 		{
 			throw std::runtime_error("Missing class in function path");
@@ -311,7 +307,7 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 		
 		std::string classToLoad = fp["class"];
 
-		jni_class_loader cloader(env, std::string(module_path, module_path_len));
+		jni_class_loader cloader(env, std::string(module_path));
 		
 		openjdk_context* ctxt = new openjdk_context();
 		
@@ -414,19 +410,17 @@ void** load_function(const char* module_path, uint32_t module_path_len, const ch
 			throw std::runtime_error(ss.str().c_str());
 		}
 
-		res = (void**)malloc(sizeof(void*)*2);
+		res = new xcall(entrypoint, ctxt);
 		
-		res[0] = (void*)entrypoint;
-		res[1] = ctxt;
 	}
-	catch_and_fill(err, err_len);
+	catch_and_fill(err);
 
 	return res;
 }
 //--------------------------------------------------------------------
-void** make_callable(void* make_callable_context, metaffi_type_info* params_types, metaffi_type_info* retvals_types, uint8_t params_count, uint8_t retval_count, char** err, uint32_t* err_len)
+xcall* make_callable(void* make_callable_context, metaffi_type_info* params_types, int8_t params_count, metaffi_type_info* retvals_types, int8_t retval_count, char** err)
 {
-	void** res = nullptr;
+	xcall* res = nullptr;
 	try
 	{
 		openjdk_context* ctxt = (openjdk_context*)make_callable_context;
@@ -469,17 +463,23 @@ void** make_callable(void* make_callable_context, metaffi_type_info* params_type
 			throw std::runtime_error(ss.str().c_str());
 		}
 
-		res = (void**)malloc(sizeof(void*)*2);
-
-		res[0] = (void*)entrypoint;
-		res[1] = ctxt;
+		res = new xcall(entrypoint, ctxt);
 	}
-	catch_and_fill(err, err_len);
+	catch_and_fill(err);
 
 	return res;
 }
 //--------------------------------------------------------------------
-void free_function(void* pff, char** err, uint32_t* err_len)
+void free_xcall(xcall* pxcall, char** err)
 {
+	try
+	{
+		if(pxcall)
+		{
+			delete (openjdk_context*)pxcall->pxcall_and_context[1];
+			delete pxcall;
+		}
+	}
+	catch_and_fill(err);
 }
 //--------------------------------------------------------------------

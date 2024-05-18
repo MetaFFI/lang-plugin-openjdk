@@ -1948,12 +1948,13 @@ metaffi_char8 on_construct_char8(const metaffi_size* index, metaffi_size index_s
 	}
 }
 
-metaffi_string8 on_construct_string8(const metaffi_size* index, metaffi_size index_size, void* context)
+metaffi_string8 on_construct_string8(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	
 	JNIEnv* env = JNIEnv_context(context);
 	jvalue& jval = jvalue_context(context);
-
+	*is_free_required = true;
+	
 	if(index_size == 0)
 	{
 		
@@ -2033,12 +2034,13 @@ metaffi_char16 on_construct_char16(const metaffi_size* index, metaffi_size index
 	}
 }
 
-metaffi_string16 on_construct_string16(const metaffi_size* index, metaffi_size index_size, void* context)
+metaffi_string16 on_construct_string16(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
 	jvalue& jval = std::get<1>(*context_data);
-
+	*is_free_required = true;
+	
 	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
 	jvalue val = res.first;
 
@@ -2123,11 +2125,12 @@ metaffi_char32 on_construct_char32(const metaffi_size* index, metaffi_size index
 	}
 }
 
-metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size index_size, void* context)
+metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
 	jvalue& jval = std::get<1>(*context_data);
+	*is_free_required = true;
 
 	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
 	jvalue val = res.first;
@@ -2164,11 +2167,12 @@ metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size i
 	}
 }
 
-cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size index_size, void* context)
+cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
 	jvalue& jval = std::get<1>(*context_data);
+	*is_free_required = true;
 
 	if(index_size == 0)
 	{
@@ -2201,11 +2205,12 @@ cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size i
 	}
 }
 
-cdt_metaffi_callable on_construct_callable(const metaffi_size* index, metaffi_size index_size, void* context)
+cdt_metaffi_callable on_construct_callable(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
 	jvalue& jval = std::get<1>(*context_data);
+	*is_free_required = true;
 
 	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
 	jvalue val = res.first;

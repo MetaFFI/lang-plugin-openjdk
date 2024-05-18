@@ -310,48 +310,56 @@ std::pair<jvalue, char> jarray_wrapper::get_element(JNIEnv* env, jarray obj, con
         {
             jboolean* elements = env->GetBooleanArrayElements((jbooleanArray) current_array, nullptr);
             value.z = elements[index[i]];
+			env->ReleaseBooleanArrayElements((jbooleanArray) current_array, elements, 0);
             type_char = 'Z';
         }
         else if(env->IsInstanceOf(current_array, env->FindClass("[B")))
         {
             jbyte* elements = env->GetByteArrayElements((jbyteArray) current_array, nullptr);
             value.b = elements[index[i]];
+			env->ReleaseByteArrayElements((jbyteArray) current_array, elements, 0);
             type_char = 'B';
         }
         else if(env->IsInstanceOf(current_array, env->FindClass("[C")))
         {
             jchar* elements = env->GetCharArrayElements((jcharArray) current_array, nullptr);
             value.c = elements[index[i]];
+			env->ReleaseCharArrayElements((jcharArray) current_array, elements, 0);
             type_char = 'C';
         }
         else if(env->IsInstanceOf(current_array, env->FindClass("[S")))
         {
             jshort* elements = env->GetShortArrayElements((jshortArray) current_array, nullptr);
             value.s = elements[index[i]];
+			env->ReleaseShortArrayElements((jshortArray) current_array, elements, 0);
             type_char = 'S';
         }
         else if(env->IsInstanceOf(current_array, env->FindClass("[I")))
         {
             jint* elements = env->GetIntArrayElements((jintArray) current_array, nullptr);
             value.i = elements[index[i]];
-            type_char = 'I';
+            env->ReleaseIntArrayElements((jintArray) current_array, elements, 0);
+			type_char = 'I';
         }
         else if(env->IsInstanceOf(current_array, env->FindClass("[J")))
         {
             jlong* elements = env->GetLongArrayElements((jlongArray) current_array, nullptr);
             value.j = elements[index[i]];
+			env->ReleaseLongArrayElements((jlongArray) current_array, elements, 0);
             type_char = 'J';
         }
         else if(env->IsInstanceOf(current_array, env->FindClass("[F")))
         {
             jfloat* elements = env->GetFloatArrayElements((jfloatArray) current_array, nullptr);
             value.f = elements[index[i]];
+			env->ReleaseFloatArrayElements((jfloatArray) current_array, elements, 0);
             type_char = 'F';
         }
         else if(env->IsInstanceOf(current_array, env->FindClass("[D")))
         {
             jdouble* elements = env->GetDoubleArrayElements((jdoubleArray) current_array, nullptr);
             value.d = elements[index[i]];
+			env->ReleaseDoubleArrayElements((jdoubleArray) current_array, elements, 0);
             type_char = 'D';
         }
         else
