@@ -10,6 +10,7 @@
 jclass jni_metaffi_handle::metaffi_handle_class = nullptr;
 jmethodID jni_metaffi_handle::get_handle_id = nullptr;
 jmethodID jni_metaffi_handle::get_runtime_id_id = nullptr;
+jmethodID jni_metaffi_handle::get_releaser_id = nullptr;
 jmethodID jni_metaffi_handle::metaffi_handle_constructor = nullptr;
 
 
@@ -22,7 +23,7 @@ jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env)
 		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/xllr.openjdk.bridge.jar";
 		jni_class_loader clsloader(env, openjdk_bridge_url);
 		auto tmp = (jclass)clsloader.load_class("metaffi/MetaFFIHandle");
-		metaffi_handle_class = (jclass)env->NewGlobalRef(tmp);
+		metaffi_handle_class = (jclass)env->NewGlobalRef(tmp); // make global so GC doesn't delete
 		env->DeleteLocalRef(tmp);
 	}
 	
@@ -38,17 +39,24 @@ jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env)
 		check_and_throw_jvm_exception(env, true);
 	}
 	
+	if(!get_releaser_id)
+	{
+		get_releaser_id = env->GetMethodID(metaffi_handle_class, "Releaser", "()J");
+		check_and_throw_jvm_exception(env, true);
+	}
+	
 	if(!metaffi_handle_constructor)
 	{
-		metaffi_handle_constructor = env->GetMethodID(metaffi_handle_class, "<init>", "(JJ)V");
+		metaffi_handle_constructor = env->GetMethodID(metaffi_handle_class, "<init>", "(JJJ)V");
 		check_and_throw_jvm_exception(env, true);
 	}
 }
 //--------------------------------------------------------------------
-jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env, metaffi_handle v, uint64_t runtime_id):jni_metaffi_handle(env)
+jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env, metaffi_handle v, uint64_t runtime_id, void* releaser):jni_metaffi_handle(env)
 {
 	this->value.val = v;
 	this->value.runtime_id = runtime_id;
+	this->value.release = releaser;
 }
 //--------------------------------------------------------------------
 jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env, jobject obj):jni_metaffi_handle(env)
@@ -58,11 +66,14 @@ jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env, jobject obj):jni_metaffi_han
 	
 	this->value.runtime_id = (uint64_t)env->CallLongMethod(obj, get_runtime_id_id);
 	check_and_throw_jvm_exception(env, true);
+	
+	this->value.release = (void*)env->CallLongMethod(obj, get_releaser_id);
+	check_and_throw_jvm_exception(env, true);
 }
 //--------------------------------------------------------------------
-jobject jni_metaffi_handle::new_jvm_object(JNIEnv* env)
+jobject jni_metaffi_handle::new_jvm_object(JNIEnv* env) const
 {
-	jobject res = env->NewObject(metaffi_handle_class, metaffi_handle_constructor, (jlong)this->value.val, (jlong)this->value.runtime_id);
+	jobject res = env->NewObject(metaffi_handle_class, metaffi_handle_constructor, (jlong)this->value.val, (jlong)this->value.runtime_id, (jlong)this->value.release);
 	check_and_throw_jvm_exception(env, true);
 	
 	return res;
@@ -70,28 +81,28 @@ jobject jni_metaffi_handle::new_jvm_object(JNIEnv* env)
 //--------------------------------------------------------------------
 bool jni_metaffi_handle::is_metaffi_handle_wrapper_object(JNIEnv* env, jobject o)
 {
-	// if(!metaffi_handle_class)
+	if(!metaffi_handle_class)
 	{
 		jni_class_loader clsloader(env, "");
 		metaffi_handle_class = (jclass)clsloader.load_class("metaffi/MetaFFIHandle");
 		metaffi_handle_class = (jclass)env->NewGlobalRef(metaffi_handle_class);
 	}
 
-	// if(!get_handle_id)
+	if(!get_handle_id)
 	{
 		get_handle_id = env->GetMethodID(metaffi_handle_class, "Handle", "()J");
 		check_and_throw_jvm_exception(env, true);
 	}
 
-	// if(!get_runtime_id_id)
+	if(!get_runtime_id_id)
 	{
 		get_runtime_id_id = env->GetMethodID(metaffi_handle_class, "RuntimeID", "()J");
 		check_and_throw_jvm_exception(env, true);
 	}
 
-	// if(!metaffi_handle_constructor)
+	if(!metaffi_handle_constructor)
 	{
-		metaffi_handle_constructor = env->GetMethodID(metaffi_handle_class, "<init>", "(JJ)V");
+		metaffi_handle_constructor = env->GetMethodID(metaffi_handle_class, "<init>", "(JJJ)V");
 		check_and_throw_jvm_exception(env, true);
 	};
 	
@@ -108,18 +119,24 @@ uint64_t jni_metaffi_handle::get_runtime_id() const
 	return this->value.runtime_id;
 }
 //--------------------------------------------------------------------
+void* jni_metaffi_handle::get_releaser() const
+{
+	return this->value.release;
+}
+//--------------------------------------------------------------------
 jni_metaffi_handle::operator cdt_metaffi_handle() const
 {
 	cdt_metaffi_handle res;
 	res.val = this->value.val;
 	res.runtime_id = this->value.runtime_id;
+	res.release = this->value.release;
 	
 	return res;
 }
 //--------------------------------------------------------------------
-cdt_metaffi_handle jni_metaffi_handle::wrap_in_metaffi_handle(JNIEnv* env, jobject jobj)
+cdt_metaffi_handle jni_metaffi_handle::wrap_in_metaffi_handle(JNIEnv* env, jobject jobj, void* releaser)
 {
 	jobj = env->NewGlobalRef(jobj);
-	return cdt_metaffi_handle{(void*)jobj, OPENJDK_RUNTIME_ID, nullptr};
+	return cdt_metaffi_handle{(void*)jobj, OPENJDK_RUNTIME_ID, releaser};
 }
 //--------------------------------------------------------------------

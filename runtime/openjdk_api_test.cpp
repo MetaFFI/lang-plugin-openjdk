@@ -11,6 +11,24 @@
 std::filesystem::path g_module_path;
 char* err = nullptr;
 
+// make sure you include utils/scope_guard.hpp
+// if_fail_code need to assume "char* err" is defined
+#define jxcall_scope_guard(name, if_fail_code) \
+	metaffi::utils::scope_guard sg_##name([&name]() \
+	{ \
+		if(name && name->is_valid()) \
+		{ \
+            char* err = nullptr;         \
+			free_xcall(name, &err);   \
+            if(err)                           \
+            {                          \
+                if_fail_code;  \
+			}                                  \
+                                              \
+            name = nullptr;     \
+		} \
+	});
+
 struct GlobalSetup
 {
 	GlobalSetup()
@@ -149,7 +167,7 @@ TEST_SUITE("openjdk runtime api")
 		std::vector<metaffi_type_info> retvals_types = {metaffi_type_info{metaffi_string8_type}};
 
 		xcall* join_strings = cppload_entity(g_module_path.string(), function_path, params_types, retvals_types);
-		xcall_scope_guard(join_strings, FAIL(std::string(err)));
+		jxcall_scope_guard(join_strings, FAIL(std::string(err)));
 		
 		cdts* pcdts = (cdts*)xllr_alloc_cdts_buffer(params_types.size(), retvals_types.size());
 		cdts_scope_guard(pcdts);

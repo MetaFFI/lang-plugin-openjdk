@@ -21,6 +21,7 @@
 #include <runtime/cdts_traverse_construct.h>
 #include <utility>
 
+extern std::shared_ptr<jvm> pjvm;
 
 //--------------------------------------------------------------------
 
@@ -728,7 +729,7 @@ void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, cons
 
 		if(val.runtime_id != OPENJDK_RUNTIME_ID)
 		{
-			jni_metaffi_handle h(env, val.val, val.runtime_id);
+			jni_metaffi_handle h(env, val.val, val.runtime_id, val.release);
 			pair->second.l = h.new_jvm_object(env);
 		}
 		else
@@ -755,7 +756,7 @@ void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, cons
 			jobject jobj = nullptr;
 			if(val.runtime_id != OPENJDK_RUNTIME_ID)
 			{
-				jni_metaffi_handle h(env, val.val, val.runtime_id);
+				jni_metaffi_handle h(env, val.val, val.runtime_id, val.release);
 				jobj = h.new_jvm_object(env);
 			}
 			else
@@ -2167,6 +2168,15 @@ metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size i
 	}
 }
 
+void jni_releaser(void* ptr)
+{
+    JNIEnv* env = nullptr;
+	auto release_env = pjvm->get_environment(&env);
+	
+	env->DeleteGlobalRef((jobject)ptr); // remove global ref from the object
+	release_env();
+}
+
 cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
@@ -2185,7 +2195,7 @@ cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size i
 		}
 		else
 		{
-			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, jval.l);
+			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, jval.l, (void*)jni_releaser);
 		}
 	}
 	else
@@ -2200,7 +2210,7 @@ cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size i
 		}
 		else// if jobject is jobjectArray of Object
 		{
-			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, val.l);
+			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, val.l, (void*)jni_releaser);
 		}
 	}
 }
