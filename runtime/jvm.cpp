@@ -2,12 +2,9 @@
 #include <stdexcept>
 #include <sstream>
 #include <utils/scope_guard.hpp>
-#include <utils/expand_env.h>
 #include <utils/function_path_parser.h>
 #include <utils/foreign_function.h>
 #include "exception_macro.h"
-
-#define EXCEPTION_ACCESS_VIOLATION 0xc0000005
 
 using namespace metaffi::utils;
 

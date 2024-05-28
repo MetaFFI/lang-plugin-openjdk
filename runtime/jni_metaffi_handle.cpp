@@ -52,28 +52,28 @@ jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env)
 	}
 }
 //--------------------------------------------------------------------
-jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env, metaffi_handle v, uint64_t runtime_id, void* releaser):jni_metaffi_handle(env)
+jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env, metaffi_handle v, uint64_t runtime_id, releaser_fptr_t releaser):jni_metaffi_handle(env)
 {
-	this->value.val = v;
+	this->value.handle = v;
 	this->value.runtime_id = runtime_id;
 	this->value.release = releaser;
 }
 //--------------------------------------------------------------------
 jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env, jobject obj):jni_metaffi_handle(env)
 {
-	this->value.val = (void*)env->CallLongMethod(obj, get_handle_id);
+	this->value.handle = (void*)env->CallLongMethod(obj, get_handle_id);
 	check_and_throw_jvm_exception(env, true);
 	
 	this->value.runtime_id = (uint64_t)env->CallLongMethod(obj, get_runtime_id_id);
 	check_and_throw_jvm_exception(env, true);
 	
-	this->value.release = (void*)env->CallLongMethod(obj, get_releaser_id);
+	this->value.release = (releaser_fptr_t)env->CallLongMethod(obj, get_releaser_id);
 	check_and_throw_jvm_exception(env, true);
 }
 //--------------------------------------------------------------------
 jobject jni_metaffi_handle::new_jvm_object(JNIEnv* env) const
 {
-	jobject res = env->NewObject(metaffi_handle_class, metaffi_handle_constructor, (jlong)this->value.val, (jlong)this->value.runtime_id, (jlong)this->value.release);
+	jobject res = env->NewObject(metaffi_handle_class, metaffi_handle_constructor, (jlong)this->value.handle, (jlong)this->value.runtime_id, (jlong)this->value.release);
 	check_and_throw_jvm_exception(env, true);
 	
 	return res;
@@ -111,7 +111,7 @@ bool jni_metaffi_handle::is_metaffi_handle_wrapper_object(JNIEnv* env, jobject o
 //--------------------------------------------------------------------
 metaffi_handle jni_metaffi_handle::get_handle() const
 {
-	return this->value.val;
+	return this->value.handle;
 }
 //--------------------------------------------------------------------
 uint64_t jni_metaffi_handle::get_runtime_id() const
@@ -124,19 +124,19 @@ void* jni_metaffi_handle::get_releaser() const
 	return this->value.release;
 }
 //--------------------------------------------------------------------
-jni_metaffi_handle::operator cdt_metaffi_handle() const
+jni_metaffi_handle::operator cdt_metaffi_handle*() const
 {
-	cdt_metaffi_handle res;
-	res.val = this->value.val;
-	res.runtime_id = this->value.runtime_id;
-	res.release = this->value.release;
+	cdt_metaffi_handle* res = new cdt_metaffi_handle();
+	res->handle = this->value.handle;
+	res->runtime_id = this->value.runtime_id;
+	res->release = this->value.release;
 	
 	return res;
 }
 //--------------------------------------------------------------------
-cdt_metaffi_handle jni_metaffi_handle::wrap_in_metaffi_handle(JNIEnv* env, jobject jobj, void* releaser)
+cdt_metaffi_handle* jni_metaffi_handle::wrap_in_metaffi_handle(JNIEnv* env, jobject jobj, void* releaser)
 {
 	jobj = env->NewGlobalRef(jobj);
-	return cdt_metaffi_handle{(void*)jobj, OPENJDK_RUNTIME_ID, releaser};
+	return new cdt_metaffi_handle{(void*)jobj, OPENJDK_RUNTIME_ID, (releaser_fptr_t)releaser};
 }
 //--------------------------------------------------------------------

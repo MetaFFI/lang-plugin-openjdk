@@ -97,7 +97,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err)
 						handle_err(out_err, "expecting \"this\" as first parameter");
 					}
 					
-					jobject thisobj = (jobject) params_wrapper[0].cdt_val.handle_val.val;
+					jobject thisobj = (jobject) params_wrapper[0].cdt_val.handle_val->handle;
 					
 					jni_class cls(env, ctxt->cls);
 					cdts_java_wrapper retval_wrapper(&params_ret[1]);
@@ -116,7 +116,7 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err)
 				else
 				{
 					cdts_java_wrapper params_wrapper(&params_ret[0]);
-					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val.val;
+					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val->handle;
 					
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);
@@ -173,7 +173,7 @@ void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err)
 						throw std::runtime_error("expected \"this\" in index 0");
 					}
 					
-					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val.val;
+					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val->handle;
 					
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);

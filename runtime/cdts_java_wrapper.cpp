@@ -729,12 +729,12 @@ void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, cons
 
 		if(val.runtime_id != OPENJDK_RUNTIME_ID)
 		{
-			jni_metaffi_handle h(env, val.val, val.runtime_id, val.release);
+			jni_metaffi_handle h(env, val.handle, val.runtime_id, val.release);
 			pair->second.l = h.new_jvm_object(env);
 		}
 		else
 		{
-			pair->second.l = (jobject) val.val;
+			pair->second.l = (jobject) val.handle;
 		}
 	}
 	else// if is part of an array
@@ -756,12 +756,12 @@ void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, cons
 			jobject jobj = nullptr;
 			if(val.runtime_id != OPENJDK_RUNTIME_ID)
 			{
-				jni_metaffi_handle h(env, val.val, val.runtime_id, val.release);
+				jni_metaffi_handle h(env, val.handle, val.runtime_id, val.release);
 				jobj = h.new_jvm_object(env);
 			}
 			else
 			{
-				jobj = (jobject) val.val;
+				jobj = (jobject) val.handle;
 			}
 
 			env->SetObjectArrayElement(jarr, index[0], jobj);
@@ -2168,16 +2168,67 @@ metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size i
 	}
 }
 
-void jni_releaser(void* ptr)
+bool is_valid_jobject(JNIEnv* env, jobject obj)
 {
+	if (obj == nullptr) {
+		return false; // Null pointer, object is not valid
+	}
+	
+	jclass objectClass = env->FindClass("java/lang/Object");
+	if (objectClass == nullptr) {
+		return false; // Couldn't find java/lang/Object class, something is very wrong
+	}
+
+	jboolean isInstance = env->IsInstanceOf(obj, objectClass);
+	env->DeleteLocalRef(objectClass); // Clean up local reference
+
+	return isInstance == JNI_TRUE;
+}
+
+void jni_releaser(cdt_metaffi_handle* ptr)
+{
+	if(!ptr){
+		return;
+	}
+	
     JNIEnv* env = nullptr;
 	auto release_env = pjvm->get_environment(&env);
 	
-	env->DeleteGlobalRef((jobject)ptr); // remove global ref from the object
+	if(!env)
+	{
+		std::cerr << "Failed to get JNIEnv in jni_releaser\n";
+		return;
+	}
+	
+	if(!is_valid_jobject(env, (jobject)ptr->handle))
+	{
+		std::cerr << "jni_releaser received an invalid jobject\n";
+		return;
+	}
+	
+	auto refType = env->GetObjectRefType((jobject)ptr->handle);
+	
+	if(refType == JNILocalRefType)
+	{
+		env->DeleteLocalRef((jobject)ptr->handle); // remove local ref from the object
+	}
+	else if(refType == JNIGlobalRefType)
+	{
+		env->DeleteGlobalRef((jobject)ptr->handle); // remove global ref from the object
+	}
+	else if(refType == JNIWeakGlobalRefType)
+	{
+		env->DeleteWeakGlobalRef((jweak)ptr->handle); // remove weak global ref from the object
+	}
+	
+	ptr->handle = nullptr;
+	ptr->runtime_id = 0;
+	ptr->release = nullptr;
+	
 	release_env();
 }
 
-cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
+cdt_metaffi_handle* on_construct_handle(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
@@ -2191,11 +2242,11 @@ cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size i
 		char jvalue_type = jvalue_type_context(context);
 		if(jvalue_type == 'L' && jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, jval.l))
 		{
-			return (cdt_metaffi_handle) jni_metaffi_handle(env, jval.l);
+			return (cdt_metaffi_handle*)jni_metaffi_handle(env, jval.l);
 		}
 		else
 		{
-			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, jval.l, (void*)jni_releaser);
+			return jni_metaffi_handle::wrap_in_metaffi_handle(env, jval.l, (void*)jni_releaser);
 		}
 	}
 	else
@@ -2206,16 +2257,16 @@ cdt_metaffi_handle on_construct_handle(const metaffi_size* index, metaffi_size i
 		if(jni_metaffi_handle::is_metaffi_handle_wrapper_object(env, val.l))
 		{
 			jni_metaffi_handle wrapper(env, val.l);
-			return (cdt_metaffi_handle) wrapper;
+			return (cdt_metaffi_handle*)wrapper;
 		}
 		else// if jobject is jobjectArray of Object
 		{
-			return (cdt_metaffi_handle) jni_metaffi_handle::wrap_in_metaffi_handle(env, val.l, (void*)jni_releaser);
+			return (cdt_metaffi_handle*)jni_metaffi_handle::wrap_in_metaffi_handle(env, val.l, (void*)jni_releaser);
 		}
 	}
 }
 
-cdt_metaffi_callable on_construct_callable(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
+cdt_metaffi_callable* on_construct_callable(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
@@ -2225,9 +2276,9 @@ cdt_metaffi_callable on_construct_callable(const metaffi_size* index, metaffi_si
 	std::pair<jvalue, char> res = jarray_wrapper::get_element(env, (jarray) jval.l, index, index_size);
 	jvalue val = res.first;
 
-	cdt_metaffi_callable callable{};
-	fill_callable_cdt(env, val.l, callable.val, callable.parameters_types, callable.params_types_length,
-	                  callable.retval_types, callable.retval_types_length);
+	cdt_metaffi_callable* callable = new cdt_metaffi_callable{};
+	fill_callable_cdt(env, val.l, callable->val, callable->parameters_types, callable->params_types_length,
+	                  callable->retval_types, callable->retval_types_length);
 
 	return callable;
 }
@@ -2361,19 +2412,19 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 
 			if(t == metaffi_any_type || t == metaffi_string8_type)
 			{
-				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 				this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_string8())));
 				env->DeleteGlobalRef(obj);
 			}
 			else if(t == metaffi_string16_type)
 			{
-				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 				this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_string16())));
 				env->DeleteGlobalRef(obj);
 			}
 			else if(t == metaffi_string32_type)
 			{
-				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+				jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 				this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_string32())));
 				env->DeleteGlobalRef(obj);
 			}
@@ -2401,7 +2452,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Integer";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int32())));
 
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
@@ -2418,7 +2469,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Long";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int64())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
@@ -2436,7 +2487,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Short";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int16())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
@@ -2454,7 +2505,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Byte";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_int8())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
@@ -2470,7 +2521,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Char";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			if(t == metaffi_any_type || t == metaffi_char8_type)
 			{
 				this->pcdts->set(i, std::move(cdt((metaffi_char8) jchar_wrapper(env, obj))));
@@ -2504,7 +2555,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Float";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_float32())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
@@ -2520,7 +2571,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Double";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_float64())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
@@ -2536,7 +2587,7 @@ void cdts_java_wrapper::switch_to_primitive(JNIEnv* env, int i, metaffi_type t /
 				ss << "Expected metaffi type: " << t << " while received Boolean";
 				throw std::runtime_error(ss.str());
 			}
-			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val.val;
+			jobject obj = (jobject) this->pcdts->at(i).cdt_val.handle_val->handle;
 			this->pcdts->set(i, std::move(cdt(jobject_wrapper(env, obj).get_as_bool())));
 			if(env->GetObjectRefType(obj) == JNIGlobalRefType)
 			{
@@ -2555,7 +2606,7 @@ bool cdts_java_wrapper::is_jstring(JNIEnv* env, int index) const
 		return false;
 	}
 
-	jobject obj = (jobject) (this->pcdts->at(index).cdt_val.handle_val.val);
+	jobject obj = (jobject) (this->pcdts->at(index).cdt_val.handle_val->handle);
 	return env->IsInstanceOf(obj, env->FindClass("java/lang/String")) != JNI_FALSE;
 }
 
@@ -2573,12 +2624,12 @@ char cdts_java_wrapper::get_jni_primitive_signature_from_object_form_of_primitiv
 	}
 
 	if(this->pcdts->at(index).type == metaffi_handle_type &&
-	   this->pcdts->at(index).cdt_val.handle_val.runtime_id != OPENJDK_RUNTIME_ID)
+	   this->pcdts->at(index).cdt_val.handle_val->runtime_id != OPENJDK_RUNTIME_ID)
 	{
 		return 0;
 	}
 
-	jobject obj = (jobject) (this->pcdts->at(index).cdt_val.handle_val.val);
+	jobject obj = (jobject) (this->pcdts->at(index).cdt_val.handle_val->handle);
 
 	// Check if the object is an instance of a primitive type
 	if(env->IsInstanceOf(obj, env->FindClass("java/lang/Integer")))
@@ -2633,9 +2684,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int32 val) co
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
-	c.type = metaffi_handle_type;
+	c.set_handle(new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, jni_releaser});
 }
 
 //--------------------------------------------------------------------
@@ -2653,8 +2702,8 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, bool val) const
 	//	obj = env->NewGlobalRef(obj);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.cdt_val.handle_val->handle = obj;
+	c.cdt_val.handle_val->runtime_id = OPENJDK_RUNTIME_ID;
 	c.type = metaffi_handle_type;
 }
 
@@ -2671,8 +2720,8 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int8 val) con
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.cdt_val.handle_val->handle = obj;
+	c.cdt_val.handle_val->runtime_id = OPENJDK_RUNTIME_ID;
 	c.type = metaffi_handle_type;
 }
 
@@ -2689,8 +2738,8 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_uint16 val) c
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.cdt_val.handle_val->handle = obj;
+	c.cdt_val.handle_val->runtime_id = OPENJDK_RUNTIME_ID;
 	c.type = metaffi_handle_type;
 }
 
@@ -2707,8 +2756,8 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int16 val) co
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.cdt_val.handle_val->handle = obj;
+	c.cdt_val.handle_val->runtime_id = OPENJDK_RUNTIME_ID;
 	c.type = metaffi_handle_type;
 }
 
@@ -2725,8 +2774,8 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int64 val) co
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.cdt_val.handle_val->handle = obj;
+	c.cdt_val.handle_val->runtime_id = OPENJDK_RUNTIME_ID;
 	c.type = metaffi_handle_type;
 }
 
@@ -2743,8 +2792,8 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_float32 val) 
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.cdt_val.handle_val->handle = obj;
+	c.cdt_val.handle_val->runtime_id = OPENJDK_RUNTIME_ID;
 	c.type = metaffi_handle_type;
 }
 
@@ -2761,8 +2810,8 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_float64 val) 
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val.val = obj;
-	c.cdt_val.handle_val.runtime_id = OPENJDK_RUNTIME_ID;
+	c.cdt_val.handle_val->handle = obj;
+	c.cdt_val.handle_val->runtime_id = OPENJDK_RUNTIME_ID;
 	c.type = metaffi_handle_type;
 }
 

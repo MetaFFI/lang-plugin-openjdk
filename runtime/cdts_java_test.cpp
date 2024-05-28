@@ -36,22 +36,22 @@ TEST_SUITE("CDTS Java Tests")
 	TEST_CASE("Traverse 2D bytes array")
 	{
 		cdts pcdts(1, 1);                        // array of length 1 and 1 fixed dimension
-		pcdts[0] = cdt(3, 2, metaffi_uint8_type);// array of length 3 and 2 fixed dimensions
+		pcdts[0].set_new_array(3, 2, metaffi_uint8_type);// array of length 3 and 2 fixed dimensions
 
-		pcdts[0].cdt_val.array_val->arr[0] = cdt(2, 1, metaffi_uint8_type);// array of length 2 and 1 fixed dimension
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0] = cdt(metaffi_uint8(1));
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1] = cdt(metaffi_uint8(2));
+		pcdts[0].cdt_val.array_val->arr[0].set_new_array(2, 1, metaffi_uint8_type);// array of length 2 and 1 fixed dimension
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0] = (metaffi_uint8(1));
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1] = (metaffi_uint8(2));
 
-		pcdts[0].cdt_val.array_val->arr[1] = cdt(3, 1, metaffi_uint8_type);// array of length 2 and 1 fixed dimension
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0] = cdt(metaffi_uint8(3));
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1] = cdt(metaffi_uint8(4));
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[2] = cdt(metaffi_uint8(5));
+		pcdts[0].cdt_val.array_val->arr[1].set_new_array(3, 1, metaffi_uint8_type);// array of length 2 and 1 fixed dimension
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0] = (metaffi_uint8(3));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1] = (metaffi_uint8(4));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[2] = (metaffi_uint8(5));
 
-		pcdts[0].cdt_val.array_val->arr[2] = cdt(4, 1, metaffi_uint8_type);// array of length 2 and 1 fixed dimension
-		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[0] = cdt(metaffi_uint8(6));
-		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[1] = cdt(metaffi_uint8(7));
-		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[2] = cdt(metaffi_uint8(8));
-		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[3] = cdt(metaffi_uint8(9));
+		pcdts[0].cdt_val.array_val->arr[2].set_new_array(4, 1, metaffi_uint8_type);// array of length 2 and 1 fixed dimension
+		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[0] = (metaffi_uint8(6));
+		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[1] = (metaffi_uint8(7));
+		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[2] = (metaffi_uint8(8));
+		pcdts[0].cdt_val.array_val->arr[2].cdt_val.array_val->arr[3] = (metaffi_uint8(9));
 
 		cdts_java_wrapper cdts_j(&pcdts);
 		jvalue jval = cdts_j.to_jvalue(env, 0);
@@ -88,11 +88,11 @@ TEST_SUITE("CDTS Java Tests")
 	TEST_CASE("Traverse 1D bytes array")
 	{
 		cdts pcdts(1, 1);                        // array of length 1 (i.e. one parameter) and 1 fixed dimension
-		pcdts[0] = cdt(3, 1, metaffi_uint8_type);// array of length 3 and 1 fixed dimensions
+		pcdts[0].set_new_array(3, 1, metaffi_uint8_type);// array of length 3 and 1 fixed dimensions
 
-		pcdts[0].cdt_val.array_val->arr[0] = cdt(metaffi_uint8(1));
-		pcdts[0].cdt_val.array_val->arr[1] = cdt(metaffi_uint8(2));
-		pcdts[0].cdt_val.array_val->arr[2] = cdt(metaffi_uint8(3));
+		pcdts[0].cdt_val.array_val->arr[0] = (metaffi_uint8(1));
+		pcdts[0].cdt_val.array_val->arr[1] = (metaffi_uint8(2));
+		pcdts[0].cdt_val.array_val->arr[2] = (metaffi_uint8(3));
 
 		cdts_java_wrapper cdts_j(&pcdts);
 		jvalue jval = cdts_j.to_jvalue(env, 0);
@@ -112,10 +112,10 @@ TEST_SUITE("CDTS Java Tests")
 	TEST_CASE("Traverse 1D float array")
 	{
 		cdts pcdts(1, 1);
-		pcdts[0] = cdt(3, 1, metaffi_float32_type);
-		pcdts[0].cdt_val.array_val->arr[0] = cdt(metaffi_float32(1.0f));
-		pcdts[0].cdt_val.array_val->arr[1] = cdt(metaffi_float32(2.0f));
-		pcdts[0].cdt_val.array_val->arr[2] = cdt(metaffi_float32(3.0f));
+		pcdts[0].set_new_array(3, 1, metaffi_float32_type);
+		pcdts[0].cdt_val.array_val->arr[0] = (metaffi_float32(1.0f));
+		pcdts[0].cdt_val.array_val->arr[1] = (metaffi_float32(2.0f));
+		pcdts[0].cdt_val.array_val->arr[2] = (metaffi_float32(3.0f));
 
 		cdts_java_wrapper cdts_j(&pcdts);
 		jvalue jval = cdts_j.to_jvalue(env, 0);
@@ -134,39 +134,39 @@ TEST_SUITE("CDTS Java Tests")
 	TEST_CASE("Traverse 3D array")
 	{
 		cdts pcdts(1, 1);                          // one parameter
-		pcdts[0] = cdt(2, 3, metaffi_float32_type);// []
+		pcdts[0].set_new_array(2, 3, metaffi_float32_type);// []
 
-		pcdts[0].cdt_val.array_val->arr[0] = cdt(2, 2, metaffi_float32_type);// [0][]
-		pcdts[0].cdt_val.array_val->arr[1] = cdt(3, 2, metaffi_float32_type);// [1][]
+		pcdts[0].cdt_val.array_val->arr[0].set_new_array(2, 2, metaffi_float32_type);// [0][]
+		pcdts[0].cdt_val.array_val->arr[1].set_new_array(3, 2, metaffi_float32_type);// [1][]
 
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0] = cdt(4, 1, metaffi_float32_type);// [0][0][]
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1] = cdt(2, 1, metaffi_float32_type);// [0][1][]
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].set_new_array(4, 1, metaffi_float32_type);// [0][0][]
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1].set_new_array(2, 1, metaffi_float32_type);// [0][1][]
 
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0] = cdt(3, 1, metaffi_float32_type);// [1][0][]
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1] = cdt(2, 1, metaffi_float32_type);// [1][1][]
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[2] = cdt(1, 1, metaffi_float32_type);// [1][2][]
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0].set_new_array(3, 1, metaffi_float32_type);// [1][0][]
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1].set_new_array(2, 1, metaffi_float32_type);// [1][1][]
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[2].set_new_array(1, 1, metaffi_float32_type);// [1][2][]
 
 		// [0][0][] = {1.0f, 2.0f, 3.0f, 4.0f}
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0] = cdt(metaffi_float32(1.0f));
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1] = cdt(metaffi_float32(2.0f));
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[2] = cdt(metaffi_float32(3.0f));
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[3] = cdt(metaffi_float32(4.0f));
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0] = (metaffi_float32(1.0f));
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1] = (metaffi_float32(2.0f));
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[2] = (metaffi_float32(3.0f));
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[3] = (metaffi_float32(4.0f));
 
 		// [0][1][] = {5.0f, 6.0f}
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0] = cdt(metaffi_float32(5.0f));
-		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1] = cdt(metaffi_float32(6.0f));
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0] = (metaffi_float32(5.0f));
+		pcdts[0].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1] = (metaffi_float32(6.0f));
 
 		// [1][0][] = {7.0f, 8.0f, 9.0f}
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0] = cdt(metaffi_float32(7.0f));
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1] = cdt(metaffi_float32(8.0f));
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0].cdt_val.array_val->arr[2] = cdt(metaffi_float32(9.0f));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0].cdt_val.array_val->arr[0] = (metaffi_float32(7.0f));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0].cdt_val.array_val->arr[1] = (metaffi_float32(8.0f));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0].cdt_val.array_val->arr[2] = (metaffi_float32(9.0f));
 
 		// [1][1][] = {10.0f, 11.0f}
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0] = cdt(metaffi_float32(10.0f));
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1] = cdt(metaffi_float32(11.0f));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1].cdt_val.array_val->arr[0] = (metaffi_float32(10.0f));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1].cdt_val.array_val->arr[1] = (metaffi_float32(11.0f));
 
 		// [1][2][] = {12.0f}
-		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[2].cdt_val.array_val->arr[0] = cdt(metaffi_float32(12.0f));
+		pcdts[0].cdt_val.array_val->arr[1].cdt_val.array_val->arr[2].cdt_val.array_val->arr[0] = (metaffi_float32(12.0f));
 
 		cdts_java_wrapper cdts_j(&pcdts);
 		jvalue jval = cdts_j.to_jvalue(env, 0);
@@ -229,7 +229,7 @@ TEST_SUITE("CDTS Java Tests")
 		REQUIRE((pcdts.fixed_dimensions == 1));
 		REQUIRE((pcdts.length == 1));
 		REQUIRE((pcdts[0].type == metaffi_uint8_array_type));
-		REQUIRE((pcdts[0].free_required == true));
+		REQUIRE((pcdts[0].free_required != 0));
 		REQUIRE((pcdts[0].cdt_val.array_val->fixed_dimensions == 1));
 		REQUIRE((pcdts[0].cdt_val.array_val->length == 3));
 		REQUIRE((pcdts[0].cdt_val.array_val->arr[0].type == metaffi_uint8_type));

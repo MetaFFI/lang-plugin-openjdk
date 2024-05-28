@@ -15,9 +15,8 @@ get_dir_sources(${CMAKE_CURRENT_LIST_DIR} ${target_jni_name}_sources)
 add_library(${target_jni_name} SHARED ${${target_jni_name}_sources} ${METAFFI_SDK}/runtime/xllr_static_capi_loader.cpp ${METAFFI_SDK}/runtime/xllr_capi_loader.c)
 target_include_directories(${target_jni_name} PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
 set_target_properties(${target_jni_name} PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(${target_jni_name} PRIVATE Boost::filesystem ${JNI_LIBRARIES} xllr.openjdk)
+target_link_libraries(${target_jni_name} PRIVATE ${CMAKE_DL_LIBS} Boost::filesystem ${JNI_LIBRARIES} xllr.openjdk)
 add_dependencies(${target_jni_name} xllr.openjdk)
-link_to_dl_for_non_windows(${target_jni_name})
 
 set_target_properties( ${target_jni_name}
 		PROPERTIES

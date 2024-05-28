@@ -15,11 +15,11 @@ get_dir_sources(${CMAKE_CURRENT_LIST_DIR} ${target_name}_sources)
 get_sdk_utils_sources(utils_srcs)
 get_sdk_runtime_sources(runtime_srcs)
 
-add_library(${target_name} SHARED ${${target_name}_sources} ${utils_srcs} ${METAFFI_SDK_CPP_SOURCES})
+add_library(${target_name} SHARED ${${target_name}_sources} ${utils_srcs} ${runtime_srcs})
 target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS} ${METAFFI_SDK} ${JNI_INCLUDE_DIRS})
 set_target_properties(${target_name} PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON LINK_FLAGS "-Wl,-Bsymbolic")
-target_link_libraries(${target_name} PRIVATE Boost::filesystem ${JNI_LIBRARIES})
-link_to_dl_for_non_windows(${target_name})
+target_link_libraries(${target_name} PRIVATE Boost::filesystem ${JNI_LIBRARIES} ${CMAKE_DL_LIBS})
+
 
 # set RPATH
 set_property(TARGET ${target_name} APPEND PROPERTY INSTALL_RPATH "$ORIGIN;$ORIGIN/lib")
@@ -60,8 +60,6 @@ if(NOT WIN32)
 	add_custom_command(TARGET openjdk_api_test POST_BUILD COMMAND patchelf --set-rpath "$ORIGIN:$ORIGIN/lib:$ENV{METAFFI_HOME}:${Boost_LIBRARY_DIRS}:$ENV{JAVA_HOME}/lib/server/:$ENV{JAVA_HOME}/lib/:$ENV{JAVA_HOME}" $<TARGET_FILE:openjdk_api_test>)
 endif()
 
-
-
 add_executable(cdts_java_test "cdts_java_test.cpp" ${utils_srcs} ${runtime_srcs})
 target_link_libraries(cdts_java_test PRIVATE doctest::doctest ${target_name} Boost::filesystem ${JNI_LIBRARIES})
 add_test(NAME "OpenJDK CDTS Test" COMMAND cdts_java_test)
@@ -75,3 +73,4 @@ endif()
 
 # install
 install_target(${target_name} .)
+copy_file_from_project_binary_to_metaffi_home(${target_name} ${target_name}${CMAKE_SHARED_LIBRARY_SUFFIX})
