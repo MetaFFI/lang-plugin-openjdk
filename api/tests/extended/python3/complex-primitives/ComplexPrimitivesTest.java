@@ -2,7 +2,6 @@ import api.MetaFFIModule;
 import api.MetaFFIRuntime;
 import metaffi.*;
 import org.junit.*;
-import metaffi.MetaFFIHandle;
 
 import java.util.*;
 
@@ -444,8 +443,8 @@ public class ComplexPrimitivesTest
 	@AfterClass
 	public static void fini()
 	{
-		// TODO
-		// runtime.releaseRuntimePlugin();
+		if(runtime != null)
+			runtime.releaseRuntimePlugin();
 	}
 
 	@Test

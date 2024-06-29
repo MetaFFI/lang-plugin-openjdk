@@ -241,7 +241,7 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 		// URLClassLoader childURLClassLoader = new URLClassLoader( jarURLArray, classLoaderInstance ) ;
 		
 		// initialize with "$METAFFI_HOME/xllr.openjdk.bridge.jar"
-		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/xllr.openjdk.bridge.jar";
+		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/openjdk/xllr.openjdk.bridge.jar";
 		
 		jobjectArray jarURLArray = env->NewObjectArray(1, url_class, nullptr); // URL[]{}
 		check_and_throw_jvm_exception(env, jarURLArray,);
@@ -255,7 +255,7 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	if(!is_bridge_added)
 	{
 		std::string openjdk_bridge = file_protocol + std::getenv("METAFFI_HOME");
-		openjdk_bridge += "/";
+		openjdk_bridge += "/openjdk/";
 		openjdk_bridge += "xllr.openjdk.bridge.jar";
 
 #ifdef _WIN32

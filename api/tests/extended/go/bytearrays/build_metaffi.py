@@ -29,11 +29,13 @@ def run_command(command: str):
 
 
 def main():
-	
-	os.chdir(os.path.dirname(os.path.abspath(__file__)))
-	
-	gopath = run_command("go env GOPATH")
-	run_command(f'metaffi -c --idl BytesPrinter.go -g')
+	try:
+		os.chdir(os.path.dirname(os.path.abspath(__file__)))
+		
+		gopath = run_command("go env GOPATH")
+		run_command(f'metaffi -c --idl BytesPrinter.go -g')
+	except:
+		exit(1)
 
 
 if __name__ == '__main__':

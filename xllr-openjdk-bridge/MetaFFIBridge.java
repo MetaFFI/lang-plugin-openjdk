@@ -26,7 +26,7 @@ public class MetaFFIBridge
 		xllrExtension = xllrExtension.substring(xllrExtension.lastIndexOf("."));
 		String metaffiHome = System.getenv("METAFFI_HOME");
 
-		System.load(metaffiHome+"/xllr.openjdk.jni.bridge"+xllrExtension);
+		System.load(metaffiHome+"/openjdk/xllr.openjdk.jni.bridge"+xllrExtension);
 
 
 	}

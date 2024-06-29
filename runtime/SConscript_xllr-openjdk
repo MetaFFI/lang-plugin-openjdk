@@ -1,0 +1,87 @@
+from re import S
+import SCons.Environment
+import SCons.Script
+import SCons.Node
+import SCons.Node.FS
+import glob
+import SCons.Script.SConsOptions
+import compiler_options
+import post_actions
+import platform
+import scons_utils
+from site_scons import ALIAS_OPENJDK, ALIAS_OPENJDK_UNITTESTS
+
+# * Import the parent Environment
+env: SCons.Environment.Environment
+SCons.Script.Import('env')
+
+
+# * ---- Build xllr.openjdk C++ dynamic library ----
+env_xllr_openjdk = env.Clone() # use the same environment as openjdk project
+env_xllr_openjdk.LoadConanPackagesInfo()
+
+source = env['sdk_src']
+source += [s for s in glob.glob(env.Dir('.').abspath + '/*.cpp') if not s.endswith("_test.cpp")]
+
+includes = [env['sdk_path']]
+includes.append(env_xllr_openjdk.Dir('.').abspath)
+if env.IsWindows():
+	includes.append(env_xllr_openjdk['conan_info']['openjdk']['CPPPATH'][0]+'/win32/')
+
+xllr_openjdk_dylib = env_xllr_openjdk.CPPSharedLibrary(target='xllr.openjdk',
+														project_name='openjdk',
+														sources=source,
+														include_dirs=includes,
+														libs=['jvm.lib'])
+
+xllr_openjdk_install = env_xllr_openjdk.Install(env_xllr_openjdk['METAFFI_HOME']+'/openjdk', xllr_openjdk_dylib) # install only dll.
+
+# install boost_filesystem.dll
+xllr_openjdk_dependencies_install = env_xllr_openjdk.Install(env_xllr_openjdk['METAFFI_HOME']+'/openjdk', env_xllr_openjdk.SearchConanBinaryFile('boost', f'boost_filesystem{env_xllr_openjdk.DynamicLibraryExtension()}'))
+SCons.Script.Alias(ALIAS_OPENJDK, [xllr_openjdk_dylib, xllr_openjdk_install, xllr_openjdk_dependencies_install])
+
+# to be used by other targets in the project as dependency
+env['xllr_openjdk_dylib'] = xllr_openjdk_dylib
+
+# * --- Unit Tests ---
+
+# includes = []
+# includes.extend(env_xllr_openjdk['sdk_includes'])
+# includes.append(env_xllr_openjdk['sdk_path'])
+
+
+# # dependent on XLLR dynamic library
+# cdts_java_test: SCons.Node.NodeList = env_xllr_openjdk.CPPProgram(target='cdts_java_test',
+# 															project_name='openjdk',
+# 															sources=[
+# 																env_xllr_openjdk.Dir('.').File('cdts_java_test.cpp').abspath
+# 															],
+# 															include_dirs=[
+# 																includes
+# 															],
+# 															libs=scons_utils.search_lib_in_nodeslist(xllr_openjdk_dylib))
+
+# env_xllr_openjdk.AddPostAction(cdts_java_test, post_actions.execute_doctest_unitest)
+# env.Depends(cdts_java_test, xllr_openjdk_dylib)
+
+# # build ./test/*.java to be used by openjdk_api_test
+
+# java_test_file = env_xllr_openjdk.Java(target=env_xllr_openjdk.Dir('./test').abspath, source=env_xllr_openjdk.Glob('./test/*.java'))
+# env.Depends(java_test_file, xllr_openjdk_dylib)
+
+# openjdk_api_test: SCons.Node.NodeList = env_xllr_openjdk.CPPProgram(target='openjdk_api_test',
+# 															project_name='openjdk',
+# 															sources=[
+# 																env_xllr_openjdk.Dir('.').File('openjdk_api_test.cpp').abspath
+# 															],
+# 															include_dirs=[
+# 																includes
+# 															],
+# 															libs=scons_utils.search_lib_in_nodeslist(xllr_openjdk_dylib))
+
+# env_xllr_openjdk.AddPostAction(openjdk_api_test, post_actions.execute_doctest_unitest)
+# env.Depends(openjdk_api_test, java_test_file)
+
+
+# SCons.Script.Alias(ALIAS_OPENJDK_UNITTESTS, [openjdk_api_test, cdts_java_test])
+

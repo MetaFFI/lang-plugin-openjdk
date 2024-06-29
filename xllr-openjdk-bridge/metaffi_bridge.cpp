@@ -243,8 +243,8 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 		pctxt->constructor = false;
 
 		void* xcall_and_context = xllr->make_callable(str_runtime_plugin, (void*)pctxt,
-		                                              pparams_types, (int8_t)retval_count,
-		                                              pretval_types, (int8_t)params_count,
+		                                              pparams_types, (int8_t)params_count,
+		                                              pretval_types, (int8_t)retval_count,
 		                                              &out_err_buf);
 
 		env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);

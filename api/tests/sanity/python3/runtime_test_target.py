@@ -48,7 +48,12 @@ class testmap:
 def call_callback_add(add_function):
 	print(f'Calling add_function {add_function}', file=sys.stderr)
 	
-	res = add_function(1, 2)
+	try:
+		res = add_function(1, 2)
+	except Exception as e:
+		print(f'add_function threw an Exception:\n{e}', file=sys.stderr)
+		raise
+
 	print(f'returned from callback')
 	res = res[0]
 	if res != 3:

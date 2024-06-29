@@ -15,7 +15,7 @@ class GoMCache
 	private metaffi.Caller plen = null;
 	private metaffi.Caller pset = null;
 	private metaffi.Caller pget = null;
-	private MetaFFIHandle instance = null;
+	public MetaFFIHandle instance = null;
 
 	public GoMCache() throws Exception
 	{
@@ -63,6 +63,12 @@ class GoMCache
 
 		// call constructor
 		this.instance = (MetaFFIHandle)newMCache.call()[0];
+
+		if(this.instance == null)
+			throw new Exception("Failed to create GoMCache instance, and not exception has been thrown?!");
+
+		if(this.instance.Handle() == 0)
+			throw new Exception("Failed to create GoMCache instance, and handle is 0?!");
 	}
 
 	public long len()
@@ -73,6 +79,7 @@ class GoMCache
 	public void set(String k, Object v) throws MetaFFIException
 	{
 		var infinity = (long)this.pinfinity.call()[0];
+
 		this.pset.call(this.instance, k, v, infinity);
 	}
 
@@ -104,7 +111,9 @@ public class GoMCacheTest
 	@Test
 	public void testGoMCache() throws Exception
 	{
-		var m = new GoMCache();
+		System.out.println("testGoMCache");
+		GoMCache m = new GoMCache();
+		System.out.println(String.format("m members: %d", m.instance.Handle(), m.instance.runtime_id));
 		m.set("myinteger", 101L);
 
 		Assert.assertTrue(m.len() == 1);

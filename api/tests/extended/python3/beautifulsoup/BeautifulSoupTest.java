@@ -197,8 +197,8 @@ public class BeautifulSoupTest
 	@AfterClass
 	public static void fini()
 	{
-		// TODO
-		// runtime.releaseRuntimePlugin();
+		if(runtime != null)
+			runtime.releaseRuntimePlugin();
 	}
 
 	@Test

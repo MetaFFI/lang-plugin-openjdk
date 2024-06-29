@@ -25,14 +25,6 @@ jvm::jvm()
 		return;
 	}
 	// create new JVM
-
-//	std::stringstream ss;
-//	ss << "-Djava.class.path=" << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << ":" << std::getenv("METAFFI_HOME") << "/javaparser-core-3.24.4.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor_MetaFFIGuest.jar" << ":" << std::getenv("METAFFI_HOME") << "/JavaExtractor.jar";
-//	printf("JVM classpath: %s\n", ss.str().c_str());
-//	std::string options_string = ss.str();
-//	JavaVMOption* options = new JavaVMOption[3];
-//	options[0].optionString = (char*)options_string.c_str();
-
 	// read classpath environment variable and set it, including "." as default.
 
 #ifdef _WIN32
@@ -42,7 +34,7 @@ jvm::jvm()
 #endif
 
 	std::stringstream ss;
-	ss << "-Djava.class.path=." << SEPARATOR << ".." << SEPARATOR << std::getenv("METAFFI_HOME") << "/xllr.openjdk.bridge.jar" << SEPARATOR;
+	ss << "-Djava.class.path=." << SEPARATOR << ".." << SEPARATOR << std::getenv("METAFFI_HOME") << "/openjdk/xllr.openjdk.bridge.jar" << SEPARATOR;
 	const char* classpath = std::getenv("CLASSPATH");
 	if(classpath){
 		ss << classpath << SEPARATOR;

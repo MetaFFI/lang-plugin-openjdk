@@ -1,0 +1,53 @@
+import sys
+import SCons.Environment
+import SCons.Script
+import SCons.Node
+import SCons.Node.FS
+import glob
+import SCons.Script.SConsOptions
+import compiler_options
+import post_actions
+import platform
+import scons_utils
+from site_scons import ALIAS_BUILD, ALIAS_OPENJDK, ALIAS_OPENJDK_API_TESTS, ALIAS_PYTHON3, ALIAS_PYTHON3_UNITTESTS
+import os
+
+# * Import the parent Environment
+env: SCons.Environment.Environment
+SCons.Script.Import('env')
+
+
+# * Build MetaFFI OpenJDK API Jar
+env_api_jar = env.Clone()
+api_jar = env_api_jar.JavaJar(target='metaffi.api.jar', source=env_api_jar.Glob('./*.java'), project_name='metaffi_api', classpath=[env['xllr_openjdk_bridge_jar'][0].abspath])
+
+api_jar_install = env_api_jar.Install(env_api_jar['METAFFI_HOME']+'/openjdk/', api_jar)
+
+env_api_jar.Depends(api_jar, env['xllr_openjdk_bridge_jar'])
+SCons.Script.Alias(ALIAS_OPENJDK, [api_jar, api_jar_install])
+
+# * --- Cross Language Tests ---
+test_path = env_api_jar.Dir('./tests').abspath
+def openjdk_cross_lang_test(target, source, env):
+	# execute "tests/run_api_tests.py"
+	curpath = os.getcwd()
+	try:
+		# execute "tests/run_api_tests.py"
+		os.chdir(test_path)
+
+		custom_env = env.Clone()
+		custom_env['ENV']['PATH'] = os.environ['PATH']
+		
+		custom_env.Execute(f'{scons_utils.python3_executable()} run_api_tests.py')
+	except Exception as e:
+		print(f"Cross language tests failed: {e}", file=sys.stderr)
+		env.Exit(1)
+	finally:
+		os.chdir(curpath)
+
+
+openjdk_cross_lang_test_cmd = env.Command(target='openjdk_cross_lang_test', source=[], action=openjdk_cross_lang_test)
+env.Depends(openjdk_cross_lang_test_cmd, ALIAS_BUILD)
+SCons.Script.Alias(ALIAS_OPENJDK_API_TESTS, openjdk_cross_lang_test_cmd)
+
+# TODO Publish to Maven

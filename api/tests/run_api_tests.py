@@ -7,6 +7,7 @@ from colorama import init, Fore
 import platform
 import glob
 
+
 # Initialize colorama
 init()
 
@@ -56,8 +57,8 @@ def run_unittest(script_path):
 		# Java JUnit test
 		junit_jar = os.path.join(current_path, 'junit-platform-console-standalone-1.10.2.jar')
 		hamcrest_jar = os.path.join(current_path, 'hamcrest-core-1.3.jar')
-		bridge_jar = os.path.join(os.environ['METAFFI_HOME'], 'xllr.openjdk.bridge.jar')
-		api_jar = os.path.join(os.environ['METAFFI_HOME'], 'metaffi.api.jar')
+		bridge_jar = os.path.join(os.environ['METAFFI_HOME']+'/openjdk/', 'xllr.openjdk.bridge.jar')
+		api_jar = os.path.join(os.environ['METAFFI_HOME']+'/openjdk/', 'metaffi.api.jar')
 		class_name = os.path.splitext(os.path.basename(script_path))[0]
 		class_path = f'.{os.pathsep}{junit_jar}{os.pathsep}{hamcrest_jar}{os.pathsep}{bridge_jar}{os.pathsep}{api_jar}'
 		
@@ -174,4 +175,4 @@ run_script(build_extended_go_bytes_arrays_path)
 run_unittest(test_extended_go_bytes_arrays_path)
 os.remove(os.path.join(current_path, 'extended', 'go', 'gomcache', f'mcache_MetaFFIGuest{get_extension_by_platform()}'))
 
-print(f'{Fore.MAGENTA}Testing Extended OpenJDK -> Go{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
+print(f'{Fore.MAGENTA}Testing Extended OpenJDK <- Go{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')

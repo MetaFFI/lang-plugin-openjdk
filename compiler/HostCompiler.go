@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
-	compiler "github.com/MetaFFI/plugin-sdk/compiler/go"
-	TemplateFunctions2 "github.com/MetaFFI/plugin-sdk/compiler/go/CodeTemplates"
-	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	compiler "github.com/MetaFFI/plugin-sdk/compiler/go"
+	TemplateFunctions2 "github.com/MetaFFI/plugin-sdk/compiler/go/CodeTemplates"
+	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 )
 
 var javaKeywords = map[string]bool{
@@ -389,7 +390,7 @@ func (this *HostCompiler) getClassPath() string {
 	classPath := make([]string, 0)
 	classPath = append(classPath, ".")
 	classPath = append(classPath, fmt.Sprintf("%v%v", os.Getenv("METAFFI_HOME"), string(os.PathSeparator)))
-	classPath = append(classPath, fmt.Sprintf("%v%vxllr.openjdk.bridge.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator)))
+	classPath = append(classPath, fmt.Sprintf("%v%vopenjdk%vxllr.openjdk.bridge.jar", os.Getenv("METAFFI_HOME"), string(os.PathSeparator), string(os.PathSeparator)))
 
 	return strings.Join(classPath, string(os.PathListSeparator))
 }

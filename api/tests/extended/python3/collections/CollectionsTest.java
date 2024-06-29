@@ -2,7 +2,6 @@ import api.MetaFFIModule;
 import api.MetaFFIRuntime;
 import metaffi.*;
 import org.junit.*;
-import metaffi.MetaFFIHandle;
 
 import java.util.HashMap;
 
@@ -70,8 +69,8 @@ public class CollectionsTest
 	@AfterClass
 	public static void fini()
 	{
-		// TODO
-		// runtime.releaseRuntimePlugin();
+		if(runtime != null)
+			runtime.releaseRuntimePlugin();
 	}
 
 	@Test

@@ -39,9 +39,9 @@ class NumpyArray
 		this.instance = (MetaFFIHandle)constructor.call((Object)longarray)[0];
 	}
 
-	public float mean()
+	public double mean()
 	{
-		return (float) (this.pmean.call(this.instance)[0]);
+		return (double) (this.pmean.call(this.instance)[0]);
 	}
 }
 
@@ -59,8 +59,8 @@ public class NumpyTest
 	@AfterClass
 	public static void fini()
 	{
-		// TODO
-		// runtime.releaseRuntimePlugin();
+		if(runtime != null)
+			runtime.releaseRuntimePlugin();
 	}
 
 	@Test
