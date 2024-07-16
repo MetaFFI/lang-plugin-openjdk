@@ -19,19 +19,37 @@ SCons.Script.Import('env')
 env_openjdk_bridge = env.Clone() # use the same environment as the parent project
 env_openjdk_bridge.LoadConanPackagesInfo()
 
+# sources
 source = env['sdk_src']
-source += glob.glob(env_openjdk_bridge.Dir('.').abspath+'/*.cpp')
+source += [s for s in glob.glob(env.Dir('.').abspath + '/*.cpp') if not s.endswith("_test.cpp")]
 
+# includes
 includes = [env['sdk_path']]
 includes.append(env_openjdk_bridge.Dir('.').abspath)
+
+os_specific_include_path = '/win32/' if env_openjdk_bridge.IsWindows() else '/linux/'
+includes.append(env_openjdk_bridge['conan_info']['openjdk']['CPPPATH'][0]+f'{os_specific_include_path}')
+
+libpath = []
+
+# linked libraries
 if env_openjdk_bridge.IsWindows():
-	includes.append(env_openjdk_bridge['conan_info']['openjdk']['CPPPATH'][0]+'/win32/')
+	# add the jvm.lib and xllr.openjdk.lib to the linker
+	libs = ['jvm.lib', env['xllr_openjdk_dylib'][1].abspath]
+else:
+	# add the jvm.so and xllr.openjdk.so to the linker
+	libs = ['jvm.so']
+	libpath.append(env['METAFFI_HOME']+'/openjdk')
+	libpath.append(env_openjdk_bridge['conan_info']['openjdk']['LIBPATH'][0]+'/server')
+
 
 xllr_openjdk_bridge_dylib = env_openjdk_bridge.CPPSharedLibrary(target='xllr.openjdk.jni.bridge',
 																 project_name='openjdk_jni_bridge',
 																 sources=source,
 																 include_dirs=includes,
-																 libs=[env['xllr_openjdk_dylib'][1].abspath, 'jvm.lib'])
+																 lib_dirs=libpath,
+																 libs=libs)
+env_openjdk_bridge.Depends(xllr_openjdk_bridge_dylib, env['xllr_openjdk_dylib'])
 
 xllr_openjdk_bridge_install = env_openjdk_bridge.Install(env_openjdk_bridge['METAFFI_HOME']+'/openjdk', xllr_openjdk_bridge_dylib) # install only dll.
 

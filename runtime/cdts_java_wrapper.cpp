@@ -15,17 +15,19 @@
 #include "jshort_wrapper.h"
 #include "jstring_wrapper.h"
 #include "runtime_id.h"
-#include "utils/tracer.h"
+#include "utils/defines.h"
 #include <algorithm>
 #include <iostream>
 #include <runtime/cdts_traverse_construct.h>
 #include <utility>
+#include <utils/defines.h>
+
 
 extern std::shared_ptr<jvm> pjvm;
 
 //--------------------------------------------------------------------
 
-void on_traverse_float64(const metaffi_size* index, metaffi_size index_size, metaffi_float64 val, void* context)
+DLL_PRIVATE void on_traverse_float64(const metaffi_size* index, metaffi_size index_size, metaffi_float64 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -67,7 +69,7 @@ void on_traverse_float64(const metaffi_size* index, metaffi_size index_size, met
 	}
 }
 
-void on_traverse_float32(const metaffi_size* index, metaffi_size index_size, metaffi_float32 val, void* context)
+DLL_PRIVATE void on_traverse_float32(const metaffi_size* index, metaffi_size index_size, metaffi_float32 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -109,7 +111,7 @@ void on_traverse_float32(const metaffi_size* index, metaffi_size index_size, met
 	}
 }
 
-void on_traverse_int8(const metaffi_size* index, metaffi_size index_size, metaffi_int8 val, void* context)
+DLL_PRIVATE void on_traverse_int8(const metaffi_size* index, metaffi_size index_size, metaffi_int8 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -151,7 +153,7 @@ void on_traverse_int8(const metaffi_size* index, metaffi_size index_size, metaff
 	}
 }
 
-void on_traverse_uint8(const metaffi_size* index, metaffi_size index_size, metaffi_uint8 val, void* context)
+DLL_PRIVATE void on_traverse_uint8(const metaffi_size* index, metaffi_size index_size, metaffi_uint8 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -194,7 +196,7 @@ void on_traverse_uint8(const metaffi_size* index, metaffi_size index_size, metaf
 	}
 }
 
-void on_traverse_int16(const metaffi_size* index, metaffi_size index_size, metaffi_int16 val, void* context)
+DLL_PRIVATE void on_traverse_int16(const metaffi_size* index, metaffi_size index_size, metaffi_int16 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -236,7 +238,7 @@ void on_traverse_int16(const metaffi_size* index, metaffi_size index_size, metaf
 	}
 }
 
-void on_traverse_uint16(const metaffi_size* index, metaffi_size index_size, metaffi_uint16 val, void* context)
+DLL_PRIVATE void on_traverse_uint16(const metaffi_size* index, metaffi_size index_size, metaffi_uint16 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -280,7 +282,7 @@ void on_traverse_uint16(const metaffi_size* index, metaffi_size index_size, meta
 	}
 }
 
-void on_traverse_int32(const metaffi_size* index, metaffi_size index_size, metaffi_int32 val, void* context)
+DLL_PRIVATE void on_traverse_int32(const metaffi_size* index, metaffi_size index_size, metaffi_int32 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -323,7 +325,7 @@ void on_traverse_int32(const metaffi_size* index, metaffi_size index_size, metaf
 	}
 }
 
-void on_traverse_uint32(const metaffi_size* index, metaffi_size index_size, metaffi_uint32 val, void* context)
+DLL_PRIVATE void on_traverse_uint32(const metaffi_size* index, metaffi_size index_size, metaffi_uint32 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -368,7 +370,7 @@ void on_traverse_uint32(const metaffi_size* index, metaffi_size index_size, meta
 	}
 }
 
-void on_traverse_int64(const metaffi_size* index, metaffi_size index_size, metaffi_int64 val, void* context)
+DLL_PRIVATE void on_traverse_int64(const metaffi_size* index, metaffi_size index_size, metaffi_int64 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -410,7 +412,7 @@ void on_traverse_int64(const metaffi_size* index, metaffi_size index_size, metaf
 	}
 }
 
-void on_traverse_uint64(const metaffi_size* index, metaffi_size index_size, metaffi_uint64 val, void* context)
+DLL_PRIVATE void on_traverse_uint64(const metaffi_size* index, metaffi_size index_size, metaffi_uint64 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -453,7 +455,7 @@ void on_traverse_uint64(const metaffi_size* index, metaffi_size index_size, meta
 	}
 }
 
-void on_traverse_bool(const metaffi_size* index, metaffi_size index_size, metaffi_bool val, void* context)
+DLL_PRIVATE void on_traverse_bool(const metaffi_size* index, metaffi_size index_size, metaffi_bool val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -498,7 +500,7 @@ void on_traverse_bool(const metaffi_size* index, metaffi_size index_size, metaff
 	}
 }
 
-void on_traverse_char8(const metaffi_size* index, metaffi_size index_size, metaffi_char8 val, void* context)
+DLL_PRIVATE void on_traverse_char8(const metaffi_size* index, metaffi_size index_size, metaffi_char8 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -548,7 +550,7 @@ void on_traverse_char8(const metaffi_size* index, metaffi_size index_size, metaf
 	}
 }
 
-void on_traverse_string8(const metaffi_size* index, metaffi_size index_size, metaffi_string8 val, void* context)
+DLL_PRIVATE void on_traverse_string8(const metaffi_size* index, metaffi_size index_size, metaffi_string8 val, void* context)
 {
 	
 	if(index_size == 0)
@@ -580,7 +582,7 @@ void on_traverse_string8(const metaffi_size* index, metaffi_size index_size, met
 	}
 }
 
-void on_traverse_char16(const metaffi_size* index, metaffi_size index_size, metaffi_char16 val, void* context)
+DLL_PRIVATE void on_traverse_char16(const metaffi_size* index, metaffi_size index_size, metaffi_char16 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -619,7 +621,7 @@ void on_traverse_char16(const metaffi_size* index, metaffi_size index_size, meta
 	}
 }
 
-void on_traverse_string16(const metaffi_size* index, metaffi_size index_size, metaffi_string16 val, void* context)
+DLL_PRIVATE void on_traverse_string16(const metaffi_size* index, metaffi_size index_size, metaffi_string16 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -650,7 +652,7 @@ void on_traverse_string16(const metaffi_size* index, metaffi_size index_size, me
 	}
 }
 
-void on_traverse_char32(const metaffi_size* index, metaffi_size index_size, metaffi_char32 val, void* context)
+DLL_PRIVATE void on_traverse_char32(const metaffi_size* index, metaffi_size index_size, metaffi_char32 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -689,7 +691,7 @@ void on_traverse_char32(const metaffi_size* index, metaffi_size index_size, meta
 	}
 }
 
-void on_traverse_string32(const metaffi_size* index, metaffi_size index_size, metaffi_string32 val, void* context)
+DLL_PRIVATE void on_traverse_string32(const metaffi_size* index, metaffi_size index_size, metaffi_string32 val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -720,7 +722,7 @@ void on_traverse_string32(const metaffi_size* index, metaffi_size index_size, me
 	}
 }
 
-void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, const cdt_metaffi_handle& val, void* context)
+DLL_PRIVATE void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, const cdt_metaffi_handle& val, void* context)
 {
 	if(index_size == 0)
 	{
@@ -789,7 +791,7 @@ void on_traverse_handle(const metaffi_size* index, metaffi_size index_size, cons
 	}
 }
 
-void on_traverse_callable(const metaffi_size* index, metaffi_size index_size, const cdt_metaffi_callable& val, void* context)
+DLL_PRIVATE void on_traverse_callable(const metaffi_size* index, metaffi_size index_size, const cdt_metaffi_callable& val, void* context)
 {
 	auto pcreate_caller = [](JNIEnv* env, const cdt_metaffi_callable& val) -> jobject {
 		jclass load_callable_cls = env->FindClass("metaffi/Caller");
@@ -856,7 +858,7 @@ void on_traverse_callable(const metaffi_size* index, metaffi_size index_size, co
 	}
 }
 
-void on_traverse_null(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE void on_traverse_null(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 	if(index_size == 0)
 	{
@@ -881,7 +883,7 @@ void on_traverse_null(const metaffi_size* index, metaffi_size index_size, void* 
 	}
 }
 
-metaffi_bool on_traverse_array(const metaffi_size* index, metaffi_size index_size, const cdts& val, metaffi_int64 fixed_dimensions, metaffi_type common_type, void* context)
+DLL_PRIVATE metaffi_bool on_traverse_array(const metaffi_size* index, metaffi_size index_size, const cdts& val, metaffi_int64 fixed_dimensions, metaffi_type common_type, void* context)
 {
 	// traverse to the last dimension based on the indices array in "index" and "index_size"
 	// and create another array of "common_type" and set it to the jobject "context"
@@ -916,7 +918,7 @@ metaffi_bool on_traverse_array(const metaffi_size* index, metaffi_size index_siz
 	return 1;
 }
 
-metaffi::runtime::traverse_cdts_callbacks get_traverse_cdts_callback(void* context)
+DLL_PRIVATE metaffi::runtime::traverse_cdts_callbacks jni_get_traverse_cdts_callback(void* context)
 {
 	metaffi::runtime::traverse_cdts_callbacks tcc = {
 	        context,
@@ -950,7 +952,7 @@ metaffi::runtime::traverse_cdts_callbacks get_traverse_cdts_callback(void* conte
 #define jvalue_type_context(ctxt) std::get<2>(*(static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(ctxt)))
 #define metaffi_type_info_context(ctxt) std::get<3>(*(static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(ctxt)))
 
-metaffi_size on_construct_array_metadata(const metaffi_size* index, metaffi_size index_length, metaffi_bool* is_fixed_dimension, metaffi_bool* is_1d_array, metaffi_type* common_type, metaffi_bool* is_manually_construct_array, void* context)
+DLL_PRIVATE metaffi_size on_construct_array_metadata(const metaffi_size* index, metaffi_size index_length, metaffi_bool* is_fixed_dimension, metaffi_bool* is_1d_array, metaffi_type* common_type, metaffi_bool* is_manually_construct_array, void* context)
 {
 	auto elem = jarray_wrapper::get_element(JNIEnv_context(context), (jarray) jvalue_context(context).l, index, index_length);
 	if(elem.second != 'L') { throw std::invalid_argument("Expected jobject to be an array"); }
@@ -965,13 +967,13 @@ metaffi_size on_construct_array_metadata(const metaffi_size* index, metaffi_size
 	return res.second;
 }
 
-metaffi_size on_get_root_elements_count(void* context)
+DLL_PRIVATE metaffi_size on_get_root_elements_count(void* context)
 {
 
 	return JNIEnv_context(context)->GetArrayLength((jarray) jvalue_context(context).l);
 }
 
-metaffi_type_info on_get_type_info(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_type_info on_get_type_info(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 	auto type_info_from_jvalue = [](JNIEnv* env, jvalue& jval, char jval_type, metaffi_type_info root_type_info) -> metaffi_type_info {
 		if(jval_type == 'L')
@@ -1112,7 +1114,7 @@ metaffi_type_info on_get_type_info(const metaffi_size* index, metaffi_size index
 	return type_info_from_jvalue(env, res.first, res.second, root_type_info);
 }
 
-metaffi_float64 on_construct_float64(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_float64 on_construct_float64(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	if(index_size == 0)
@@ -1158,7 +1160,7 @@ metaffi_float64 on_construct_float64(const metaffi_size* index, metaffi_size ind
 	}
 }
 
-metaffi_float32 on_construct_float32(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_float32 on_construct_float32(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1203,7 +1205,7 @@ metaffi_float32 on_construct_float32(const metaffi_size* index, metaffi_size ind
 	}
 }
 
-metaffi_int8 on_construct_int8(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_int8 on_construct_int8(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1262,7 +1264,7 @@ metaffi_int8 on_construct_int8(const metaffi_size* index, metaffi_size index_siz
 	}
 }
 
-metaffi_uint8 on_construct_uint8(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_uint8 on_construct_uint8(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = JNIEnv_context(context);
@@ -1321,7 +1323,7 @@ metaffi_uint8 on_construct_uint8(const metaffi_size* index, metaffi_size index_s
 	}
 }
 
-metaffi_int16 on_construct_int16(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_int16 on_construct_int16(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = JNIEnv_context(context);
@@ -1397,7 +1399,7 @@ metaffi_int16 on_construct_int16(const metaffi_size* index, metaffi_size index_s
 	}
 }
 
-metaffi_uint16 on_construct_uint16(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_uint16 on_construct_uint16(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = JNIEnv_context(context);
@@ -1472,7 +1474,7 @@ metaffi_uint16 on_construct_uint16(const metaffi_size* index, metaffi_size index
 	}
 }
 
-metaffi_int32 on_construct_int32(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_int32 on_construct_int32(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1564,7 +1566,7 @@ metaffi_int32 on_construct_int32(const metaffi_size* index, metaffi_size index_s
 	}
 }
 
-metaffi_uint32 on_construct_uint32(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_uint32 on_construct_uint32(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1655,7 +1657,7 @@ metaffi_uint32 on_construct_uint32(const metaffi_size* index, metaffi_size index
 	}
 }
 
-metaffi_int64 on_construct_int64(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_int64 on_construct_int64(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1762,7 +1764,7 @@ metaffi_int64 on_construct_int64(const metaffi_size* index, metaffi_size index_s
 	}
 }
 
-metaffi_uint64 on_construct_uint64(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_uint64 on_construct_uint64(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1869,7 +1871,7 @@ metaffi_uint64 on_construct_uint64(const metaffi_size* index, metaffi_size index
 	}
 }
 
-metaffi_bool on_construct_bool(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_bool on_construct_bool(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1919,7 +1921,7 @@ metaffi_bool on_construct_bool(const metaffi_size* index, metaffi_size index_siz
 	}
 }
 
-metaffi_char8 on_construct_char8(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_char8 on_construct_char8(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -1965,7 +1967,7 @@ metaffi_char8 on_construct_char8(const metaffi_size* index, metaffi_size index_s
 	}
 }
 
-metaffi_string8 on_construct_string8(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
+DLL_PRIVATE metaffi_string8 on_construct_string8(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	
 	JNIEnv* env = JNIEnv_context(context);
@@ -2005,7 +2007,7 @@ metaffi_string8 on_construct_string8(const metaffi_size* index, metaffi_size ind
 	}
 }
 
-metaffi_char16 on_construct_char16(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_char16 on_construct_char16(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 
 	JNIEnv* env = JNIEnv_context(context);
@@ -2051,7 +2053,7 @@ metaffi_char16 on_construct_char16(const metaffi_size* index, metaffi_size index
 	}
 }
 
-metaffi_string16 on_construct_string16(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
+DLL_PRIVATE metaffi_string16 on_construct_string16(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
@@ -2093,7 +2095,7 @@ metaffi_string16 on_construct_string16(const metaffi_size* index, metaffi_size i
 	}
 }
 
-metaffi_char32 on_construct_char32(const metaffi_size* index, metaffi_size index_size, void* context)
+DLL_PRIVATE metaffi_char32 on_construct_char32(const metaffi_size* index, metaffi_size index_size, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = JNIEnv_context(context);
@@ -2142,7 +2144,7 @@ metaffi_char32 on_construct_char32(const metaffi_size* index, metaffi_size index
 	}
 }
 
-metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
+DLL_PRIVATE metaffi_string32 on_construct_string32(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
@@ -2244,7 +2246,7 @@ void jni_releaser(cdt_metaffi_handle* ptr)
 	release_env();
 }
 
-cdt_metaffi_handle* on_construct_handle(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
+DLL_PRIVATE cdt_metaffi_handle* on_construct_handle(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
@@ -2282,7 +2284,7 @@ cdt_metaffi_handle* on_construct_handle(const metaffi_size* index, metaffi_size 
 	}
 }
 
-cdt_metaffi_callable* on_construct_callable(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
+DLL_PRIVATE cdt_metaffi_callable* on_construct_callable(const metaffi_size* index, metaffi_size index_size, metaffi_bool* is_free_required, void* context)
 {
 	std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>* context_data = static_cast<std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>*>(context);
 	JNIEnv* env = std::get<0>(*context_data);
@@ -2299,7 +2301,7 @@ cdt_metaffi_callable* on_construct_callable(const metaffi_size* index, metaffi_s
 	return callable;
 }
 
-metaffi::runtime::construct_cdts_callbacks get_construct_cdts_callbacks(void* context)
+DLL_PRIVATE metaffi::runtime::construct_cdts_callbacks jni_get_construct_cdts_callbacks(void* context)
 {
 	metaffi::runtime::construct_cdts_callbacks callbacks{};
 	callbacks.context = context;
@@ -2343,7 +2345,7 @@ jvalue cdts_java_wrapper::to_jvalue(JNIEnv* env, int index) const
 	cdt& c = this->pcdts->at(index);
 
 	auto context = std::pair<JNIEnv*, jvalue&>(env, jval);
-	metaffi::runtime::traverse_cdt(c, get_traverse_cdts_callback(&context));
+	metaffi::runtime::traverse_cdt(c, jni_get_traverse_cdts_callback(&context));
 	return jval;
 }
 
@@ -2353,7 +2355,7 @@ void cdts_java_wrapper::from_jvalue(JNIEnv* env, jvalue jval, char jval_type, co
 	cdt& c = this->pcdts->at(index);
 
 	auto context = std::tuple<JNIEnv*, jvalue&, char, const metaffi_type_info&>(env, jval, jval_type, type);
-	metaffi::runtime::construct_cdt(c, get_construct_cdts_callbacks(&context));
+	metaffi::runtime::construct_cdt(c, jni_get_construct_cdts_callbacks(&context));
 }
 
 //--------------------------------------------------------------------

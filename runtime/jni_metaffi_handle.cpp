@@ -121,7 +121,7 @@ uint64_t jni_metaffi_handle::get_runtime_id() const
 //--------------------------------------------------------------------
 void* jni_metaffi_handle::get_releaser() const
 {
-	return this->value.release;
+	return (void*)this->value.release;
 }
 //--------------------------------------------------------------------
 jni_metaffi_handle::operator cdt_metaffi_handle*() const

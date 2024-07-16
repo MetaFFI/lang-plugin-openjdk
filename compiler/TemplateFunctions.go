@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+
 	. "github.com/MetaFFI/plugin-sdk/compiler/go/CodeTemplates"
 	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
 // --------------------------------------------------------------------

@@ -15,12 +15,11 @@ env['sdk_path'] = env.Dir('.').abspath + '/plugin-sdk'
 # * ---- Build MetaFFI Core Targets ----
 SCons.Script.SConscript(env['sdk_path']+'/SConscript_plugin-sdk', exports='env') # load plugin-sdk into the environment
 
-SCons.Script.SConscript(['runtime/SConscript_xllr-openjdk', # OpenJDK XLLR
-						 'xllr-openjdk-bridge/SConscript_bridge-openjdk', # OpenJDK XLLR Bridge
-						# 'compiler/SConscript_compiler-openjdk', # TODO: OpenJDK Compiler
-						# 'idl/SConscript_idl-openjdk', # TODO: OpenJDK IDL
-						  'api/SConscript_api-openjdk', # API
-						 ], exports='env')
+SCons.Script.SConscript('runtime/SConscript_xllr-openjdk', exports='env') # OpenJDK XLLR
+SCons.Script.SConscript('xllr-openjdk-bridge/SConscript_bridge-openjdk', exports='env') # OpenJDK XLLR Bridge
+# SCons.Script.SConscript('compiler/SConscript_compiler-openjdk', exports='env') # TODO: OpenJDK Compiler
+# SCons.Script.SConscript('idl/SConscript_idl-openjdk', exports='env') # TODO: OpenJDK IDL
+SCons.Script.SConscript('api/SConscript_api-openjdk', exports='env') # API
 
 
 SCons.Script.Alias(ALIAS_BUILD, ALIAS_OPENJDK)

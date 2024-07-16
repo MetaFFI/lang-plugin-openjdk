@@ -1,17 +1,17 @@
+#include "cdts_java_wrapper.h"
+#include "class_loader.h"
+#include "contexts.h"
+#include "jvm.h"
+#include "utils/function_path_parser.h"
+#include "utils/scope_guard.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <set>
-#include "jvm.h"
-#include <runtime/runtime_plugin_api.h>
-#include <sstream>
 #include <mutex>
+#include <runtime/runtime_plugin_api.h>
 #include <runtime/xllr_capi_loader.h>
-#include "utils/scope_guard.hpp"
-#include "utils/function_path_parser.h"
-#include "class_loader.h"
-#include "cdts_java_wrapper.h"
-#include "contexts.h"
+#include <set>
+#include <sstream>
 
 
 #define TRUE 1
@@ -20,29 +20,31 @@
 std::shared_ptr<jvm> pjvm;
 std::once_flag once_flag;
 
-#define handle_err(err, desc) \
-	{auto err_len = strlen( desc ); \
-	*err = (char*)malloc(err_len + 1); \
-	strcpy(*err, desc ); \
-	memset((*err+err_len), 0, 1);}
+#define handle_err(err, desc)               \
+	{                                       \
+		auto err_len = strlen(desc);        \
+		*err = (char*) malloc(err_len + 1); \
+		strcpy(*err, desc);                 \
+		memset((*err + err_len), 0, 1);     \
+	}
 
-#define catch_and_fill(err, ...)\
-catch(std::exception& exp) \
-{                                \
-    __VA_ARGS__; \
-	int len = strlen(exp.what());\
-	char* errbuf = (char*)calloc(len+1, sizeof(char));\
-	strcpy(errbuf, exp.what());\
-	*err = errbuf;\
-}\
-catch(...)\
-{                                        \
-	__VA_ARGS__;\
-	int len = strlen("Unknown Error");\
-	char* errbuf = (char*)calloc(len+1, sizeof(char));\
-	strcpy(errbuf, "Unknown Error");\
-	*err = errbuf;\
-}
+#define catch_and_fill(err, ...)                              \
+	catch(std::exception & exp)                               \
+	{                                                         \
+		__VA_ARGS__;                                          \
+		int len = strlen(exp.what());                         \
+		char* errbuf = (char*) calloc(len + 1, sizeof(char)); \
+		strcpy(errbuf, exp.what());                           \
+		*err = errbuf;                                        \
+	}                                                         \
+	catch(...)                                                \
+	{                                                         \
+		__VA_ARGS__;                                          \
+		int len = strlen("Unknown Error");                    \
+		char* errbuf = (char*) calloc(len + 1, sizeof(char)); \
+		strcpy(errbuf, "Unknown Error");                      \
+		*err = errbuf;                                        \
+	}
 
 
 //--------------------------------------------------------------------
@@ -68,21 +70,20 @@ void free_runtime(char** err)
 	catch_and_fill(err);
 }
 //--------------------------------------------------------------------
-void xcall_params_ret(void* context, cdts params_ret[2], char** out_err)
+void jni_xcall_params_ret(void* context, cdts params_ret[2], char** out_err)
 {
 	try
 	{
-		JNIEnv *env;
+		JNIEnv* env;
 		auto release_environment = pjvm->get_environment(&env);
-		metaffi::utils::scope_guard sg([&]
-		                               { release_environment(); });
-		
-		openjdk_context *ctxt = (openjdk_context*) context;
-		if (ctxt->field) // if field
+		metaffi::utils::scope_guard sg([&] { release_environment(); });
+
+		openjdk_context* ctxt = (openjdk_context*) context;
+		if(ctxt->field)// if field
 		{
-			if (ctxt->is_getter)
+			if(ctxt->is_getter)
 			{
-				if (!ctxt->instance_required)
+				if(!ctxt->instance_required)
 				{
 					jni_class cls(env, ctxt->cls);
 					cdts_java_wrapper wrapper(&params_ret[1]);
@@ -92,130 +93,125 @@ void xcall_params_ret(void* context, cdts params_ret[2], char** out_err)
 				{
 					// get "this"
 					cdts_java_wrapper params_wrapper(&params_ret[0]);
-					if (params_wrapper[0].type != metaffi_handle_type)
+					if(params_wrapper[0].type != metaffi_handle_type)
 					{
 						handle_err(out_err, "expecting \"this\" as first parameter");
 					}
-					
+
 					jobject thisobj = (jobject) params_wrapper[0].cdt_val.handle_val->handle;
-					
+
 					jni_class cls(env, ctxt->cls);
 					cdts_java_wrapper retval_wrapper(&params_ret[1]);
 					cls.write_field_to_cdts(0, retval_wrapper, thisobj, ctxt->field, ctxt->field_or_return_type);
 				}
 			}
-			else // setter
+			else// setter
 			{
-				if (!ctxt->instance_required)
+				if(!ctxt->instance_required)
 				{
 					cdts_java_wrapper params_wrapper(&params_ret[0]);
-					
+
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(0, params_wrapper, nullptr, ctxt->field);
 				}
 				else
 				{
 					cdts_java_wrapper params_wrapper(&params_ret[0]);
-					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val->handle;
-					
+					jobject thisobj = (jobject) params_wrapper[0].cdt_val.handle_val->handle;
+
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);
 				}
 			}
 		}
-		else // callable
+		else// callable
 		{
 			cdts_java_wrapper params_wrapper(&params_ret[0]);
 			cdts_java_wrapper retvals_wrapper(&params_ret[1]);
 			jni_class cls(env, ctxt->cls);
 			cls.call(params_wrapper, retvals_wrapper, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
-	}
-	catch(std::runtime_error& err)
+	} catch(std::runtime_error& err)
 	{
 		handle_err(out_err, err.what());
-	}
-	catch(...)
+	} catch(...)
 	{
 		handle_err(out_err, "Unknown error occurred");
 	}
 }
 //--------------------------------------------------------------------
-void xcall_params_no_ret(void* context, cdts parameters[1], char** out_err)
+void jni_xcall_params_no_ret(void* context, cdts parameters[1], char** out_err)
 {
 	try
 	{
-		JNIEnv *env;
+		JNIEnv* env;
 		auto release_environment = pjvm->get_environment(&env);
-		metaffi::utils::scope_guard sg([&]{ release_environment(); });
-		
-		openjdk_context *ctxt = (openjdk_context *) context;
-		if (ctxt->field) // if field
+		metaffi::utils::scope_guard sg([&] { release_environment(); });
+
+		openjdk_context* ctxt = (openjdk_context*) context;
+		if(ctxt->field)// if field
 		{
-			if (ctxt->is_getter)
+			if(ctxt->is_getter)
 			{
 				throw std::runtime_error("wrong xcall for getter");
 			}
-			else // setter
+			else// setter
 			{
-				if (!ctxt->instance_required)
+				if(!ctxt->instance_required)
 				{
 					cdts_java_wrapper params_wrapper(&parameters[0]);
-					
+
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(0, params_wrapper, nullptr, ctxt->field);
 				}
 				else
 				{
 					cdts_java_wrapper params_wrapper(&parameters[0]);
-					
-					if(params_wrapper[0].type != metaffi_handle_type){
+
+					if(params_wrapper[0].type != metaffi_handle_type)
+					{
 						throw std::runtime_error("expected \"this\" in index 0");
 					}
-					
-					jobject thisobj = (jobject)params_wrapper[0].cdt_val.handle_val->handle;
-					
+
+					jobject thisobj = (jobject) params_wrapper[0].cdt_val.handle_val->handle;
+
 					jni_class cls(env, ctxt->cls);
 					cls.write_cdts_to_field(1, params_wrapper, thisobj, ctxt->field);
 				}
 			}
-
 		}
-		else // callable
+		else// callable
 		{
 			cdts_java_wrapper params_wrapper(&parameters[0]);
 			cdts_java_wrapper dummy(&parameters[1]);
-			
+
 			jni_class cls(env, ctxt->cls);
 			cls.call(params_wrapper, dummy, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
-	}
-	catch(std::runtime_error& err)
+	} catch(std::runtime_error& err)
 	{
 		handle_err(out_err, err.what());
-	}
-	catch(...)
+	} catch(...)
 	{
 		handle_err(out_err, "Unknown error occurred");
 	}
 }
 //--------------------------------------------------------------------
-void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err)
+void jni_xcall_no_params_ret(void* context, cdts return_values[1], char** out_err)
 {
 	try
 	{
-		JNIEnv *env;
+		JNIEnv* env;
 		auto release_environment = pjvm->get_environment(&env);
-		metaffi::utils::scope_guard sg([&]
-		                               { release_environment(); });
-		
-		openjdk_context *ctxt = (openjdk_context *) context;
+		metaffi::utils::scope_guard sg([&] { release_environment(); });
 
-		if (ctxt->field) // if field
+		openjdk_context* ctxt = (openjdk_context*) context;
+
+		if(ctxt->field)// if field
 		{
-			if (ctxt->is_getter)
+			if(ctxt->is_getter)
 			{
-				if (!ctxt->instance_required)
+				if(!ctxt->instance_required)
 				{
 					jni_class cls(env, ctxt->cls);
 					cdts_java_wrapper wrapper(&return_values[1]);
@@ -226,65 +222,59 @@ void xcall_no_params_ret(void* context, cdts return_values[1], char** out_err)
 					throw std::runtime_error("wrong xcall for non-static getter");
 				}
 			}
-			else // setter
+			else// setter
 			{
 				throw std::runtime_error("wrong xcall for setter");
 			}
 		}
-		else // callable
+		else// callable
 		{
 			cdts_java_wrapper dummy(&return_values[0]);
 			cdts_java_wrapper retvals_wrapper(&return_values[1]);
-			
+
 			jni_class cls(env, ctxt->cls);
 			cls.call(dummy, retvals_wrapper, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
 		}
-	}
-	catch(std::runtime_error& err)
+	} catch(std::runtime_error& err)
 	{
 		handle_err(out_err, err.what());
-	}
-	catch(...)
+	} catch(...)
 	{
 		handle_err(out_err, "Unknown error occurred");
 	}
 }
 //--------------------------------------------------------------------
-void xcall_no_params_no_ret(void* context, char** out_err)
+void jni_xcall_no_params_no_ret(void* context, char** out_err)
 {
 	try
 	{
-		JNIEnv *env;
+		JNIEnv* env;
 		auto release_environment = pjvm->get_environment(&env);
-		metaffi::utils::scope_guard sg([&]
-		                               { release_environment(); });
+		metaffi::utils::scope_guard sg([&] { release_environment(); });
 
-		openjdk_context *ctxt = (openjdk_context *) context;
-		if (ctxt->field) // if field
+		openjdk_context* ctxt = (openjdk_context*) context;
+		if(ctxt->field)// if field
 		{
-			if (ctxt->is_getter)
+			if(ctxt->is_getter)
 			{
 				throw std::runtime_error("wrong xcall for getter");
 			}
-			else // setter
+			else// setter
 			{
 				throw std::runtime_error("wrong xcall for setter");
 			}
 		}
-		else // callable
+		else// callable
 		{
 			cdts_java_wrapper dummy(nullptr);
 
 			jni_class cls(env, ctxt->cls);
 			cls.call(dummy, dummy, ctxt->field_or_return_type, ctxt->instance_required, ctxt->constructor, ctxt->any_type_indices, ctxt->method);
-
 		}
-	}
-	catch(std::runtime_error& err)
+	} catch(std::runtime_error& err)
 	{
 		handle_err(out_err, err.what());
-	}
-	catch(...)
+	} catch(...)
 	{
 		handle_err(out_err, "Unknown error occurred");
 	}
@@ -303,24 +293,25 @@ xcall* load_entity(const char* module_path, const char* function_path, metaffi_t
 
 		JNIEnv* env;
 		auto release_environment = pjvm->get_environment(&env);
-		metaffi::utils::scope_guard sg([&]{ release_environment(); });
-		
+		metaffi::utils::scope_guard sg([&] { release_environment(); });
+
 		std::string classToLoad = fp["class"];
 
 		jni_class_loader cloader(env, std::string(module_path));
-		
+
 		openjdk_context* ctxt = new openjdk_context();
-		
+
 		jni_class loaded_class = cloader.load_class(classToLoad);
-		ctxt->cls = (jclass)loaded_class;
+		ctxt->cls = (jclass) loaded_class;
 		ctxt->instance_required = fp.contains("instance_required");
 
 		void* entrypoint = nullptr;
-		
+
 		// set in context and parameters indices of "any_type"
-		for(uint8_t i=0 ; i<params_count ; i++)
+		for(uint8_t i = 0; i < params_count; i++)
 		{
-			if(params_types[i].type == metaffi_any_type){
+			if(params_types[i].type == metaffi_any_type)
+			{
 				ctxt->any_type_indices.insert(i);
 			}
 		}
@@ -330,14 +321,15 @@ xcall* load_entity(const char* module_path, const char* function_path, metaffi_t
 			if(fp.contains("getter"))
 			{
 				ctxt->is_getter = true;
-				
-				if(retval_count == 0){
+
+				if(retval_count == 0)
+				{
 					throw std::runtime_error("return type of getter is not specified");
 				}
-				
+
 				ctxt->field = loaded_class.load_field(fp["field"], argument_definition(retvals_types[0]), fp.contains("instance_required"));
 				ctxt->field_or_return_type = retvals_types[0];
-				entrypoint = fp.contains("instance_required") ? (void*)xcall_params_ret : (void*)xcall_no_params_ret;
+				entrypoint = fp.contains("instance_required") ? (void*) jni_xcall_params_ret : (void*) jni_xcall_no_params_ret;
 			}
 			else if(fp.contains("setter"))
 			{
@@ -345,7 +337,7 @@ xcall* load_entity(const char* module_path, const char* function_path, metaffi_t
 				argument_definition argtype = fp.contains("instance_required") ? argument_definition(params_types[1]) : argument_definition(params_types[0]);
 				ctxt->field = loaded_class.load_field(fp["field"], argtype, fp.contains("instance_required"));
 				ctxt->field_or_return_type = argtype.type;
-				entrypoint = (void*)xcall_params_no_ret;
+				entrypoint = (void*) jni_xcall_params_no_ret;
 			}
 			else
 			{
@@ -354,49 +346,49 @@ xcall* load_entity(const char* module_path, const char* function_path, metaffi_t
 		}
 		else if(fp.contains("callable"))
 		{
-			if(retval_count > 1){
+			if(retval_count > 1)
+			{
 				throw std::runtime_error("Java does not support multiple return values");
 			}
 
 			std::vector<argument_definition> parameters;
 			if(params_count > 0)
 			{
-				int i = ctxt->instance_required ? 1 : 0; // if instance required, skip "this"
-				for(; i<params_count ; i++){
+				int i = ctxt->instance_required ? 1 : 0;// if instance required, skip "this"
+				for(; i < params_count; i++)
+				{
 					parameters.emplace_back(params_types[i]);
 				}
 			}
 
 			ctxt->method = loaded_class.load_method(fp["callable"],
-													retval_count == 0 ? argument_definition() : argument_definition(retvals_types[0]),
-													parameters,
-													fp.contains("instance_required"));
+			                                        retval_count == 0 ? argument_definition() : argument_definition(retvals_types[0]),
+			                                        parameters,
+			                                        fp.contains("instance_required"));
 
 			ctxt->constructor = fp["callable"] == "<init>";
 			ctxt->field_or_return_type = retval_count == 0 ? metaffi_type_info{metaffi_null_type} : retvals_types[0];
 
-			if (params_count == 0 && retval_count == 0)
+			if(params_count == 0 && retval_count == 0)
 			{
-				entrypoint = (void*)xcall_no_params_no_ret;
+				entrypoint = (void*) jni_xcall_no_params_no_ret;
 			}
-			else if (params_count > 0 && retval_count == 0)
+			else if(params_count > 0 && retval_count == 0)
 			{
-				entrypoint = (void*)xcall_params_no_ret;
+				entrypoint = (void*) jni_xcall_params_no_ret;
 			}
-			else if (params_count == 0 && retval_count > 0)
+			else if(params_count == 0 && retval_count > 0)
 			{
-				entrypoint = (void*)xcall_no_params_ret;
+				entrypoint = (void*) jni_xcall_no_params_ret;
 			}
-			else if (params_count > 0 && retval_count > 0)
+			else if(params_count > 0 && retval_count > 0)
 			{
-				entrypoint = (void*)xcall_params_ret;
+				entrypoint = (void*) jni_xcall_params_ret;
 			}
 			else
 			{
 				entrypoint = nullptr;
 			}
-
-
 		}
 		else
 		{
@@ -411,7 +403,6 @@ xcall* load_entity(const char* module_path, const char* function_path, metaffi_t
 		}
 
 		res = new xcall(entrypoint, ctxt);
-		
 	}
 	catch_and_fill(err);
 
@@ -423,38 +414,40 @@ xcall* make_callable(void* make_callable_context, metaffi_type_info* params_type
 	xcall* res = nullptr;
 	try
 	{
-		openjdk_context* ctxt = (openjdk_context*)make_callable_context;
+		openjdk_context* ctxt = (openjdk_context*) make_callable_context;
 
 		void* entrypoint = nullptr;
 
 		// set in context and parameters indices of "any_type"
-		for(uint8_t i=0 ; i<params_count ; i++)
+		for(uint8_t i = 0; i < params_count; i++)
 		{
-			if(params_types[i].type == metaffi_any_type){
+			if(params_types[i].type == metaffi_any_type)
+			{
 				ctxt->any_type_indices.insert(i);
 			}
 		}
 
-		if(retval_count > 1){
+		if(retval_count > 1)
+		{
 			throw std::runtime_error("Java does not support multiple return values");
 		}
 
 		std::vector<argument_definition> parameters;
 		if(params_count > 0)
 		{
-			int i = ctxt->instance_required ? 1 : 0; // if instance required, skip "this"
-			for(; i<params_count ; i++){
+			int i = ctxt->instance_required ? 1 : 0;// if instance required, skip "this"
+			for(; i < params_count; i++)
+			{
 				parameters.emplace_back(params_types[i]);
 			}
 		}
 
 		ctxt->field_or_return_type = retval_count == 0 ? metaffi_type_info{metaffi_null_type} : retvals_types[0];
 
-		entrypoint = (params_count == 0 && retval_count == 0) ? (void*)xcall_no_params_no_ret  :
-		             (params_count > 0 && retval_count == 0) ? (void*)xcall_params_no_ret :
-		             (params_count == 0 && retval_count > 0) ? (void*)xcall_no_params_ret :
-		             (params_count > 0 && retval_count > 0) ? (void*)xcall_params_ret :
-					 nullptr;
+		entrypoint = (params_count == 0 && retval_count == 0) ? (void*) jni_xcall_no_params_no_ret : (params_count > 0 && retval_count == 0) ? (void*) jni_xcall_params_no_ret
+		                                                                                     : (params_count == 0 && retval_count > 0)       ? (void*) jni_xcall_no_params_ret
+		                                                                                     : (params_count > 0 && retval_count > 0)        ? (void*) jni_xcall_params_ret
+		                                                                                                                                     : nullptr;
 
 		if(!entrypoint)
 		{
@@ -476,7 +469,7 @@ void free_xcall(xcall* pxcall, char** err)
 	{
 		if(pxcall)
 		{
-			delete (openjdk_context*)pxcall->pxcall_and_context[1];
+			delete(openjdk_context*) pxcall->pxcall_and_context[1];
 			delete pxcall;
 		}
 	}
