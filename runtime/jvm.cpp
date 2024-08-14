@@ -87,7 +87,7 @@ std::function<void()> jvm::get_environment(JNIEnv** env)
 	auto get_env_result = pjvm->GetEnv((void**)env, JNI_VERSION_1_4);
 	if (get_env_result == JNI_EDETACHED)
 	{
-		if(pjvm->AttachCurrentThread((void**)*env, nullptr) == JNI_OK)
+		if(pjvm->AttachCurrentThread((void**)env, nullptr) == JNI_OK)
 		{
 			did_attach_thread = true;
 		}
