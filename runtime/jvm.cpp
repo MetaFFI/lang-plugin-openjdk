@@ -71,7 +71,7 @@ void jvm::fini()
 	{
 		jint res = this->pjvm->DestroyJavaVM(); // TODO: Check why it gets stuck !
 		if(res != JNI_OK){
-			printf("Failed to destroy JVM: %d\n", res);
+			printf("Failed to destroy JVM: %ld\n", res);
 		}
 		
 		this->pjvm = nullptr;

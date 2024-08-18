@@ -43,7 +43,6 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_load_1runtime_1plugin(JNIEnv* 
 	try
 	{
 		const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
-		jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
 
 		char* out_err_buf = nullptr;
 		xllr->load_runtime_plugin(str_runtime_plugin, &out_err_buf);
@@ -69,7 +68,6 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* 
 	try
 	{
 		const char* str_runtime_plugin = env->GetStringUTFChars(runtime_plugin, nullptr);
-		jsize str_runtime_plugin_len = env->GetStringLength(runtime_plugin);
 
 		char* out_err_buf = nullptr;
 		xllr->free_runtime_plugin(str_runtime_plugin, &out_err_buf);
@@ -307,9 +305,6 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 
 		const char* str_function_path = env->GetStringUTFChars(function_path, nullptr);
 		check_and_throw_jvm_exception(env, str_function_path);
-
-		jsize str_function_path_len = env->GetStringLength(function_path);
-		check_and_throw_jvm_exception(env, true);
 
 		jsize params_count = parameters_types == nullptr ? 0 : env->GetArrayLength(parameters_types);
 		check_and_throw_jvm_exception(env, true);

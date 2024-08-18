@@ -2,13 +2,13 @@ conandeps = {
 
 
         "conandeps" : {
-            "CPPPATH"     : ['C:\\Users\\green\\.conan2\\p\\openjfaf2efa7b3ccc\\p\\include', 'C:\\Users\\green\\.conan2\\p\\docte2fe58cbe17539\\p\\include', 'C:\\Users\\green\\.conan2\\p\\b\\boost967d5cfd88737\\p\\include'],
-            "LIBPATH"     : ['C:\\Users\\green\\.conan2\\p\\openjfaf2efa7b3ccc\\p\\lib', 'C:\\Users\\green\\.conan2\\p\\b\\boost967d5cfd88737\\p\\lib'],
-            "BINPATH"     : ['C:\\Users\\green\\.conan2\\p\\openjfaf2efa7b3ccc\\p\\bin', 'C:\\Users\\green\\.conan2\\p\\b\\boost967d5cfd88737\\p\\bin'],
-            "LIBS"        : ['boost_log_setup', 'boost_log', 'boost_locale', 'boost_iostreams', 'boost_graph', 'boost_contract', 'boost_wave', 'boost_unit_test_framework', 'boost_type_erasure', 'boost_thread', 'boost_random', 'boost_prg_exec_monitor', 'boost_nowide', 'boost_json', 'boost_filesystem', 'boost_coroutine', 'boost_chrono', 'boost_wserialization', 'boost_url', 'boost_timer', 'libboost_test_exec_monitor', 'boost_stacktrace_windbg_cached', 'boost_stacktrace_windbg', 'boost_stacktrace_noop', 'boost_serialization', 'boost_regex', 'boost_program_options', 'boost_math_tr1l', 'boost_math_tr1f', 'boost_math_tr1', 'boost_math_c99l', 'boost_math_c99f', 'boost_math_c99', 'libboost_exception', 'boost_date_time', 'boost_context', 'boost_container', 'boost_charconv', 'boost_atomic', 'ole32', 'dbgeng', 'bcrypt'],
+            "CPPPATH"     : ['/home/tcs/.conan2/p/b/booste92fea2c97b0c/p/include', '/home/tcs/.conan2/p/openj19acca4b9c37e/p/include', '/home/tcs/.conan2/p/docte2fe58cbe17539/p/include', '/home/tcs/.conan2/p/libbab546f21710147/p/include'],
+            "LIBPATH"     : ['/home/tcs/.conan2/p/b/booste92fea2c97b0c/p/lib', '/home/tcs/.conan2/p/openj19acca4b9c37e/p/lib', '/home/tcs/.conan2/p/libbab546f21710147/p/lib'],
+            "BINPATH"     : ['/home/tcs/.conan2/p/b/booste92fea2c97b0c/p/bin', '/home/tcs/.conan2/p/openj19acca4b9c37e/p/bin', '/home/tcs/.conan2/p/libbab546f21710147/p/bin'],
+            "LIBS"        : ['boost_log_setup', 'boost_log', 'boost_locale', 'boost_iostreams', 'boost_graph', 'boost_fiber_numa', 'boost_fiber', 'boost_contract', 'boost_wave', 'boost_unit_test_framework', 'boost_type_erasure', 'boost_thread', 'boost_random', 'boost_prg_exec_monitor', 'boost_nowide', 'boost_json', 'boost_filesystem', 'boost_coroutine', 'boost_chrono', 'boost_wserialization', 'boost_url', 'boost_timer', 'boost_test_exec_monitor', 'boost_stacktrace_noop', 'boost_stacktrace_from_exception', 'boost_stacktrace_basic', 'boost_stacktrace_backtrace', 'boost_stacktrace_addr2line', 'boost_serialization', 'boost_regex', 'boost_program_options', 'boost_math_tr1l', 'boost_math_tr1f', 'boost_math_tr1', 'boost_math_c99l', 'boost_math_c99f', 'boost_math_c99', 'boost_exception', 'boost_date_time', 'boost_context', 'boost_container', 'boost_charconv', 'boost_atomic', 'backtrace', 'dl', 'rt', 'pthread'],
             "FRAMEWORKS"  : [],
             "FRAMEWORKPATH" : [],
-            "CPPDEFINES"  : ['BOOST_STACKTRACE_USE_WINDBG_CACHED', 'BOOST_STACKTRACE_USE_WINDBG', 'BOOST_STACKTRACE_USE_NOOP', 'BOOST_SYSTEM_USE_UTF8', 'BOOST_ALL_DYN_LINK', 'BOOST_ALL_NO_LIB'],
+            "CPPDEFINES"  : ['BOOST_STACKTRACE_USE_NOOP', 'BOOST_STACKTRACE_USE_BACKTRACE', 'BOOST_STACKTRACE_ADDR2LINE_LOCATION="/usr/bin/addr2line"', 'BOOST_STACKTRACE_USE_ADDR2LINE', 'BOOST_SYSTEM_USE_UTF8', 'BOOST_ALL_DYN_LINK'],
             "CXXFLAGS"    : [],
             "CCFLAGS"     : [],
             "SHLINKFLAGS" : [],
@@ -18,9 +18,9 @@ conandeps = {
         
 
         "boost" : {
-            "CPPPATH"     : ['C:\\Users\\green\\.conan2\\p\\b\\boost967d5cfd88737\\p\\include'],
-            "LIBPATH"     : ['C:\\Users\\green\\.conan2\\p\\b\\boost967d5cfd88737\\p\\lib'],
-            "BINPATH"     : ['C:\\Users\\green\\.conan2\\p\\b\\boost967d5cfd88737\\p\\bin'],
+            "CPPPATH"     : ['/home/tcs/.conan2/p/b/booste92fea2c97b0c/p/include'],
+            "LIBPATH"     : ['/home/tcs/.conan2/p/b/booste92fea2c97b0c/p/lib'],
+            "BINPATH"     : ['/home/tcs/.conan2/p/b/booste92fea2c97b0c/p/bin'],
             "LIBS"        : [],
             "FRAMEWORKS"  : [],
             "FRAMEWORKPATH" : [],
@@ -65,8 +65,24 @@ conandeps = {
         "bzip2_version" : "1.0.8",
         
 
+        "libbacktrace" : {
+            "CPPPATH"     : ['/home/tcs/.conan2/p/libbab546f21710147/p/include'],
+            "LIBPATH"     : ['/home/tcs/.conan2/p/libbab546f21710147/p/lib'],
+            "BINPATH"     : ['/home/tcs/.conan2/p/libbab546f21710147/p/bin'],
+            "LIBS"        : ['backtrace'],
+            "FRAMEWORKS"  : [],
+            "FRAMEWORKPATH" : [],
+            "CPPDEFINES"  : [],
+            "CXXFLAGS"    : [],
+            "CCFLAGS"     : [],
+            "SHLINKFLAGS" : [],
+            "LINKFLAGS"   : [],
+        },
+        "libbacktrace_version" : "cci.20210118",
+        
+
         "doctest" : {
-            "CPPPATH"     : ['C:\\Users\\green\\.conan2\\p\\docte2fe58cbe17539\\p\\include'],
+            "CPPPATH"     : ['/home/tcs/.conan2/p/docte2fe58cbe17539/p/include'],
             "LIBPATH"     : [],
             "BINPATH"     : [],
             "LIBS"        : [],
@@ -82,9 +98,9 @@ conandeps = {
         
 
         "openjdk" : {
-            "CPPPATH"     : ['C:\\Users\\green\\.conan2\\p\\openjfaf2efa7b3ccc\\p\\include'],
-            "LIBPATH"     : ['C:\\Users\\green\\.conan2\\p\\openjfaf2efa7b3ccc\\p\\lib'],
-            "BINPATH"     : ['C:\\Users\\green\\.conan2\\p\\openjfaf2efa7b3ccc\\p\\bin'],
+            "CPPPATH"     : ['/home/tcs/.conan2/p/openj19acca4b9c37e/p/include'],
+            "LIBPATH"     : ['/home/tcs/.conan2/p/openj19acca4b9c37e/p/lib'],
+            "BINPATH"     : ['/home/tcs/.conan2/p/openj19acca4b9c37e/p/bin'],
             "LIBS"        : [],
             "FRAMEWORKS"  : [],
             "FRAMEWORKPATH" : [],

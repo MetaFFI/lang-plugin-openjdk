@@ -22,30 +22,42 @@ std::once_flag once_flag;
 
 #define handle_err(err, desc)               \
 	{                                       \
-		auto err_len = strlen(desc);        \
+		auto err_len = std::strlen(desc);   \
 		*err = (char*) malloc(err_len + 1); \
-		strcpy(*err, desc);                 \
-		memset((*err + err_len), 0, 1);     \
+		if (!*err)                          \
+		{                                   \
+			throw std::runtime_error("out of memory"); \
+		}                                   \
+		std::copy(desc, desc + err_len, *err); \
+		(*err)[err_len] = '\0';             \
 	}
 
 #define catch_and_fill(err, ...)                              \
 	catch(std::exception & exp)                               \
 	{                                                         \
 		__VA_ARGS__;                                          \
-		int len = strlen(exp.what());                         \
-		char* errbuf = (char*) calloc(len + 1, sizeof(char)); \
-		strcpy(errbuf, exp.what());                           \
-		*err = errbuf;                                        \
+		auto len = std::strlen(exp.what());                   \
+		*err = (char*) malloc(len + 1);                       \
+		if (!*err)                                            \
+		{                                                     \
+			throw std::runtime_error("out of memory");        \
+		}                                                     \
+		std::copy(exp.what(), exp.what() + len, *err);        \
+		(*err)[len] = '\0';                                   \
 	}                                                         \
 	catch(...)                                                \
 	{                                                         \
 		__VA_ARGS__;                                          \
-		int len = strlen("Unknown Error");                    \
-		char* errbuf = (char*) calloc(len + 1, sizeof(char)); \
-		strcpy(errbuf, "Unknown Error");                      \
-		*err = errbuf;                                        \
+		const char* unknown_err = "Unknown Error";            \
+		auto len = std::strlen(unknown_err);                  \
+		*err = (char*) malloc(len + 1);                       \
+		if (!*err)                                            \
+		{                                                     \
+			throw std::runtime_error("out of memory");        \
+		}                                                     \
+		std::copy(unknown_err, unknown_err + len, *err);      \
+		(*err)[len] = '\0';                                   \
 	}
-
 
 //--------------------------------------------------------------------
 void load_runtime(char** err)

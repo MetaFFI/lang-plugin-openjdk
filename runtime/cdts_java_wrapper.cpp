@@ -243,7 +243,6 @@ DLL_PRIVATE void on_traverse_uint16(const metaffi_size* index, metaffi_size inde
 	if(index_size == 0)
 	{
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
-		JNIEnv* env = pair->first;
 		pair->second.s = (jshort) val;
 	}
 	else// if is part of an array
@@ -330,7 +329,6 @@ DLL_PRIVATE void on_traverse_uint32(const metaffi_size* index, metaffi_size inde
 	if(index_size == 0)
 	{
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
-		JNIEnv* env = pair->first;
 		pair->second.i = (jint) val;
 	}
 	else// if is part of an array
@@ -587,7 +585,6 @@ DLL_PRIVATE void on_traverse_char16(const metaffi_size* index, metaffi_size inde
 	if(index_size == 0)
 	{
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
-		JNIEnv* env = pair->first;
 		pair->second.c = (jchar) val.c[0];
 	}
 	else// if is part of an array
@@ -657,7 +654,6 @@ DLL_PRIVATE void on_traverse_char32(const metaffi_size* index, metaffi_size inde
 	if(index_size == 0)
 	{
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
-		JNIEnv* env = pair->first;
 		pair->second.c = (jchar) val.c;
 	}
 	else// if is part of an array
@@ -863,7 +859,6 @@ DLL_PRIVATE void on_traverse_null(const metaffi_size* index, metaffi_size index_
 	if(index_size == 0)
 	{
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
-		JNIEnv* env = pair->first;
 		pair->second.l = nullptr;
 	}
 	else// if is part of an array
