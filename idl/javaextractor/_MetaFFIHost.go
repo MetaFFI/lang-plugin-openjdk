@@ -129,7 +129,7 @@ func BindModuleToCode(modulePath string){
 	// load functions
 	loadFF := func(fpath string, params []IDL.MetaFFITypeInfo, retvals []IDL.MetaFFITypeInfo) (caller func(...interface{}) ([]interface{}, error)){
 		var err error
-		caller, err = mod.LoadWithAlias(fpath, params, retvals)
+		caller, err = mod.LoadWithInfo(fpath, params, retvals)
 		if err != nil{ // failed
 			panic(err)
 		}
