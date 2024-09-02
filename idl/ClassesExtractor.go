@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"strings"
+
+	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 )
 
 var classes map[string]*IDL.ClassDefinition
@@ -32,7 +33,7 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 		}
 
 		//if packageName != "" {
-		//	javacls.SetFunctionPath("package", packageName)
+		//	javacls.SetEntityPath("package", packageName)
 		//}
 
 		comment, err := c.Comment_Getter()
@@ -74,14 +75,14 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 				if javaTypeToMFFI(typy) == IDL.HANDLE {
 					fdecl.TypeAlias = typy
 				}
-				fdecl.Getter.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_get_%v", javacls.Name, fdecl.Getter.Name))
-				fdecl.Setter.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_set_%v", javacls.Name, fdecl.Setter.Name))
+				fdecl.Getter.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_get_%v", javacls.Name, fdecl.Getter.Name))
+				fdecl.Setter.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_set_%v", javacls.Name, fdecl.Setter.Name))
 			} else {
 				fdecl = IDL.NewFieldDefinition(javacls, name, javaTypeToMFFI(typy), "Get"+name, "", !isStatic)
 				if javaTypeToMFFI(typy) == IDL.HANDLE {
 					fdecl.TypeAlias = typy
 				}
-				fdecl.Getter.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_get_%v", javacls.Name, fdecl.Getter.Name))
+				fdecl.Getter.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_get_%v", javacls.Name, fdecl.Getter.Name))
 			}
 
 			javacls.AddField(fdecl)
@@ -97,9 +98,9 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 			javaconst.OverloadIndex = int32(i)
 
 			if i > 0 {
-				javaconst.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v%v", javacls.Name, javaconst.Name, i))
+				javaconst.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v%v", javacls.Name, javaconst.Name, i))
 			} else {
-				javaconst.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javaconst.Name))
+				javaconst.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javaconst.Name))
 			}
 
 			comment, err := f.Comment_Getter()
@@ -166,9 +167,9 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 			}
 
 			if javameth.OverloadIndex > 0 {
-				javameth.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v%v", javacls.Name, javameth.Name, javameth.OverloadIndex))
+				javameth.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v%v", javacls.Name, javameth.Name, javameth.OverloadIndex))
 			} else {
-				javameth.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javameth.Name))
+				javameth.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javameth.Name))
 			}
 
 			comment, err := f.Comment_Getter()
@@ -254,14 +255,14 @@ func ExtractClasses(javainfo *JavaInfo) ([]*IDL.ClassDefinition, error) {
 
 		}
 
-		javacls.Releaser.SetFunctionPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javacls.Releaser.Name))
+		javacls.Releaser.SetEntityPath("entrypoint_function", fmt.Sprintf("EntryPoint_%v_%v", javacls.Name, javacls.Releaser.Name))
 
 		// set function path items
 		if packageName != "" {
-			javacls.SetFunctionPath("package", packageName)
+			javacls.SetEntityPath("package", packageName)
 		}
 
-		javacls.SetFunctionPath("entrypoint_class", javacls.Name+"_Entrypoints")
+		javacls.SetEntityPath("entrypoint_class", javacls.Name+"_Entrypoints")
 
 		classes[javacls.Name] = javacls
 	}

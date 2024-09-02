@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
 )
 
 // --------------------------------------------------------------------
@@ -61,7 +62,7 @@ func (this *JavaIDLCompiler) ParseIDL(sourceCode string, filePath string) (*IDL.
 	guestCodeModule := strings.ReplaceAll(path.Base(this.sourceCodeFilePath), path.Ext(this.sourceCodeFilePath), "")
 	module.AddExternalResource(guestCodeModule + path.Ext(this.sourceCodeFilePath))
 
-	module.SetFunctionPath("module", guestCodeModule)
+	module.SetEntityPath("module", guestCodeModule)
 
 	this.idl.FinalizeConstruction()
 

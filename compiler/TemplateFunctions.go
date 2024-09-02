@@ -79,7 +79,7 @@ func callConstructor(class *IDL.ClassDefinition, constructor *IDL.ConstructorDef
 	}
 
 	clsName := ""
-	if pck, found := constructor.FunctionPath["package"]; found {
+	if pck, found := constructor.EntityPath["package"]; found {
 		clsName = pck + "." + class.Name
 	} else {
 		clsName = class.Name
@@ -101,7 +101,7 @@ func getImports(definition *IDL.IDLDefinition) string {
 
 	for _, m := range definition.Modules {
 		for _, c := range m.Classes {
-			if pck, found := c.FunctionPath["package"]; found {
+			if pck, found := c.EntityPath["package"]; found {
 				imports = append(imports, pck)
 			}
 		}
@@ -155,7 +155,7 @@ func getFullClassName(cls *IDL.ClassDefinition) string {
 	clsName := re.ReplaceAllString(cls.Name, "")
 	clsName = strings.ReplaceAll(clsName, "$", ".")
 
-	if pck, found := cls.FunctionPath["package"]; found {
+	if pck, found := cls.EntityPath["package"]; found {
 		return fmt.Sprintf("%v.%v", pck, clsName)
 	} else {
 		return clsName
@@ -483,29 +483,29 @@ func createLoadFunction(idl *IDL.IDLDefinition, mod *IDL.ModuleDefinition) strin
 
 	/*
 		{{range $findex, $f := $m.Globals}}
-		{{if $f.Getter}}{{$f.Getter.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-		{{if $f.Setter}}{{$f.Setter.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
+		{{if $f.Getter}}{{$f.Getter.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.EntityPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+		{{if $f.Setter}}{{$f.Setter.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.EntityPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 		{{end}}{{/* End globals * /}}
 	*/
 	for _, f := range mod.Globals {
 		if f.Getter != nil {
-			line := fmt.Sprintf("%v = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", f.Getter.GetEntityIDName(), idl.TargetLanguage, f.Getter.FunctionPathAsString(idl), len(f.Getter.Parameters), len(f.Getter.ReturnValues))
+			line := fmt.Sprintf("%v = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", f.Getter.GetEntityIDName(), idl.TargetLanguage, f.Getter.EntityPathAsString(idl), len(f.Getter.Parameters), len(f.Getter.ReturnValues))
 			loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 		}
 
 		if f.Setter != nil {
-			line := fmt.Sprintf("%v = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", f.Setter.GetEntityIDName(), idl.TargetLanguage, f.Setter.FunctionPathAsString(idl), len(f.Setter.Parameters), len(f.Setter.ReturnValues))
+			line := fmt.Sprintf("%v = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", f.Setter.GetEntityIDName(), idl.TargetLanguage, f.Setter.EntityPathAsString(idl), len(f.Setter.Parameters), len(f.Setter.ReturnValues))
 			loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 		}
 	}
 
 	/*
 		{{range $findex, $f := $m.Functions}}
-		{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+		{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.EntityPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 		{{end}}
 	*/
 	for _, f := range mod.Functions {
-		line := fmt.Sprintf("%v = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", f.GetEntityIDName(), idl.TargetLanguage, f.FunctionPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
+		line := fmt.Sprintf("%v = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", f.GetEntityIDName(), idl.TargetLanguage, f.EntityPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
 		loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 	}
 
@@ -516,48 +516,48 @@ func createLoadFunction(idl *IDL.IDLDefinition, mod *IDL.ModuleDefinition) strin
 
 		/*
 			{{range $findex, $f := $c.Fields}}
-			{{if $f.Getter}}{{$c.Name}}_overload{{$f.Getter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.FunctionPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
-			{{if $f.Setter}}{{$c.Name}}_overload{{$f.Setter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.FunctionPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
+			{{if $f.Getter}}{{$c.Name}}_overload{{$f.Getter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Getter.EntityPathAsString $idl}}", (byte){{len $f.Getter.Parameters}}, (byte){{len $f.Getter.ReturnValues}});{{end}}
+			{{if $f.Setter}}{{$c.Name}}_overload{{$f.Setter.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.Setter.EntityPathAsString $idl}}", (byte){{len $f.Setter.Parameters}}, (byte){{len $f.Setter.ReturnValues}});{{end}}
 			{{end}}
 		*/
 		for _, f := range c.Fields {
 			if f.Getter != nil {
-				line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.Getter.GetNameWithOverloadIndex(), idl.TargetLanguage, f.Getter.FunctionPathAsString(idl), len(f.Getter.Parameters), len(f.Getter.ReturnValues))
+				line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.Getter.GetNameWithOverloadIndex(), idl.TargetLanguage, f.Getter.EntityPathAsString(idl), len(f.Getter.Parameters), len(f.Getter.ReturnValues))
 				loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 			}
 			if f.Setter != nil {
-				line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.Setter.GetNameWithOverloadIndex(), idl.TargetLanguage, f.Setter.FunctionPathAsString(idl), len(f.Setter.Parameters), len(f.Setter.ReturnValues))
+				line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.Setter.GetNameWithOverloadIndex(), idl.TargetLanguage, f.Setter.EntityPathAsString(idl), len(f.Setter.Parameters), len(f.Setter.ReturnValues))
 				loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 			}
 		}
 
 		/*
 			{{range $findex, $f := $c.Constructors}}
-			{{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+			{{$c.Name}}_{{$f.GetNameWithOverloadIndex}}ID = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.EntityPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 			{{end}}
 		*/
 		for _, f := range c.Constructors {
-			line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.GetNameWithOverloadIndex(), idl.TargetLanguage, f.FunctionPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
+			line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.GetNameWithOverloadIndex(), idl.TargetLanguage, f.EntityPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
 			loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 		}
 
 		/*
 			{{if $c.Releaser}}{{$f := $c.Releaser}}
-			{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+			{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.EntityPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 			{{end}}
 		*/
 		if f := c.Releaser; f != nil {
-			line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.GetNameWithOverloadIndex(), idl.TargetLanguage, f.FunctionPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
+			line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.GetNameWithOverloadIndex(), idl.TargetLanguage, f.EntityPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
 			loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 		}
 
 		/*
 			{{range $findex, $f := $c.Methods}}
-			{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.FunctionPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
+			{{$f.GetEntityIDName}} = metaffiBridge.load_function("xllr.{{$targetLanguage}}", modulePath, "{{$f.EntityPathAsString $idl}}", (byte){{len $f.Parameters}}, (byte){{len $f.ReturnValues}});
 			{{end}}
 		*/
 		for _, f := range c.Methods {
-			line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.GetNameWithOverloadIndex(), idl.TargetLanguage, f.FunctionPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
+			line := fmt.Sprintf("%v_%vID = metaffiBridge.load_function(\"xllr.%v\", modulePath, \"%v\", (byte)%v, (byte)%v);", c.Name, f.GetNameWithOverloadIndex(), idl.TargetLanguage, f.EntityPathAsString(idl), len(f.Parameters), len(f.ReturnValues))
 			loadFunctionLinesOfCode = append(loadFunctionLinesOfCode, line)
 		}
 	}

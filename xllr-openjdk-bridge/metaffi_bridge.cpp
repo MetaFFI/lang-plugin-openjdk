@@ -91,7 +91,7 @@ JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_free_1runtime_1plugin(JNIEnv* 
 jclass MetaFFITypeInfoClass = nullptr;
 jfieldID typeFieldID = nullptr;
 jfieldID aliasFieldID = nullptr;
-metaffi_type_info* convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(JNIEnv* env, jobjectArray inputArray)
+metaffi_type_info* convert_MetaFFITypeInfo_array_to_metaffi_type_with_info(JNIEnv* env, jobjectArray inputArray)
 {
 	// Get the length of the input array
 	jsize length = env->GetArrayLength(inputArray);
@@ -226,11 +226,11 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 
 		metaffi_type_info* pparams_types = parameters_types == nullptr ?
 													nullptr :
-													convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, parameters_types);
+													convert_MetaFFITypeInfo_array_to_metaffi_type_with_info(env, parameters_types);
 
 		metaffi_type_info* pretval_types = retval_types == nullptr ?
 		                                             nullptr :
-		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, retval_types);
+		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_info(env, retval_types);
 
 		char* out_err_buf = nullptr;
 
@@ -287,7 +287,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 	}
 }
 //--------------------------------------------------------------------
-JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, jclass , jstring runtime_plugin, jstring module_path, jstring function_path, jobjectArray parameters_types, jobjectArray retval_types)
+JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, jclass , jstring runtime_plugin, jstring module_path, jstring entity_path, jobjectArray parameters_types, jobjectArray retval_types)
 {
 	try
 	{
@@ -303,8 +303,8 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 		jsize str_module_path_len = env->GetStringLength(module_path);
 		check_and_throw_jvm_exception(env, str_module_path_len);
 
-		const char* str_function_path = env->GetStringUTFChars(function_path, nullptr);
-		check_and_throw_jvm_exception(env, str_function_path);
+		const char* str_entity_path = env->GetStringUTFChars(entity_path, nullptr);
+		check_and_throw_jvm_exception(env, str_entity_path);
 
 		jsize params_count = parameters_types == nullptr ? 0 : env->GetArrayLength(parameters_types);
 		check_and_throw_jvm_exception(env, true);
@@ -314,24 +314,24 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1function(JNIEnv* env, j
 
 		metaffi_type_info* pparams_types = parameters_types == nullptr ?
 													nullptr :
-													convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, parameters_types);
+													convert_MetaFFITypeInfo_array_to_metaffi_type_with_info(env, parameters_types);
 
 		metaffi_type_info* pretval_types = retval_types == nullptr ?
 		                                             nullptr :
-		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_alias(env, retval_types);
+		                                             convert_MetaFFITypeInfo_array_to_metaffi_type_with_info(env, retval_types);
 
 		char* out_err_buf = nullptr;
 		uint32_t out_err_len = 0;
 
 		xcall* xcall_and_context = xllr->load_entity(str_runtime_plugin,
-													str_module_path, str_function_path,
+													str_module_path, str_entity_path,
 			                                        pparams_types, (int8_t)params_count,
 		                                            pretval_types, (int8_t)retval_count,
 		                                            &out_err_buf);
 
 		// release runtime_plugin
 		env->ReleaseStringUTFChars(runtime_plugin, str_runtime_plugin);
-		env->ReleaseStringUTFChars(function_path, str_function_path);
+		env->ReleaseStringUTFChars(entity_path, str_entity_path);
 
 		if(params_count > 0)
 		{

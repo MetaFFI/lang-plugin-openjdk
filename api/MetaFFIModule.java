@@ -17,13 +17,13 @@ public class MetaFFIModule
 
 
 
-	public metaffi.Caller load(String functionPath, metaffi.MetaFFITypeInfo[] parametersTypes, metaffi.MetaFFITypeInfo[] retvalsTypes)
+	public metaffi.Caller load(String entityPath, metaffi.MetaFFITypeInfo[] parametersTypes, metaffi.MetaFFITypeInfo[] retvalsTypes)
 	{
 
 		var xcallAndContext = metaffi.MetaFFIBridge.load_function(
 															"xllr."+this.runtime.runtimePlugin,
 															this.modulePath,
-															functionPath,
+															entityPath,
 															parametersTypes,
 															retvalsTypes);
 

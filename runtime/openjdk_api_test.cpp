@@ -64,7 +64,7 @@ static GlobalSetup setup;
 
 
 auto cppload_entity(const std::string& module_path,
-                    const std::string& function_path,
+                    const std::string& entity_path,
                     std::vector<metaffi_type_info> params_types,
                     std::vector<metaffi_type_info> retvals_types)
 {
@@ -74,7 +74,7 @@ auto cppload_entity(const std::string& module_path,
 	metaffi_type_info* retvals_types_arr = retvals_types.empty() ? nullptr : retvals_types.data();
 
 	xcall* pxcall = load_entity(module_path.c_str(),
-	                            function_path.c_str(),
+	                            entity_path.c_str(),
 	                            params_types_arr, params_types.size(),
 	                            retvals_types_arr, retvals_types.size(),
 	                            &err);
@@ -96,8 +96,8 @@ TEST_SUITE("openjdk runtime api")
 {
 	TEST_CASE("runtime_test_target.hello_world")
 	{
-		std::string function_path = "class=sanity.TestRuntime,callable=helloWorld";
-		xcall* phello_world = cppload_entity(g_module_path.string(), function_path, {}, {});
+		std::string entity_path = "class=sanity.TestRuntime,callable=helloWorld";
+		xcall* phello_world = cppload_entity(g_module_path.string(), entity_path, {}, {});
 		metaffi::utils::scope_guard sg([phello_world]() {
 			char* err = nullptr;
 			free_xcall(phello_world, &err);
@@ -110,8 +110,8 @@ TEST_SUITE("openjdk runtime api")
 
 	TEST_CASE("runtime_test_target.returns_an_error")
 	{
-		std::string function_path = "class=sanity.TestRuntime,callable=returnsAnError";
-		xcall* preturns_an_error = cppload_entity(g_module_path.string(), function_path, {}, {});
+		std::string entity_path = "class=sanity.TestRuntime,callable=returnsAnError";
+		xcall* preturns_an_error = cppload_entity(g_module_path.string(), entity_path, {}, {});
 		metaffi::utils::scope_guard sg([preturns_an_error]() {
 			char* err = nullptr;
 			free_xcall(preturns_an_error, &err);
@@ -125,11 +125,11 @@ TEST_SUITE("openjdk runtime api")
 
 	TEST_CASE("runtime_test_target.div_integers")
 	{
-		std::string function_path = "class=sanity.TestRuntime,callable=divIntegers";
+		std::string entity_path = "class=sanity.TestRuntime,callable=divIntegers";
 		std::vector<metaffi_type_info> params_types = {metaffi_type_info{metaffi_int32_type}, metaffi_type_info{metaffi_int32_type}};
 		std::vector<metaffi_type_info> retvals_types = {metaffi_type_info{metaffi_float32_type}};
 
-		xcall* pdiv_integers = cppload_entity(g_module_path.string(), function_path, params_types, retvals_types);
+		xcall* pdiv_integers = cppload_entity(g_module_path.string(), entity_path, params_types, retvals_types);
 		metaffi::utils::scope_guard sg([pdiv_integers]() {
 			char* err = nullptr;
 			free_xcall(pdiv_integers, &err);
@@ -157,11 +157,11 @@ TEST_SUITE("openjdk runtime api")
 
 	TEST_CASE("runtime_test_target.join_strings")
 	{
-		std::string function_path = "class=sanity.TestRuntime,callable=joinStrings";
+		std::string entity_path = "class=sanity.TestRuntime,callable=joinStrings";
 		std::vector<metaffi_type_info> params_types = {metaffi_type_info{metaffi_string8_array_type, nullptr, false, 1}};
 		std::vector<metaffi_type_info> retvals_types = {metaffi_type_info{metaffi_string8_type}};
 
-		xcall* join_strings = cppload_entity(g_module_path.string(), function_path, params_types, retvals_types);
+		xcall* join_strings = cppload_entity(g_module_path.string(), entity_path, params_types, retvals_types);
 		jxcall_scope_guard(join_strings, FAIL(std::string(err)));
 
 		cdts* pcdts = (cdts*) xllr_alloc_cdts_buffer(params_types.size(), retvals_types.size());
@@ -184,10 +184,10 @@ TEST_SUITE("openjdk runtime api")
 	TEST_CASE("runtime_test_target.testmap.set_get_contains")
 	{
 		// create new testmap
-		std::string function_path = "class=sanity.TestMap,callable=<init>";
+		std::string entity_path = "class=sanity.TestMap,callable=<init>";
 		std::vector<metaffi_type_info> retvals_types = {{metaffi_handle_type, (char*) "sanity/TestMap", false, 0}};
 
-		xcall* pnew_testmap = cppload_entity(g_module_path.string(), function_path, {}, retvals_types);
+		xcall* pnew_testmap = cppload_entity(g_module_path.string(), entity_path, {}, retvals_types);
 		metaffi::utils::scope_guard sg([pnew_testmap]() {
 			char* err = nullptr;
 			free_xcall(pnew_testmap, &err);
@@ -211,10 +211,10 @@ TEST_SUITE("openjdk runtime api")
 		cdt_metaffi_handle* testmap_instance = retvals_cdts[0].cdt_val.handle_val;
 
 		// set
-		function_path = "class=sanity.TestMap,callable=set,instance_required";
+		entity_path = "class=sanity.TestMap,callable=set,instance_required";
 		std::vector<metaffi_type_info> params_types = {metaffi_type_info{metaffi_handle_type}, metaffi_type_info{metaffi_string8_type}, metaffi_type_info{metaffi_any_type}};
 
-		xcall* p_testmap_set = cppload_entity(g_module_path.string(), function_path, params_types, {});
+		xcall* p_testmap_set = cppload_entity(g_module_path.string(), entity_path, params_types, {});
 		metaffi::utils::scope_guard sg3([p_testmap_set]() {
 			char* err = nullptr;
 			free_xcall(p_testmap_set, &err);
@@ -235,11 +235,11 @@ TEST_SUITE("openjdk runtime api")
 		if(err) { FAIL(std::string(err)); }
 
 		// contains
-		function_path = "class=sanity.TestMap,callable=contains,instance_required";
+		entity_path = "class=sanity.TestMap,callable=contains,instance_required";
 		std::vector<metaffi_type_info> params_contains_types = {metaffi_type_info{metaffi_handle_type}, metaffi_type_info{metaffi_string8_type}};
 		std::vector<metaffi_type_info> retvals_contains_types = {metaffi_type_info{metaffi_bool_type}};
 
-		xcall* p_testmap_contains = cppload_entity(g_module_path.string(), function_path, params_contains_types, retvals_contains_types);
+		xcall* p_testmap_contains = cppload_entity(g_module_path.string(), entity_path, params_contains_types, retvals_contains_types);
 		metaffi::utils::scope_guard sg4([p_testmap_contains]() {
 			char* err = nullptr;
 			free_xcall(p_testmap_contains, &err);
@@ -263,11 +263,11 @@ TEST_SUITE("openjdk runtime api")
 		REQUIRE((retvals_cdts3[0].cdt_val.bool_val != 0));
 
 		// get
-		function_path = "class=sanity.TestMap,callable=get,instance_required";
+		entity_path = "class=sanity.TestMap,callable=get,instance_required";
 		std::vector<metaffi_type_info> params_get_types = {metaffi_type_info{metaffi_handle_type}, metaffi_type_info{metaffi_string8_type}};
 		std::vector<metaffi_type_info> retvals_get_types = {metaffi_type_info{metaffi_any_type}};
 
-		xcall* p_testmap_get = cppload_entity(g_module_path.string(), function_path, params_get_types, retvals_get_types);
+		xcall* p_testmap_get = cppload_entity(g_module_path.string(), entity_path, params_get_types, retvals_get_types);
 		metaffi::utils::scope_guard sg5([p_testmap_get]() {
 			char* err = nullptr;
 			free_xcall(p_testmap_get, &err);
@@ -293,10 +293,10 @@ TEST_SUITE("openjdk runtime api")
 
 	TEST_CASE("runtime_test_target.testmap.set_get_contains_cpp_object")
 	{
-		std::string function_path = "class=sanity.TestMap,callable=<init>";
+		std::string entity_path = "class=sanity.TestMap,callable=<init>";
 		std::vector<metaffi_type_info> retvals_types = {{metaffi_handle_type, (char*) "sanity/TestMap", false, 0}};
 
-		xcall* pnew_testmap = cppload_entity(g_module_path.string(), function_path, {}, retvals_types);
+		xcall* pnew_testmap = cppload_entity(g_module_path.string(), entity_path, {}, retvals_types);
 		metaffi::utils::scope_guard sg([pnew_testmap]() {
 			char* err = nullptr;
 			free_xcall(pnew_testmap, &err);
@@ -321,10 +321,10 @@ TEST_SUITE("openjdk runtime api")
 		cdt_metaffi_handle* testmap_instance = pcdts_retvals[0].cdt_val.handle_val;
 
 		// set
-		function_path = "class=sanity.TestMap,callable=set,instance_required";
+		entity_path = "class=sanity.TestMap,callable=set,instance_required";
 		std::vector<metaffi_type_info> params_types = {metaffi_type_info{metaffi_handle_type}, metaffi_type_info{metaffi_string8_type}, metaffi_type_info{metaffi_any_type}};
 
-		xcall* p_testmap_set = cppload_entity(g_module_path.string(), function_path, params_types, {});
+		xcall* p_testmap_set = cppload_entity(g_module_path.string(), entity_path, params_types, {});
 		metaffi::utils::scope_guard sg3([p_testmap_set]() {
 			char* err = nullptr;
 			free_xcall(p_testmap_set, &err);
@@ -349,11 +349,11 @@ TEST_SUITE("openjdk runtime api")
 		if(err) { FAIL(std::string(err)); }
 
 		// contains
-		function_path = "class=sanity.TestMap,callable=contains,instance_required";
+		entity_path = "class=sanity.TestMap,callable=contains,instance_required";
 		std::vector<metaffi_type_info> params_contains_types = {metaffi_type_info{metaffi_handle_type}, metaffi_type_info{metaffi_string8_type}};
 		std::vector<metaffi_type_info> retvals_contains_types = {metaffi_type_info{metaffi_bool_type}};
 
-		xcall* p_testmap_contains = cppload_entity(g_module_path.string(), function_path, params_contains_types, retvals_contains_types);
+		xcall* p_testmap_contains = cppload_entity(g_module_path.string(), entity_path, params_contains_types, retvals_contains_types);
 		metaffi::utils::scope_guard sg5([p_testmap_contains]() {
 			char* err = nullptr;
 			free_xcall(p_testmap_contains, &err);
@@ -375,11 +375,11 @@ TEST_SUITE("openjdk runtime api")
 		REQUIRE((pcdts_retvals5[0].cdt_val.bool_val != 0));
 
 		// get
-		function_path = "class=sanity.TestMap,callable=get,instance_required";
+		entity_path = "class=sanity.TestMap,callable=get,instance_required";
 		std::vector<metaffi_type_info> params_get_types = {metaffi_type_info{metaffi_handle_type}, metaffi_type_info{metaffi_string8_type}};
 		std::vector<metaffi_type_info> retvals_get_types = {metaffi_type_info{metaffi_any_type}};
 
-		xcall* p_testmap_get = cppload_entity(g_module_path.string(), function_path, params_get_types, retvals_get_types);
+		xcall* p_testmap_get = cppload_entity(g_module_path.string(), entity_path, params_get_types, retvals_get_types);
 		metaffi::utils::scope_guard sg6([p_testmap_get]() {
 			char* err = nullptr;
 			free_xcall(p_testmap_get, &err);
@@ -409,10 +409,10 @@ TEST_SUITE("openjdk runtime api")
 	TEST_CASE("runtime_test_target.testmap.get_set_name")
 	{
 		// create new testmap
-		std::string function_path = "class=sanity.TestMap,callable=<init>";
+		std::string entity_path = "class=sanity.TestMap,callable=<init>";
 		std::vector<metaffi_type_info> retvals_types = {{metaffi_handle_type, (char*) "sanity/TestMap", false, 0}};
 
-		xcall* pnew_testmap = cppload_entity(g_module_path.string(), function_path, {}, retvals_types);
+		xcall* pnew_testmap = cppload_entity(g_module_path.string(), entity_path, {}, retvals_types);
 		metaffi::utils::scope_guard sg([pnew_testmap]() {
 			char* err = nullptr;
 			free_xcall(pnew_testmap, &err);
@@ -435,11 +435,11 @@ TEST_SUITE("openjdk runtime api")
 
 
 		// load getter
-		function_path = "class=sanity.TestMap,field=name,instance_required,getter";
+		entity_path = "class=sanity.TestMap,field=name,instance_required,getter";
 		std::vector<metaffi_type_info> params_name_getter_types = {metaffi_type_info{metaffi_handle_type}};
 		std::vector<metaffi_type_info> retvals_name_getter_types = {metaffi_type_info{metaffi_string8_type}};
 
-		xcall* pget_name = cppload_entity(g_module_path.string(), function_path, params_name_getter_types, retvals_name_getter_types);
+		xcall* pget_name = cppload_entity(g_module_path.string(), entity_path, params_name_getter_types, retvals_name_getter_types);
 		metaffi::utils::scope_guard sg2([pget_name]() {
 			char* err = nullptr;
 			free_xcall(pget_name, &err);
@@ -447,10 +447,10 @@ TEST_SUITE("openjdk runtime api")
 		});
 
 		// load setter
-		function_path = "class=sanity.TestMap,field=name,instance_required,setter";
+		entity_path = "class=sanity.TestMap,field=name,instance_required,setter";
 		std::vector<metaffi_type_info> params_name_setter_types = {metaffi_type_info{metaffi_handle_type}, metaffi_type_info{metaffi_string8_type}};
 
-		xcall* pset_name = cppload_entity(g_module_path.string(), function_path, params_name_setter_types, {});
+		xcall* pset_name = cppload_entity(g_module_path.string(), entity_path, params_name_setter_types, {});
 		metaffi::utils::scope_guard sg3([pset_name]() {
 			char* err = nullptr;
 			free_xcall(pset_name, &err);
@@ -506,10 +506,10 @@ TEST_SUITE("openjdk runtime api")
 	TEST_CASE("runtime_test_target.wait_a_bit")
 	{
 		// get five_seconds global
-		std::string function_path = "class=sanity.TestRuntime,field=fiveSeconds,getter";
+		std::string entity_path = "class=sanity.TestRuntime,field=fiveSeconds,getter";
 		std::vector<metaffi_type_info> retvals_fiveSeconds_getter_types = {{metaffi_int32_type, nullptr, false, 0}};
 
-		xcall* pfive_seconds_getter = cppload_entity(g_module_path.string(), function_path, {}, retvals_fiveSeconds_getter_types);
+		xcall* pfive_seconds_getter = cppload_entity(g_module_path.string(), entity_path, {}, retvals_fiveSeconds_getter_types);
 		metaffi::utils::scope_guard sg([pfive_seconds_getter]() {
 			char* err = nullptr;
 			free_xcall(pfive_seconds_getter, &err);
@@ -534,10 +534,10 @@ TEST_SUITE("openjdk runtime api")
 		int32_t five = pcdts_retvals[0].cdt_val.int32_val;
 
 		// call wait_a_bit
-		function_path = "class=sanity.TestRuntime,callable=waitABit";
+		entity_path = "class=sanity.TestRuntime,callable=waitABit";
 		std::vector<metaffi_type_info> params_waitABit_types = {metaffi_type_info{metaffi_int32_type}};
 
-		xcall* pwait_a_bit = cppload_entity(g_module_path.string(), function_path, params_waitABit_types, {});
+		xcall* pwait_a_bit = cppload_entity(g_module_path.string(), entity_path, params_waitABit_types, {});
 		metaffi::utils::scope_guard sg3([pwait_a_bit]() {
 			char* err = nullptr;
 			free_xcall(pwait_a_bit, &err);
@@ -557,10 +557,10 @@ TEST_SUITE("openjdk runtime api")
 
 	TEST_CASE("runtime_test_target.SomeClass")
 	{
-		std::string function_path = "class=sanity.TestRuntime,callable=getSomeClasses";
+		std::string entity_path = "class=sanity.TestRuntime,callable=getSomeClasses";
 		std::vector<metaffi_type_info> retvals_getSomeClasses_types = {{metaffi_handle_array_type, (char*) "sanity.SomeClass[]", false, 1}};
 
-		xcall* pgetSomeClasses = cppload_entity(g_module_path.string(), function_path, {}, retvals_getSomeClasses_types);
+		xcall* pgetSomeClasses = cppload_entity(g_module_path.string(), entity_path, {}, retvals_getSomeClasses_types);
 		metaffi::utils::scope_guard sg([pgetSomeClasses]() {
 			char* err = nullptr;
 			free_xcall(pgetSomeClasses, &err);
@@ -585,10 +585,10 @@ TEST_SUITE("openjdk runtime api")
 
 		//--------------------------------------------------------------------
 
-		function_path = "class=sanity.TestRuntime,callable=expectThreeSomeClasses";
+		entity_path = "class=sanity.TestRuntime,callable=expectThreeSomeClasses";
 		std::vector<metaffi_type_info> params_expectThreeSomeClasses_types = {{metaffi_handle_array_type, (char*) "sanity.SomeClass[]", false, 1}};
 
-		xcall* pexpectThreeSomeClasses = cppload_entity(g_module_path.string(), function_path, params_expectThreeSomeClasses_types, {});
+		xcall* pexpectThreeSomeClasses = cppload_entity(g_module_path.string(), entity_path, params_expectThreeSomeClasses_types, {});
 		metaffi::utils::scope_guard sg2([pexpectThreeSomeClasses]() {
 			char* err = nullptr;
 			free_xcall(pexpectThreeSomeClasses, &err);
@@ -610,10 +610,10 @@ TEST_SUITE("openjdk runtime api")
 
 		//--------------------------------------------------------------------
 
-		function_path = "class=sanity.SomeClass,callable=print,instance_required";
+		entity_path = "class=sanity.SomeClass,callable=print,instance_required";
 		std::vector<metaffi_type_info> params_SomeClassPrint_types = {{metaffi_handle_type, nullptr, false, 0}};
 
-		xcall* pSomeClassPrint = cppload_entity(g_module_path.string(), function_path, params_SomeClassPrint_types, {});
+		xcall* pSomeClassPrint = cppload_entity(g_module_path.string(), entity_path, params_SomeClassPrint_types, {});
 		metaffi::utils::scope_guard sg3([pSomeClassPrint]() {
 			char* err = nullptr;
 			free_xcall(pSomeClassPrint, &err);
@@ -633,10 +633,10 @@ TEST_SUITE("openjdk runtime api")
 
 	TEST_CASE("runtime_test_target.ThreeBuffers")
 	{
-		std::string function_path = "class=sanity.TestRuntime,callable=expectThreeBuffers";
+		std::string entity_path = "class=sanity.TestRuntime,callable=expectThreeBuffers";
 		std::vector<metaffi_type_info> params_expectThreeBuffers_types = {{metaffi_uint8_array_type, nullptr, false, 2}};
 
-		xcall* pexpectThreeBuffers = cppload_entity(g_module_path.string(), function_path, params_expectThreeBuffers_types, {});
+		xcall* pexpectThreeBuffers = cppload_entity(g_module_path.string(), entity_path, params_expectThreeBuffers_types, {});
 		metaffi::utils::scope_guard sg([pexpectThreeBuffers]() {
 			char* err = nullptr;
 			free_xcall(pexpectThreeBuffers, &err);
@@ -669,10 +669,10 @@ TEST_SUITE("openjdk runtime api")
 		(*pexpectThreeBuffers)(pcdts, &err);
 		if(err) { FAIL(std::string(err)); }
 
-		function_path = "class=sanity.TestRuntime,callable=getThreeBuffers";
+		entity_path = "class=sanity.TestRuntime,callable=getThreeBuffers";
 		std::vector<metaffi_type_info> retval_getThreeBuffers_types = {{metaffi_uint8_array_type, nullptr, false, 2}};
 
-		xcall* pgetThreeBuffers = cppload_entity(g_module_path.string(), function_path, {}, retval_getThreeBuffers_types);
+		xcall* pgetThreeBuffers = cppload_entity(g_module_path.string(), entity_path, {}, retval_getThreeBuffers_types);
 		metaffi::utils::scope_guard sg2([pgetThreeBuffers]() {
 			char* err = nullptr;
 			free_xcall(pgetThreeBuffers, &err);

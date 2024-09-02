@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <utils/scope_guard.hpp>
-#include <utils/function_path_parser.h>
+#include <utils/entity_path_parser.h>
 #include <utils/foreign_function.h>
 #include "exception_macro.h"
 
@@ -137,21 +137,21 @@ void jvm::check_throw_error(jint err)
 	}
 }
 //--------------------------------------------------------------------
-void jvm::load_function_path(const std::string& function_path, jclass* cls, jmethodID* meth)
+void jvm::load_entity_path(const std::string& entity_path, jclass* cls, jmethodID* meth)
 {
 	JNIEnv* penv;
 	auto release_env = get_environment(&penv);
 	scope_guard sg([&](){ release_env(); });
 	
-	metaffi::utils::function_path_parser fp(function_path);
+	metaffi::utils::entity_path_parser fp(entity_path);
 	
 	// get guest module
-	//*cls = this->load_class(fp[function_path_entry_metaffi_guest_lib],
-    //                               std::string("metaffi_guest/")+fp[function_path_class_entrypoint_function]); // prepend entry point package name;
-	*cls = penv->FindClass((std::string("metaffi_guest/")+fp[function_path_entrypoint_class]).c_str());
+	//*cls = this->load_class(fp[entity_path_entry_metaffi_guest_lib],
+    //                               std::string("metaffi_guest/")+fp[entity_path_class_entrypoint_function]); // prepend entry point package name;
+	*cls = penv->FindClass((std::string("metaffi_guest/")+fp[entity_path_entrypoint_class]).c_str());
 	check_and_throw_jvm_exception(penv, *cls);
 	
-	*meth = penv->GetStaticMethodID(*cls, (fp[function_path_entry_entrypoint_function]).c_str(), ("(J)V"));
+	*meth = penv->GetStaticMethodID(*cls, (fp[entity_path_entry_entrypoint_function]).c_str(), ("(J)V"));
 	check_and_throw_jvm_exception(penv, *meth);
 	
 }

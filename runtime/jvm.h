@@ -28,7 +28,7 @@ public:
 	
 	void fini();
 	
-	void load_function_path(const std::string& function_path, jclass* cls, jmethodID* meth);
+	void load_entity_path(const std::string& entity_path, jclass* cls, jmethodID* meth);
 	
 	// returns release environment function
 	// TODO: add scoped wrapper
