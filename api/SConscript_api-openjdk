@@ -9,7 +9,7 @@ import compiler_options
 import post_actions
 import platform
 import scons_utils
-from site_scons import ALIAS_BUILD, ALIAS_OPENJDK, ALIAS_OPENJDK_API_TESTS, ALIAS_PYTHON3, ALIAS_PYTHON3_UNITTESTS
+from site_scons import ALIAS_BUILD, ALIAS_OPENJDK, ALIAS_OPENJDK_API_TESTS, ALIAS_PYTHON311, ALIAS_PYTHON311_UNITTESTS
 import os
 
 # * Import the parent Environment
@@ -46,7 +46,7 @@ def openjdk_cross_lang_test(target, source, env):
 				custom_env['ENV']['CGO_CFLAGS'] = os.environ['CGO_CFLAGS']
 			custom_env['ENV']['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
 
-		exit_code = custom_env.Execute(f'{scons_utils.python3_executable()} run_api_tests.py')
+		exit_code = custom_env.Execute(f'{scons_utils.python3_executable("3.11")} run_api_tests.py')
 		if exit_code:
 			print(f"Cross language tests failed: exit code {exit_code}", file=sys.stderr)
 			sys.exit(1)

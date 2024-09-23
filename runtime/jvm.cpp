@@ -24,7 +24,10 @@ jvm::jvm()
 		
 		return;
 	}
+
 	// create new JVM
+
+
 	// read classpath environment variable and set it, including "." as default.
 
 #ifdef _WIN32

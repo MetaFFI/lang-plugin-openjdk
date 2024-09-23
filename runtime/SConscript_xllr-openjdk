@@ -9,6 +9,10 @@ import compiler_options
 import post_actions
 import platform
 import scons_utils
+from colorama import Fore
+import sys
+import platform
+
 from site_scons import ALIAS_OPENJDK, ALIAS_OPENJDK_UNITTESTS
 
 # * Import the parent Environment
@@ -16,9 +20,18 @@ env: SCons.Environment.Environment
 SCons.Script.Import('env')
 
 
+if env.IsWindows():
+	env.LoadConanPackagesInfo('conanfile.txt', 'SConscript_conandeps_windows')
+elif env.IsLinux():
+	env.LoadConanPackagesInfo('conanfile.txt', 'SConscript_conandeps_linux')
+else:
+	print(f'{Fore.RED}Unsupported platform: {platform.system()}{Fore.RESET}')
+	sys.exit(1)
+
 # * ---- Build xllr.openjdk C++ dynamic library ----
 env_xllr_openjdk = env.Clone() # use the same environment as openjdk project
-env_xllr_openjdk.LoadConanPackagesInfo()
+
+
 
 # sources
 source = env['sdk_src']
@@ -53,16 +66,15 @@ xllr_openjdk_dylib = env_xllr_openjdk.CPPSharedLibrary(target='xllr.openjdk',
 
 xllr_openjdk_install = env_xllr_openjdk.Install(env_xllr_openjdk['METAFFI_HOME']+'/openjdk', xllr_openjdk_dylib) # installs xllr.
 
-# install boost_filesystem
+# * install
+
+# install boost
 xllr_openjdk_dependencies_install = env_xllr_openjdk.Install(env_xllr_openjdk['METAFFI_HOME']+'/openjdk', env_xllr_openjdk.SearchConanBinaryFile('boost', f'*boost_filesystem*'))
 
 if not env_xllr_openjdk.IsWindows(): # non-windows also uses boost thread
 	xllr_openjdk_dependencies_install.extend(env_xllr_openjdk.Install(env_xllr_openjdk['METAFFI_HOME']+'/openjdk', env_xllr_openjdk.SearchConanBinaryFile('boost', f'*boost_thread*')))
 	xllr_openjdk_dependencies_install.extend(env_xllr_openjdk.Install(env_xllr_openjdk['METAFFI_HOME']+'/openjdk', env_xllr_openjdk.SearchConanBinaryFile('boost', f'*boost_stacktrace_from_exception*')))
 	
-	# TODO: copy libjvm.so to the openjdk directory
-	#xllr_openjdk_dependencies_install.extend(env_xllr_openjdk.Install(env_xllr_openjdk['METAFFI_HOME']+'/openjdk', env_xllr_openjdk.SearchConanBinaryFile('openjdk', f'*libjvm*')))
-
 
 SCons.Script.Alias(ALIAS_OPENJDK, [xllr_openjdk_dylib, xllr_openjdk_install, xllr_openjdk_dependencies_install])
 
@@ -71,7 +83,15 @@ env['xllr_openjdk_dylib'] = xllr_openjdk_dylib
 
 # * --- Unit Tests ---
 test_env = env.Clone()
-test_env.LoadConanPackagesInfo()
+if test_env.IsWindows():
+	test_env.LoadConanPackagesInfo('conanfile.txt', 'SConscript_conandeps_windows')
+elif test_env.IsLinux():
+	test_env.LoadConanPackagesInfo('conanfile.txt', 'SConscript_conandeps_linux')
+else:
+	print(f'{Fore.RED}Unsupported platform: {platform.system()}{Fore.RESET}')
+	sys.exit(1)
+
+
 includes = []
 includes.extend(test_env['sdk_includes'])
 includes.append(test_env['sdk_path'])

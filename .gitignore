@@ -70,4 +70,4 @@ api/out/
 
 runtime/SConscript_conandeps
 
-xllr-openjdk-bridge/SConscript_conandeps
+*SConscript_conandeps*
