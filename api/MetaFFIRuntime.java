@@ -2,6 +2,7 @@ package api;
 
 import metaffi.MetaFFITypeInfo;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -15,6 +16,22 @@ public class MetaFFIRuntime
 
 	public MetaFFIRuntime(String runtimePlugin)
 	{
+		String metaFFIHome = System.getenv("METAFFI_HOME");
+		if (metaFFIHome == null) {
+			throw new IllegalStateException("METAFFI_HOME environment variable is not set");
+		}
+
+		String os = System.getProperty("os.name").toLowerCase();
+		String libext = "";
+		if (os.contains("win")) {
+			libext = ".dll";
+		}
+		else{
+			libext = ".so";
+		}
+
+		System.load(metaFFIHome+"/openjdk/xllr.openjdk"+libext);
+
 		this.runtimePlugin = runtimePlugin;
 	}
 
