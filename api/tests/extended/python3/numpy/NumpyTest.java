@@ -16,6 +16,7 @@ class NumpyArray
 	private MetaFFIHandle instance;
 	private Caller pmean;
 	private Caller pstr;
+	private Caller pitem;
 
 	public NumpyArray(long[] array)
 	{
@@ -25,6 +26,10 @@ class NumpyArray
 				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
 
 		this.pmean = np.load("callable=ndarray.mean,instance_required",
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
+				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)});
+
+		this.pitem = np.load("callable=float64.item,instance_required",
 				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)},
 				new MetaFFITypeInfo[]{new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIFloat64)});
 
@@ -41,7 +46,8 @@ class NumpyArray
 
 	public double mean()
 	{
-		return (double) (this.pmean.call(this.instance)[0]);
+		var resNumpyFloat64 = this.pmean.call(this.instance)[0];
+		return (double) this.pitem.call(resNumpyFloat64)[0];
 	}
 }
 

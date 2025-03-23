@@ -15,16 +15,6 @@ c_cpp_shared_lib(xllr.openjdk.jni.bridge
 add_dependencies(xllr.openjdk.jni.bridge xllr.openjdk)
 set(xllr.openjdk.jni.bridge xllr.openjdk.jni.bridge PARENT_SCOPE)
 
-# copy jvm.dll and jawt.dll
-# and usually not in the path
-add_custom_command(TARGET xllr.openjdk.jni.bridge POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy $ENV{JAVA_HOME}/bin/server/jvm${CMAKE_SHARED_LIBRARY_SUFFIX} $ENV{METAFFI_HOME}/openjdk/
-)
-
-add_custom_command(TARGET xllr.openjdk.jni.bridge POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy $ENV{JAVA_HOME}/bin/jawt${CMAKE_SHARED_LIBRARY_SUFFIX} $ENV{METAFFI_HOME}/openjdk/
-)
-
 # build xllr.openjdk.bridge.jar from *.java
 build_jar(xllr.openjdk.bridge
 	SOURCES

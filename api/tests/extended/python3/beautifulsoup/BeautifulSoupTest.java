@@ -130,12 +130,14 @@ class BeautifulSoup
 
 	public Tag[] FindAll(String tag)
 	{
-		var handles = (Object[])this.find_all.call(this.instance, tag)[0];
+		var handles = this.find_all.call(this.instance, tag)[0];
 
-		Tag[] tags = new Tag[handles.length];
-		for(int i=0 ; i<handles.length ; i++)
+		PyListClass list = new PyListClass((MetaFFIHandle)handles);
+
+		Tag[] tags = new Tag[(int)list.len()];
+		for(int i=0 ; i<(int)list.len() ; i++)
 		{
-			tags[i] = new Tag((MetaFFIHandle)handles[i]);
+			tags[i] = new Tag((MetaFFIHandle)list.get(i));
 		}
 
 		return tags;
