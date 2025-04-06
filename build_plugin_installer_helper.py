@@ -78,7 +78,10 @@ def check_prerequisites() -> bool:
 	except Exception as e:
 		print("java is not installed")
 		return False
-		
 
 def print_prerequisites():
-	print("""Prerequisites:\n\tOpenJDK 21""")
+	pass
+
+
+def get_version():
+	return '0.3.0'
