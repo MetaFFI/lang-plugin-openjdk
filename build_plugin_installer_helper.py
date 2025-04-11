@@ -12,22 +12,35 @@ def get_files(win_metaffi_home: str, ubuntu_metaffi_home: str) -> Tuple[Dict[str
 	
 	pluginname = 'openjdk'
 	
-	win_metaffi_home = win_metaffi_home.replace('\\', '/')
-	ubuntu_metaffi_home = ubuntu_metaffi_home.replace('\\', '/')
+	win_metaffi_home = win_metaffi_home.replace('\\', '/')+f'/{pluginname}/'
+	ubuntu_metaffi_home = ubuntu_metaffi_home.replace('\\', '/')+f'/{pluginname}/'
 
-	win_files = {}
-	for file in glob.glob(win_metaffi_home + f'/{pluginname}/**', recursive=True):		
-		if os.path.isfile(file) and '__' not in file:
-			file = file.replace('\\', '/')
-			win_files[file.removeprefix(win_metaffi_home+f'/{pluginname}/')] = file
-
-	assert len(win_files) > 0, f'No files found in {win_metaffi_home}/{pluginname}'
-
-	ubuntu_files = {}
-	for file in glob.glob(ubuntu_metaffi_home + f'/{pluginname}/**', recursive=True):
-		if os.path.isfile(file) and '__' not in file:
-			file = file.replace('\\', '/')
-			ubuntu_files[file.removeprefix(ubuntu_metaffi_home+f'/{pluginname}/')] = file
+	win_files = {
+		'xllr.openjdk.dll': win_metaffi_home + 'xllr.openjdk.dll',
+		'xllr.openjdk.jni.bridge.dll': win_metaffi_home + 'xllr.openjdk.jni.bridge.dll',
+		'metaffi.api.jar': win_metaffi_home + 'metaffi.api.jar',
+		'xllr.openjdk.bridge.jar': win_metaffi_home + 'xllr.openjdk.bridge.jar',
+		'boost_filesystem-vc143-mt-gd-x64-1_87.dll': win_metaffi_home + 'boost_filesystem-vc143-mt-gd-x64-1_87.dll'
+	}
+	
+	# for each absolute path in the value of win_files, check if the file exists
+	for key, value in win_files.items():
+		if not os.path.isfile(value):
+			raise FileNotFoundError(f'{value} not found - cannot build the installer')
+	
+	ubuntu_files = {
+		'xllr.openjdk.so': ubuntu_metaffi_home + 'xllr.openjdk.so',
+		'xllr.openjdk.jni.bridge.so': ubuntu_metaffi_home + 'xllr.openjdk.jni.bridge.so',
+		'metaffi.api.jar': ubuntu_metaffi_home + 'metaffi.api.jar',
+		'xllr.openjdk.bridge.jar': ubuntu_metaffi_home + 'xllr.openjdk.bridge.jar',
+		'libboost_filesystem.so.1.87.0': ubuntu_metaffi_home + 'libboost_filesystem.so.1.87.0'
+	}
+	
+	# for each absolute path in the value of ubuntu_files, check if the file exists
+	for key, value in ubuntu_files.items():
+		if not os.path.isfile(value):
+			raise FileNotFoundError(f'{value} not found - cannot build the installer')
+	
 
 	assert len(ubuntu_files) > 0, f'No files found in {ubuntu_metaffi_home}/{pluginname}'
 
@@ -57,6 +70,21 @@ def setup_environment():
 		# add $JAVA_HOME/bin/server to PATH
 		java_home = os.environ['JAVA_HOME']
 		SysEnv().set('PATH', f'{java_home}/bin/server;{os.environ["PATH"]}')
+	else:
+		from pycrosskit.envariables import SysEnv
+		import os
+		
+		# Fail if JAVA_HOME is not set
+		if "JAVA_HOME" not in os.environ:
+			raise EnvironmentError("JAVA_HOME is not set. Cannot configure LD_LIBRARY_PATH.")
+		
+		java_home = os.environ["JAVA_HOME"]
+		ld_lib = os.environ.get("LD_LIBRARY_PATH", "")
+		paths = ld_lib.split(":") if ld_lib else []
+		
+		if f"{java_home}/lib/server" not in paths:
+			new_ld = f"{java_home}/lib/server:{ld_lib}" if ld_lib else f"{java_home}/lib/server"
+			SysEnv().set("LD_LIBRARY_PATH", new_ld)
 
 
 def check_prerequisites() -> bool:
