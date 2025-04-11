@@ -36,18 +36,25 @@ jvm::jvm()
 #define SEPARATOR ':'
 #endif
 
+	if(std::getenv("METAFFI_HOME") == nullptr)
+	{
+		throw std::runtime_error("METAFFI_HOME environment variable is not set");
+	}
+	
 	std::stringstream ss;
-	ss << "-Djava.class.path=." << SEPARATOR << ".." << SEPARATOR << std::getenv("METAFFI_HOME") << "/openjdk/xllr.openjdk.bridge.jar" << SEPARATOR;
+	ss << "-Djava.class.path=." << SEPARATOR << ".." << SEPARATOR << std::getenv("METAFFI_HOME") << "/openjdk/xllr.openjdk.bridge.jar";
 	const char* classpath = std::getenv("CLASSPATH");
-	if(classpath){
-		ss << classpath << SEPARATOR;
+	if (classpath && strlen(classpath) > 0) {
+	    ss << SEPARATOR << classpath;
 	}
 
+	printf("JVM classpath: %s\n", ss.str().c_str());
+	
 	std::string cp_option = ss.str();
 
 	// set initialization args
 	JavaVMInitArgs vm_args = {0};
-	vm_args.version = JNI_VERSION_1_4;
+	vm_args.version = JNI_VERSION_1_8;
 	vm_args.nOptions = 1;
 	vm_args.options = new JavaVMOption[1];
 	vm_args.options[0].optionString = (char*)cp_option.c_str();
