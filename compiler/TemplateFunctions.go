@@ -38,6 +38,12 @@ var templatesFuncMap = map[string]any{
 	"CreateLoadFunction":           createLoadFunction,
 	"GetFullClassName":             getFullClassName,
 	"ClassForName":                 classForName,
+	// Modern MetaFFI API functions
+	"ConvertToJavaType":  convertToJavaType,
+	"GetMetaFFIType":     getMetaFFIType,
+	"IsArray":            isArray,
+	"toJavaType":         toJavaType,
+	"getMetaFFITypeInfo": getMetaFFITypeInfo,
 }
 
 func classForName(className string) string {
@@ -183,10 +189,10 @@ func getObject(cls *IDL.ClassDefinition, meth *IDL.MethodDefinition) string {
 // --------------------------------------------------------------------
 func ToJavaType(arg *IDL.ArgDefinition) string {
 
-	elem := arg.Type
+	elem := string(arg.Type)
 	dims := arg.Dimensions
 
-	if dims > 0 && strings.Index(string(elem), "_array") == -1 {
+	if dims > 0 && strings.Index(elem, "_array") == -1 {
 		elem += "_array"
 	}
 	javaType, found := MetaFFITypeToJavaType[elem]
@@ -588,3 +594,230 @@ func createLoadFunction(idl *IDL.IDLDefinition, mod *IDL.ModuleDefinition) strin
 }
 
 //--------------------------------------------------------------------
+
+// Modern MetaFFI API functions
+
+// --------------------------------------------------------------------
+func isArray(dimensions int) bool {
+	return dimensions > 0
+}
+
+// --------------------------------------------------------------------
+func convertToJavaType(arg *IDL.ArgDefinition) string {
+	if arg.Dimensions > 0 {
+		return convertToJavaType(arg) + "[]"
+	}
+
+	switch arg.Type {
+	case "int64":
+		return "long"
+	case "int32":
+		return "int"
+	case "int16":
+		return "short"
+	case "int8":
+		return "byte"
+	case "uint64":
+		return "long"
+	case "uint32":
+		return "int"
+	case "uint16":
+		return "short"
+	case "uint8":
+		return "byte"
+	case "float64":
+		return "double"
+	case "float32":
+		return "float"
+	case "string8":
+		return "String"
+	case "string16":
+		return "String"
+	case "string32":
+		return "String"
+	case "bool":
+		return "boolean"
+	case "handle":
+		if arg.TypeAlias != "" {
+			return arg.TypeAlias
+		}
+		return "MetaFFIHandle"
+	case "any":
+		return "Object"
+	default:
+		return "Object"
+	}
+}
+
+// --------------------------------------------------------------------
+func getMetaFFIType(arg *IDL.ArgDefinition) string {
+	switch arg.Type {
+	case "int64":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64)"
+	case "int32":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt32)"
+	case "int16":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt16)"
+	case "int8":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIInt8)"
+	case "uint64":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIUInt64)"
+	case "uint32":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIUInt32)"
+	case "uint16":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIUInt16)"
+	case "uint8":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIUInt8)"
+	case "float64":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIFloat64)"
+	case "float32":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIFloat32)"
+	case "string8":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString8)"
+	case "string16":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString16)"
+	case "string32":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIString32)"
+	case "bool":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIBool)"
+	case "handle":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle)"
+	case "any":
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)"
+	default:
+		return "new MetaFFITypeInfo(MetaFFITypeInfo.MetaFFITypes.MetaFFIAny)"
+	}
+}
+
+// --------------------------------------------------------------------
+// New template functions for modern MetaFFI API
+
+// toJavaType converts MetaFFI type to Java type
+func toJavaType(metaffiType string) string {
+	switch metaffiType {
+	case "int32":
+		return "int"
+	case "int64":
+		return "long"
+	case "float32":
+		return "float"
+	case "float64":
+		return "double"
+	case "bool":
+		return "boolean"
+	case "string":
+		return "String"
+	case "array":
+		return "Object[]"
+	case "map":
+		return "Map"
+	case "function":
+		return "Object"
+	case "void":
+		return "void"
+	case "handle":
+		return "Object"
+	default:
+		return "Object"
+	}
+}
+
+// getMetaFFITypeInfo generates MetaFFI type info for complex types
+func getMetaFFITypeInfo(metaffiType string) string {
+	switch metaffiType {
+	case "int32":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIInt32"
+	case "int64":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIInt64"
+	case "float32":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIFloat32"
+	case "float64":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIFloat64"
+	case "bool":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIBool"
+	case "string":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIString8"
+	case "array":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIArray"
+	case "map":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIAny"
+	case "function":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFICallable"
+	case "void":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFINull"
+	case "handle":
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIHandle"
+	default:
+		return "MetaFFITypeInfo.MetaFFITypes.MetaFFIAny"
+	}
+}
+
+// javaKeywords contains Java reserved keywords
+var javaKeywords = map[string]bool{
+	"abstract":     true,
+	"assert":       true,
+	"boolean":      true,
+	"break":        true,
+	"byte":         true,
+	"case":         true,
+	"catch":        true,
+	"char":         true,
+	"class":        true,
+	"const":        true,
+	"continue":     true,
+	"default":      true,
+	"do":           true,
+	"double":       true,
+	"else":         true,
+	"enum":         true,
+	"extends":      true,
+	"final":        true,
+	"finally":      true,
+	"float":        true,
+	"for":          true,
+	"goto":         true,
+	"if":           true,
+	"implements":   true,
+	"import":       true,
+	"instanceof":   true,
+	"int":          true,
+	"interface":    true,
+	"long":         true,
+	"native":       true,
+	"new":          true,
+	"package":      true,
+	"private":      true,
+	"protected":    true,
+	"public":       true,
+	"return":       true,
+	"short":        true,
+	"static":       true,
+	"strictfp":     true,
+	"super":        true,
+	"switch":       true,
+	"synchronized": true,
+	"this":         true,
+	"throw":        true,
+	"throws":       true,
+	"transient":    true,
+	"try":          true,
+	"void":         true,
+	"volatile":     true,
+	"while":        true,
+}
+
+// MetaFFITypeToJavaType maps MetaFFI types to Java types
+var MetaFFITypeToJavaType = map[string]string{
+	"int32":    "int",
+	"int64":    "long",
+	"float32":  "float",
+	"float64":  "double",
+	"bool":     "boolean",
+	"string":   "String",
+	"array":    "Object[]",
+	"map":      "Map",
+	"function": "Object",
+	"void":     "void",
+	"handle":   "Object",
+	"any":      "Object",
+}

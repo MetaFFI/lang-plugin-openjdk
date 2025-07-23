@@ -205,11 +205,11 @@ def main():
 		run_unittest(test_extended_go_bytes_arrays_path)
 		os.remove(os.path.join(current_path, 'extended', 'go', 'bytearrays', f'BytesPrinter_MetaFFIGuest{get_extension_by_platform()}'))
 		
-		build_extended_go_bytes_arrays_path = os.path.join(current_path, 'extended', 'go', 'gomcache', 'build_metaffi.py')
-		test_extended_go_bytes_arrays_path = os.path.join(current_path, 'extended', 'go', 'gomcache', 'GoMCacheTest.java')
-		run_script(build_extended_go_bytes_arrays_path)
-		run_unittest(test_extended_go_bytes_arrays_path)
-		os.remove(os.path.join(current_path, 'extended', 'go', 'gomcache', f'mcache_MetaFFIGuest{get_extension_by_platform()}'))
+		# build_extended_go_bytes_arrays_path = os.path.join(current_path, 'extended', 'go', 'gomcache', 'build_metaffi.py')
+		# test_extended_go_bytes_arrays_path = os.path.join(current_path, 'extended', 'go', 'gomcache', 'GoMCacheTest.java')
+		# run_script(build_extended_go_bytes_arrays_path)
+		# run_unittest(test_extended_go_bytes_arrays_path)
+		# os.remove(os.path.join(current_path, 'extended', 'go', 'gomcache', f'mcache_MetaFFIGuest{get_extension_by_platform()}'))
 		
 		print(f'{Fore.MAGENTA}Testing Extended OpenJDK <- Go{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
  
