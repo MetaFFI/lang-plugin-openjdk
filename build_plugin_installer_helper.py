@@ -10,16 +10,16 @@ def get_files(win_metaffi_home: str, ubuntu_metaffi_home: str) -> Tuple[Dict[str
 	# get all files from $METAFFI_HOME/go - the installed dir of this project recursively
 	# don't continue recursively if the directory starts with '__'
 	
-	pluginname = 'openjdk'
+	pluginname = 'jvm'
 	
 	win_metaffi_home = win_metaffi_home.replace('\\', '/')+f'/{pluginname}/'
 	ubuntu_metaffi_home = ubuntu_metaffi_home.replace('\\', '/')+f'/{pluginname}/'
 
 	win_files = {
-		'xllr.openjdk.dll': win_metaffi_home + 'xllr.openjdk.dll',
-		'xllr.openjdk.jni.bridge.dll': win_metaffi_home + 'xllr.openjdk.jni.bridge.dll',
+		'xllr.jvm.dll': win_metaffi_home + 'xllr.jvm.dll',
+		'xllr.jvm.jni.bridge.dll': win_metaffi_home + 'xllr.jvm.jni.bridge.dll',
 		'metaffi.api.jar': win_metaffi_home + 'metaffi.api.jar',
-		'xllr.openjdk.bridge.jar': win_metaffi_home + 'xllr.openjdk.bridge.jar',
+		'xllr.jvm.bridge.jar': win_metaffi_home + 'xllr.jvm.bridge.jar',
 		'boost_filesystem-vc143-mt-gd-x64-1_87.dll': win_metaffi_home + 'boost_filesystem-vc143-mt-gd-x64-1_87.dll'
 	}
 	
@@ -29,10 +29,10 @@ def get_files(win_metaffi_home: str, ubuntu_metaffi_home: str) -> Tuple[Dict[str
 			raise FileNotFoundError(f'{value} not found - cannot build the installer')
 	
 	ubuntu_files = {
-		'xllr.openjdk.so': ubuntu_metaffi_home + 'xllr.openjdk.so',
-		'xllr.openjdk.jni.bridge.so': ubuntu_metaffi_home + 'xllr.openjdk.jni.bridge.so',
+		'xllr.jvm.so': ubuntu_metaffi_home + 'xllr.jvm.so',
+		'xllr.jvm.jni.bridge.so': ubuntu_metaffi_home + 'xllr.jvm.jni.bridge.so',
 		'metaffi.api.jar': ubuntu_metaffi_home + 'metaffi.api.jar',
-		'xllr.openjdk.bridge.jar': ubuntu_metaffi_home + 'xllr.openjdk.bridge.jar',
+		'xllr.jvm.bridge.jar': ubuntu_metaffi_home + 'xllr.jvm.bridge.jar',
 		'libboost_filesystem.so.1.87.0': ubuntu_metaffi_home + 'libboost_filesystem.so.1.87.0'
 	}
 	
@@ -101,7 +101,7 @@ def check_prerequisites() -> bool:
 		if 'version "21.' in output_str.lower() or 'version "21.' in stderr_str.lower():
 			return True
 		else:
-			print(f"""OpenJDK 21 is required\nfound:{output_str}{stderr_str}""")
+			print(f"""JVM 21 is required\nfound:{output_str}{stderr_str}""")
 			return False
 	except Exception as e:
 		print("java is not installed")

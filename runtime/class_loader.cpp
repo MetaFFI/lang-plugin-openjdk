@@ -240,12 +240,12 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	{
 		// URLClassLoader childURLClassLoader = new URLClassLoader( jarURLArray, classLoaderInstance ) ;
 		
-		// initialize with "$METAFFI_HOME/xllr.openjdk.bridge.jar"
-		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/openjdk/xllr.openjdk.bridge.jar";
+		// initialize with "$METAFFI_HOME/xllr.jvm.bridge.jar"
+		std::string jvm_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/jvm/xllr.jvm.bridge.jar";
 		
 		jobjectArray jarURLArray = env->NewObjectArray(1, url_class, nullptr); // URL[]{}
 		check_and_throw_jvm_exception(env, jarURLArray,);
-		env->SetObjectArrayElement(jarURLArray, 0, env->NewObject(url_class, url_class_constructor, env->NewStringUTF(openjdk_bridge_url.c_str())));
+		env->SetObjectArrayElement(jarURLArray, 0, env->NewObject(url_class, url_class_constructor, env->NewStringUTF(jvm_bridge_url.c_str())));
 		check_and_throw_jvm_exception(env, true,);
 		
 		childURLClassLoader = env->NewObject(url_class_loader, url_class_loader_constructor, jarURLArray, classLoaderInstance);
@@ -254,15 +254,15 @@ jni_class jni_class_loader::load_class(const std::string& class_name)
 	
 	if(!is_bridge_added)
 	{
-		std::string openjdk_bridge = file_protocol + std::getenv("METAFFI_HOME");
-		openjdk_bridge += "/openjdk/";
-		openjdk_bridge += "xllr.openjdk.bridge.jar";
+		std::string jvm_bridge = file_protocol + std::getenv("METAFFI_HOME");
+		jvm_bridge += "/jvm/";
+		jvm_bridge += "xllr.jvm.bridge.jar";
 
 #ifdef _WIN32
-		boost::replace_all(openjdk_bridge, "\\", "/");
+		boost::replace_all(jvm_bridge, "\\", "/");
 #endif
 		
-		jobject urlInstance = env->NewObject(url_class, url_class_constructor, env->NewStringUTF(openjdk_bridge.c_str()));
+		jobject urlInstance = env->NewObject(url_class, url_class_constructor, env->NewStringUTF(jvm_bridge.c_str()));
 		check_and_throw_jvm_exception(env, urlInstance,);
 		env->CallObjectMethod(childURLClassLoader, add_url, urlInstance);
 		check_and_throw_jvm_exception(env, true,);

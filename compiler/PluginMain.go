@@ -1,14 +1,14 @@
 package main
 
 import (
-	compiler "github.com/MetaFFI/plugin-sdk/compiler/go"
+	"github.com/MetaFFI/sdk/compiler/go/plugin"
 )
 
 import "C"
 
 //export init_plugin
 func init_plugin() {
-	compiler.PluginMain = compiler.NewLanguagePluginMain(NewModernHostCompiler(), nil)
+	plugin.PluginMain = plugin.NewLanguagePluginMain(NewModernHostCompiler(), nil)
 }
 
 // --------------------------------------------------------------------

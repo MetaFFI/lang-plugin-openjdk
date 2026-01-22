@@ -43,7 +43,7 @@ public class JavaInfo
 				
 				JsonObject module = new JsonObject();
 				module.addProperty("name", packageName.isEmpty() ? "default" : packageName);
-				module.addProperty("target_language", "openjdk");
+				module.addProperty("target_language", "jvm");
 				module.addProperty("comment", "");
 				module.add("tags", new JsonObject());
 				

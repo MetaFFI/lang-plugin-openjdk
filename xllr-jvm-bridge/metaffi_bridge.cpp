@@ -234,7 +234,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_load_1callable(JNIEnv* env, j
 
 		char* out_err_buf = nullptr;
 
-		openjdk_context* pctxt = new openjdk_context();
+		jvm_context* pctxt = new jvm_context();
 		pctxt->cls = cls;
 		pctxt->method = method_id;
 		pctxt->instance_required = out_is_static == JNI_FALSE;
@@ -515,7 +515,7 @@ JNIEXPORT jlong JNICALL Java_metaffi_MetaFFIBridge_get_1pcdt(JNIEnv* env, jclass
 //--------------------------------------------------------------------
 JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jclass, jlong phandle)
 {
-	if(openjdk_objects_table::instance().contains((jobject)phandle)){
+	if(jvm_objects_table::instance().contains((jobject)phandle)){
 		throwMetaFFIException(env, "Object is not found in Objects Table");
 	}
 	
@@ -524,7 +524,7 @@ JNIEXPORT jobject JNICALL Java_metaffi_MetaFFIBridge_get_1object(JNIEnv* env, jc
 //--------------------------------------------------------------------
 JNIEXPORT void JNICALL Java_metaffi_MetaFFIBridge_remove_1object (JNIEnv* env, jclass, jlong phandle)
 {
-	openjdk_objects_table::instance().remove(env, (jobject)phandle);
+	jvm_objects_table::instance().remove(env, (jobject)phandle);
 }
 //--------------------------------------------------------------------
 int get_array_dimensions(JNIEnv *env, jobjectArray arr)

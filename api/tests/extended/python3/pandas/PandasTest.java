@@ -81,7 +81,7 @@ public class PandasTest
 	@BeforeClass
 	public static void init()
 	{
-		runtime = new MetaFFIRuntime("python311");
+		runtime = new MetaFFIRuntime("python3");
 		runtime.loadRuntimePlugin();
 	}
 

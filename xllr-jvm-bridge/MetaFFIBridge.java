@@ -22,11 +22,11 @@ public class MetaFFIBridge
 
 	static
 	{
-		String xllrExtension = System.mapLibraryName("xllr.openjdk.jni.bridge");
+		String xllrExtension = System.mapLibraryName("xllr.jvm.jni.bridge");
 		xllrExtension = xllrExtension.substring(xllrExtension.lastIndexOf("."));
 		String metaffiHome = System.getenv("METAFFI_HOME");
 
-		System.load(metaffiHome+"/openjdk/xllr.openjdk.jni.bridge"+xllrExtension);
+		System.load(metaffiHome+"/jvm/xllr.jvm.jni.bridge"+xllrExtension);
 
 
 	}

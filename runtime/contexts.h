@@ -1,6 +1,6 @@
 #pragma once
 
-struct openjdk_context
+struct jvm_context
 {
     jclass cls = nullptr;
     jmethodID method = nullptr;

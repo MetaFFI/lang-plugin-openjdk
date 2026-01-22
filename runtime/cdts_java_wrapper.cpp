@@ -725,7 +725,7 @@ DLL_PRIVATE void on_traverse_handle(const metaffi_size* index, metaffi_size inde
 		std::pair<JNIEnv*, jvalue&>* pair = static_cast<std::pair<JNIEnv*, jvalue&>*>(context);
 		JNIEnv* env = pair->first;
 
-		if(val.runtime_id != OPENJDK_RUNTIME_ID)
+		if(val.runtime_id != JVM_RUNTIME_ID)
 		{
 			if(val.handle == nullptr)
 			{
@@ -760,7 +760,7 @@ DLL_PRIVATE void on_traverse_handle(const metaffi_size* index, metaffi_size inde
 		{
 			jobjectArray jarr = (jobjectArray) obj;
 			jobject jobj = nullptr;
-			if(val.runtime_id != OPENJDK_RUNTIME_ID)
+			if(val.runtime_id != JVM_RUNTIME_ID)
 			{
 				if(val.handle == nullptr)
 				{
@@ -2637,7 +2637,7 @@ char cdts_java_wrapper::get_jni_primitive_signature_from_object_form_of_primitiv
 	}
 
 	if(this->pcdts->at(index).type == metaffi_handle_type &&
-	   this->pcdts->at(index).cdt_val.handle_val->runtime_id != OPENJDK_RUNTIME_ID)
+	   this->pcdts->at(index).cdt_val.handle_val->runtime_id != JVM_RUNTIME_ID)
 	{
 		return 0;
 	}
@@ -2697,7 +2697,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int32 val) co
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.set_handle(new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, jni_releaser});
+	c.set_handle(new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, jni_releaser});
 }
 
 //--------------------------------------------------------------------
@@ -2715,7 +2715,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, bool val) const
 	//	obj = env->NewGlobalRef(obj);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
+	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
 	c.type = metaffi_handle_type;
 }
 
@@ -2732,7 +2732,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int8 val) con
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
+	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
 	c.type = metaffi_handle_type;
 }
 
@@ -2749,7 +2749,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_uint16 val) c
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
+	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
 	c.type = metaffi_handle_type;
 }
 
@@ -2766,7 +2766,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int16 val) co
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
+	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
 	c.type = metaffi_handle_type;
 }
 
@@ -2783,7 +2783,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_int64 val) co
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
+	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
 	c.type = metaffi_handle_type;
 }
 
@@ -2800,7 +2800,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_float32 val) 
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
+	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
 	c.type = metaffi_handle_type;
 }
 
@@ -2817,7 +2817,7 @@ void cdts_java_wrapper::set_object(JNIEnv* env, int index, metaffi_float64 val) 
 	check_and_throw_jvm_exception(env, true);
 
 	cdt& c = this->pcdts->at(index);
-	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, OPENJDK_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
+	c.cdt_val.handle_val = new cdt_metaffi_handle{obj, JVM_RUNTIME_ID, reinterpret_cast<void (*)(cdt_metaffi_handle*)>(jni_releaser)};
 	c.type = metaffi_handle_type;
 }
 

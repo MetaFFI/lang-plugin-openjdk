@@ -12,17 +12,17 @@
 #endif
 
 
-extern "C" void openjdk_release_object(metaffi_handle h);
+extern "C" void jvm_release_object(metaffi_handle h);
 
-class openjdk_objects_table_impl
+class jvm_objects_table_impl
 {
 private:
 	std::set<jobject> objects;
 	mutable std::shared_mutex m;
 
 public:
-	openjdk_objects_table_impl() = default;
-	~openjdk_objects_table_impl() = default;
+	jvm_objects_table_impl() = default;
+	~jvm_objects_table_impl() = default;
 	
 	void free();
 	
@@ -33,5 +33,5 @@ public:
 	size_t size() const;
 };
 
-typedef metaffi::utils::singleton<openjdk_objects_table_impl> openjdk_objects_table;
-template class metaffi::utils::singleton<openjdk_objects_table_impl>;
+typedef metaffi::utils::singleton<jvm_objects_table_impl> jvm_objects_table;
+template class metaffi::utils::singleton<jvm_objects_table_impl>;

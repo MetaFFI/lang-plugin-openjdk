@@ -90,7 +90,7 @@ void jni_xcall_params_ret(void* context, cdts params_ret[2], char** out_err)
 		auto release_environment = pjvm->get_environment(&env);
 		metaffi::utils::scope_guard sg([&] { release_environment(); });
 
-		openjdk_context* ctxt = (openjdk_context*) context;
+		jvm_context* ctxt = (jvm_context*) context;
 		if(ctxt->field)// if field
 		{
 			if(ctxt->is_getter)
@@ -160,7 +160,7 @@ void jni_xcall_params_no_ret(void* context, cdts parameters[1], char** out_err)
 		auto release_environment = pjvm->get_environment(&env);
 		metaffi::utils::scope_guard sg([&] { release_environment(); });
 
-		openjdk_context* ctxt = (openjdk_context*) context;
+		jvm_context* ctxt = (jvm_context*) context;
 		if(ctxt->field)// if field
 		{
 			if(ctxt->is_getter)
@@ -217,7 +217,7 @@ void jni_xcall_no_params_ret(void* context, cdts return_values[1], char** out_er
 		auto release_environment = pjvm->get_environment(&env);
 		metaffi::utils::scope_guard sg([&] { release_environment(); });
 
-		openjdk_context* ctxt = (openjdk_context*) context;
+		jvm_context* ctxt = (jvm_context*) context;
 
 		if(ctxt->field)// if field
 		{
@@ -264,7 +264,7 @@ void jni_xcall_no_params_no_ret(void* context, char** out_err)
 		auto release_environment = pjvm->get_environment(&env);
 		metaffi::utils::scope_guard sg([&] { release_environment(); });
 
-		openjdk_context* ctxt = (openjdk_context*) context;
+		jvm_context* ctxt = (jvm_context*) context;
 		if(ctxt->field)// if field
 		{
 			if(ctxt->is_getter)
@@ -311,7 +311,7 @@ xcall* load_entity(const char* module_path, const char* entity_path, metaffi_typ
 
 		jni_class_loader cloader(env, std::string(module_path));
 
-		openjdk_context* ctxt = new openjdk_context();
+		jvm_context* ctxt = new jvm_context();
 
 		jni_class loaded_class = cloader.load_class(classToLoad);
 		ctxt->cls = (jclass) loaded_class;
@@ -426,7 +426,7 @@ xcall* make_callable(void* make_callable_context, metaffi_type_info* params_type
 	xcall* res = nullptr;
 	try
 	{
-		openjdk_context* ctxt = (openjdk_context*) make_callable_context;
+		jvm_context* ctxt = (jvm_context*) make_callable_context;
 
 		void* entrypoint = nullptr;
 
@@ -481,7 +481,7 @@ void free_xcall(xcall* pxcall, char** err)
 	{
 		if(pxcall)
 		{
-			delete(openjdk_context*) pxcall->pxcall_and_context[1];
+			delete(jvm_context*) pxcall->pxcall_and_context[1];
 			delete pxcall;
 		}
 	}

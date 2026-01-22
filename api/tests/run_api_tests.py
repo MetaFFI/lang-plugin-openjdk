@@ -71,8 +71,8 @@ def run_unittest(script_path):
 		# Java JUnit test
 		junit_jar = os.path.join(current_path, 'junit-platform-console-standalone-1.10.2.jar')
 		hamcrest_jar = os.path.join(current_path, 'hamcrest-core-1.3.jar')
-		bridge_jar = os.path.join(os.environ['METAFFI_HOME']+'/openjdk/', 'xllr.openjdk.bridge.jar')
-		api_jar = os.path.join(os.environ['METAFFI_HOME']+'/openjdk/', 'metaffi.api.jar')
+		bridge_jar = os.path.join(os.environ['METAFFI_HOME']+'/jvm/', 'xllr.jvm.bridge.jar')
+		api_jar = os.path.join(os.environ['METAFFI_HOME']+'/jvm/', 'metaffi.api.jar')
 		class_name = os.path.splitext(os.path.basename(script_path))[0]
 		class_path = f'.{os.pathsep}{junit_jar}{os.pathsep}{hamcrest_jar}{os.pathsep}{bridge_jar}{os.pathsep}{api_jar}'
 		
@@ -129,9 +129,9 @@ def main():
 	
 	# --------------------------------------------
 	
-	# run openjdk->python3.11 tests
+	# run jvm->python3.11 tests
 	if is_plugin_installed('python311'):
-		print(f'{Fore.MAGENTA}Testing Sanity OpenJDK -> Python3.11{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Sanity JVM -> Python3.11{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
 		
 		# Define the paths to the scripts to be run
 		test_sanity_python311_path = os.path.join(current_path, 'sanity', 'APITestPython3.java')
@@ -139,13 +139,13 @@ def main():
 		# Run the scripts
 		run_unittest(test_sanity_python311_path)
 		
-		print(f'{Fore.MAGENTA}Testing Sanity OpenJDK -> Python3.11{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Sanity JVM -> Python3.11{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
 	
 	# --------------------------------------------
 	
-	# run openjdk->Go tests
+	# run jvm->Go tests
 	if is_plugin_installed('go'):
-		print(f'{Fore.MAGENTA}Testing Sanity OpenJDK -> Go{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Sanity JVM -> Go{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
 		
 		# Define the paths to the scripts to be run
 		build_sanity_go_script_path = os.path.join(current_path, 'sanity', 'go', 'build_metaffi.py')
@@ -156,7 +156,7 @@ def main():
 		run_unittest(test_sanity_go_path)
 		
 		os.remove(os.path.join(current_path, 'sanity', 'go', f'TestRuntime_MetaFFIGuest{get_extension_by_platform()}'))
-		print(f'{Fore.MAGENTA}Testing Sanity OpenJDK -> Go{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Sanity JVM -> Go{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
 	
 	# --------------------------------------------
 	
@@ -164,9 +164,9 @@ def main():
 	
 	# --------------------------------------------
 	
-	# run openjdk->python3.11 tests
+	# run jvm->python3.11 tests
 	if is_plugin_installed('python311'):
-		print(f'{Fore.MAGENTA}Testing Extended OpenJDK -> Python3.11{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Extended JVM -> Python3.11{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
 		
 		# Define the path to the unittest script
 		test_extended_bs4_path = os.path.join(current_path, 'extended', 'python3', 'beautifulsoup', 'BeautifulSoupTest.java')
@@ -190,13 +190,13 @@ def main():
 		ensure_package("pandas")
 		run_unittest(test_extended_pandas_path)
 		
-		print(f'{Fore.MAGENTA}Testing Extended OpenJDK -> Python3.11{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Extended JVM -> Python3.11{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
 	
 	# --------------------------------------------
 	
-	# run openjdk->Go tests
+	# run jvm->Go tests
 	if is_plugin_installed('go'):
-		print(f'{Fore.MAGENTA}Testing Extended OpenJDK -> Go{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Extended JVM -> Go{Fore.RESET} - {Fore.YELLOW}RUNNING{Fore.RESET}')
 		
 		# Define the paths to the scripts to be run
 		build_extended_go_bytes_arrays_path = os.path.join(current_path, 'extended', 'go', 'bytearrays', 'build_metaffi.py')
@@ -211,7 +211,7 @@ def main():
 		# run_unittest(test_extended_go_bytes_arrays_path)
 		# os.remove(os.path.join(current_path, 'extended', 'go', 'gomcache', f'mcache_MetaFFIGuest{get_extension_by_platform()}'))
 		
-		print(f'{Fore.MAGENTA}Testing Extended OpenJDK <- Go{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
+		print(f'{Fore.MAGENTA}Testing Extended JVM <- Go{Fore.RESET} - {Fore.GREEN}PASSED{Fore.RESET}')
  
 
 if __name__ == '__main__':

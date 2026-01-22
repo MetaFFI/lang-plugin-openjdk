@@ -20,8 +20,8 @@ jni_metaffi_handle::jni_metaffi_handle(JNIEnv* env)
 {
 	if(!metaffi_handle_class)
 	{
-		std::string openjdk_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/openjdk/xllr.openjdk.bridge.jar";
-		jni_class_loader clsloader(env, openjdk_bridge_url);
+		std::string jvm_bridge_url = (std::string("file://") + std::getenv("METAFFI_HOME")) + "/jvm/xllr.jvm.bridge.jar";
+		jni_class_loader clsloader(env, jvm_bridge_url);
 		auto tmp = (jclass)clsloader.load_class("metaffi/MetaFFIHandle");
 		metaffi_handle_class = (jclass)env->NewGlobalRef(tmp); // make global so GC doesn't delete
 		env->DeleteLocalRef(tmp);
@@ -137,6 +137,6 @@ jni_metaffi_handle::operator cdt_metaffi_handle*() const
 cdt_metaffi_handle* jni_metaffi_handle::wrap_in_metaffi_handle(JNIEnv* env, jobject jobj, void* releaser)
 {
 	jobj = env->NewGlobalRef(jobj);
-	return new cdt_metaffi_handle{(void*)jobj, OPENJDK_RUNTIME_ID, (releaser_fptr_t)releaser};
+	return new cdt_metaffi_handle{(void*)jobj, JVM_RUNTIME_ID, (releaser_fptr_t)releaser};
 }
 //--------------------------------------------------------------------

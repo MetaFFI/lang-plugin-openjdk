@@ -2,7 +2,7 @@
 #include <mutex>
 
 //--------------------------------------------------------------------
-void openjdk_objects_table_impl::free()
+void jvm_objects_table_impl::free()
 {
 	std::unique_lock l(m);
 	
@@ -10,7 +10,7 @@ void openjdk_objects_table_impl::free()
 
 }
 //--------------------------------------------------------------------
-void openjdk_objects_table_impl::set(jobject obj)
+void jvm_objects_table_impl::set(jobject obj)
 {
 	std::unique_lock l(m); // TODO need to use upgradable lock!
 	
@@ -22,7 +22,7 @@ void openjdk_objects_table_impl::set(jobject obj)
 	this->objects.insert(obj);
 }
 //--------------------------------------------------------------------
-void openjdk_objects_table_impl::remove(JNIEnv* env, jobject obj)
+void jvm_objects_table_impl::remove(JNIEnv* env, jobject obj)
 {
 	std::unique_lock l(m);
 	
@@ -39,20 +39,20 @@ void openjdk_objects_table_impl::remove(JNIEnv* env, jobject obj)
 	this->objects.erase(obj);
 }
 //--------------------------------------------------------------------
-bool openjdk_objects_table_impl::contains(jobject obj) const
+bool jvm_objects_table_impl::contains(jobject obj) const
 {
 	std::shared_lock l(m);
 	return this->objects.find(obj) != this->objects.end();
 }
 //--------------------------------------------------------------------
-size_t openjdk_objects_table_impl::size() const
+size_t jvm_objects_table_impl::size() const
 {
 	std::shared_lock l(m);
 	return this->objects.size();
 }
 //--------------------------------------------------------------------
-void openjdk_release_object(JNIEnv* env, metaffi_handle h)
+void jvm_release_object(JNIEnv* env, metaffi_handle h)
 {
-	openjdk_objects_table::instance().remove(env, (jobject)h);
+	jvm_objects_table::instance().remove(env, (jobject)h);
 }
 //--------------------------------------------------------------------

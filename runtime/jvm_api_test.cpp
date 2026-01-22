@@ -92,7 +92,7 @@ auto cppload_entity(const std::string& module_path,
 
 typedef void (*xcall_no_params_no_retvals)(void*, char**, uint64_t*);
 
-TEST_SUITE("openjdk runtime api")
+TEST_SUITE("jvm runtime api")
 {
 	TEST_CASE("runtime_test_target.hello_world")
 	{
@@ -206,7 +206,7 @@ TEST_SUITE("openjdk runtime api")
 
 		REQUIRE((retvals_cdts[0].type == metaffi_handle_type));
 		REQUIRE((retvals_cdts[0].cdt_val.handle_val->handle != nullptr));
-		REQUIRE((retvals_cdts[0].cdt_val.handle_val->runtime_id == OPENJDK_RUNTIME_ID));
+		REQUIRE((retvals_cdts[0].cdt_val.handle_val->runtime_id == JVM_RUNTIME_ID));
 
 		cdt_metaffi_handle* testmap_instance = retvals_cdts[0].cdt_val.handle_val;
 
@@ -316,7 +316,7 @@ TEST_SUITE("openjdk runtime api")
 
 		REQUIRE((pcdts_retvals[0].type == metaffi_handle_type));
 		REQUIRE((pcdts_retvals[0].cdt_val.handle_val->handle != nullptr));
-		REQUIRE((pcdts_retvals[0].cdt_val.handle_val->runtime_id == OPENJDK_RUNTIME_ID));
+		REQUIRE((pcdts_retvals[0].cdt_val.handle_val->runtime_id == JVM_RUNTIME_ID));
 
 		cdt_metaffi_handle* testmap_instance = pcdts_retvals[0].cdt_val.handle_val;
 
@@ -429,7 +429,7 @@ TEST_SUITE("openjdk runtime api")
 
 		REQUIRE((pcdts_retvals[0].type == metaffi_handle_type));
 		REQUIRE((pcdts_retvals[0].cdt_val.handle_val->handle != nullptr));
-		REQUIRE((pcdts_retvals[0].cdt_val.handle_val->runtime_id == OPENJDK_RUNTIME_ID));
+		REQUIRE((pcdts_retvals[0].cdt_val.handle_val->runtime_id == JVM_RUNTIME_ID));
 
 		cdt_metaffi_handle* testmap_instance = pcdts_retvals[0].cdt_val.handle_val;
 

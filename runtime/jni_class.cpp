@@ -363,7 +363,7 @@ void jni_class::call(const cdts_java_wrapper& params_wrapper, const cdts_java_wr
 			throw std::runtime_error("expected an object in index 0");
 		}
 
-		if(params_wrapper[0].cdt_val.handle_val->runtime_id != OPENJDK_RUNTIME_ID)
+		if(params_wrapper[0].cdt_val.handle_val->runtime_id != JVM_RUNTIME_ID)
 		{
 			throw std::runtime_error("expected Java object");
 		}

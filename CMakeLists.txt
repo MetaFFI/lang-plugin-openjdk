@@ -1,21 +1,26 @@
 
 # add SDK
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/plugin-sdk")
+if(NOT DEFINED sdk_src)
+	message(FATAL_ERROR "sdk_src is not defined. Ensure sdk/CMakeLists.txt is added before lang-plugin-jvm.")
+endif()
 
 # idl plugin
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/idl")
+
+# compiler plugin
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/compiler")
 
 # runtime
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/runtime")
 
 # bridge
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/xllr-openjdk-bridge")
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/xllr-jvm-bridge")
 
 # api
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/api")
 
-add_custom_target(openjdk
-	DEPENDS xllr.openjdk xllr.openjdk.jni.bridge xllr.openjdk.bridge metaffi.api openjdk_api_test cdts_java_test openjdk_idl_plugin openjdk_idl_plugin_test
+add_custom_target(jvm
+	DEPENDS xllr.jvm xllr.jvm.jni.bridge xllr.jvm.bridge metaffi.api jvm_api_test cdts_java_test metaffi.idl.jvm metaffi.compiler.jvm
 )
 
-set(openjdk ${openjdk} PARENT_SCOPE)
+set(jvm ${jvm} PARENT_SCOPE)

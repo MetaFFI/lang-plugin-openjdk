@@ -71,3 +71,44 @@ api/out/
 runtime/SConscript_conandeps
 
 *SConscript_conandeps*
+
+# -------------- JVM IDL Plugin --------------
+
+# Build artifacts and compiled classes
+lang-plugin-jvm/idl/build_classes/
+lang-plugin-jvm/idl/out/
+lang-plugin-jvm/idl/target/
+
+# Generated JAR files (except the main extractor JAR)
+lang-plugin-jvm/idl/*.jar
+!lang-plugin-jvm/idl/jvm_idl_extractor.jar
+
+# External dependencies (JARs)
+lang-plugin-jvm/idl/libs/*.jar
+
+# Test JARs (external dependencies for testing)
+lang-plugin-jvm/idl/test/*.jar
+
+# Compiled Java test classes
+lang-plugin-jvm/idl/test/java_extractor/*.class
+
+# Temporary build directories
+lang-plugin-jvm/idl/temp/
+lang-plugin-jvm/idl/tmp/
+
+# IDE-specific files
+lang-plugin-jvm/idl/.idea/
+lang-plugin-jvm/idl/.vscode/
+lang-plugin-jvm/idl/.vs/
+
+# OS-specific files
+lang-plugin-jvm/idl/.DS_Store
+lang-plugin-jvm/idl/Thumbs.db
+
+# Log files
+lang-plugin-jvm/idl/*.log
+lang-plugin-jvm/idl/logs/
+
+# Backup files
+lang-plugin-jvm/idl/*.bak
+lang-plugin-jvm/idl/*.backup

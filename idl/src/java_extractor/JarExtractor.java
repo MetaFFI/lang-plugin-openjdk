@@ -19,8 +19,19 @@ public class JarExtractor implements Extractor {
     private String[] packageFilters;
 
     public JarExtractor(String filePath) {
-        this.filePath = filePath;
-        this.packageFilters = null;
+        // Parse filePath for package filters (format: "jarfile:package1;package2")
+        if (filePath.contains(":")) {
+            String[] parts = filePath.split(":", 2);
+            this.filePath = parts[0];
+            if (parts.length > 1 && !parts[1].isEmpty()) {
+                this.packageFilters = parts[1].split(";");
+            } else {
+                this.packageFilters = null;
+            }
+        } else {
+            this.filePath = filePath;
+            this.packageFilters = null;
+        }
     }
 
     public JarExtractor(String filePath, String[] packageFilters) {

@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/MetaFFI/plugin-sdk/compiler/go/CodeTemplates"
-	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
+	. "github.com/MetaFFI/sdk/compiler/go/CodeTemplates"
+	"github.com/MetaFFI/sdk/idl_entities/go/IDL"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

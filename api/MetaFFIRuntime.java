@@ -30,7 +30,7 @@ public class MetaFFIRuntime
 			libext = ".so";
 		}
 
-		System.load(metaFFIHome+"/openjdk/xllr.openjdk"+libext);
+		System.load(metaFFIHome+"/jvm/xllr.jvm"+libext);
 
 		this.runtimePlugin = runtimePlugin;
 	}
@@ -58,7 +58,7 @@ public class MetaFFIRuntime
 
 		var params = outParameters.toArray(new MetaFFITypeInfo[]{});
 		var retvals = outRetvals.toArray(new MetaFFITypeInfo[]{});
-		long xcall_and_context = metaffi.MetaFFIBridge.load_callable("xllr.openjdk", m, jniSignature, params, retvals);
+		long xcall_and_context = metaffi.MetaFFIBridge.load_callable("xllr.jvm", m, jniSignature, params, retvals);
 
 		return metaffi.Caller.createCaller(xcall_and_context, params, retvals.length > 0 ? retvals[0] : null);
 	}

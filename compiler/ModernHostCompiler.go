@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/MetaFFI/plugin-sdk/compiler/go/IDL"
+	"github.com/MetaFFI/sdk/idl_entities/go/IDL"
 )
 
 // MetaFFIHostTemplate is the template for generating Java host wrapper code
@@ -28,7 +28,7 @@ public class {{.ModuleName}} {
     
     static {
         try {
-            metaffi = new MetaFFIRuntime("xllr.openjdk");
+            metaffi = new MetaFFIRuntime("xllr.jvm");
             module = new MetaFFIModule(metaffi, "{{.ModuleName}}");
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize MetaFFI", e);
@@ -140,7 +140,7 @@ func (this *ModernHostCompiler) CompileHost(idlData []byte, outputDir string) er
 	}
 
 	// Create temporary directory for compilation
-	tempDir, err := os.MkdirTemp("", "metaffi_openjdk_*")
+	tempDir, err := os.MkdirTemp("", "metaffi_jvm_*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %v", err)
 	}
@@ -340,8 +340,8 @@ func (this *ModernHostCompiler) getClassPath() string {
 
 	classPath := []string{
 		".",
-		filepath.Join(metaffiHome, "openjdk", "metaffi.api.jar"),
-		filepath.Join(metaffiHome, "openjdk", "xllr.openjdk.bridge.jar"),
+		filepath.Join(metaffiHome, "jvm", "metaffi.api.jar"),
+		filepath.Join(metaffiHome, "jvm", "xllr.jvm.bridge.jar"),
 	}
 
 	return strings.Join(classPath, string(os.PathListSeparator))

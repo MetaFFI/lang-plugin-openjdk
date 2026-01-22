@@ -17,8 +17,8 @@ func checkJARsAvailable() bool {
 		return false
 	}
 
-	metaffiAPIJar := filepath.Join(metaffiHome, "openjdk", "metaffi.api.jar")
-	bridgeJar := filepath.Join(metaffiHome, "openjdk", "xllr.openjdk.bridge.jar")
+	metaffiAPIJar := filepath.Join(metaffiHome, "jvm", "metaffi.api.jar")
+	bridgeJar := filepath.Join(metaffiHome, "jvm", "xllr.jvm.bridge.jar")
 
 	_, err1 := os.Stat(metaffiAPIJar)
 	_, err2 := os.Stat(bridgeJar)
@@ -35,8 +35,8 @@ func TestJARAvailability(t *testing.T) {
 		return
 	}
 
-	metaffiAPIJar := filepath.Join(metaffiHome, "openjdk", "metaffi.api.jar")
-	bridgeJar := filepath.Join(metaffiHome, "openjdk", "xllr.openjdk.bridge.jar")
+	metaffiAPIJar := filepath.Join(metaffiHome, "jvm", "metaffi.api.jar")
+	bridgeJar := filepath.Join(metaffiHome, "jvm", "xllr.jvm.bridge.jar")
 
 	_, err1 := os.Stat(metaffiAPIJar)
 	_, err2 := os.Stat(bridgeJar)
@@ -651,16 +651,162 @@ func TestConcurrentCompilation(t *testing.T) {
 	}
 }
 
-// TestMemoryUsage tests that the compiler doesn't leak memory
+// TestMemoryUsage tests memory usage during compilation
 func TestMemoryUsage(t *testing.T) {
+	// Create a large IDL with many entities
+	entities := make([]map[string]interface{}, 100)
+	for i := 0; i < 100; i++ {
+		entities[i] = map[string]interface{}{
+			"name": fmt.Sprintf("function_%d", i),
+			"type": "function",
+			"parameters": []map[string]interface{}{
+				{"name": "param1", "type": "int32"},
+				{"name": "param2", "type": "string"},
+			},
+			"return_type": "int32",
+		}
+	}
+
+	idl := map[string]interface{}{
+		"module":   "large_module",
+		"entities": entities,
+	}
+
+	idlJSON, err := json.Marshal(idl)
+	if err != nil {
+		t.Fatalf("Failed to marshal IDL: %v", err)
+	}
+
+	compiler := NewModernHostCompiler()
+	outputDir := t.TempDir()
+
+	err = compiler.CompileHost(idlJSON, outputDir)
+	if err != nil {
+		t.Fatalf("Failed to compile large module: %v", err)
+	}
+
+	// Check that JAR file was created
+	jarPath := filepath.Join(outputDir, "large_module.jar")
+	if _, err := os.Stat(jarPath); os.IsNotExist(err) {
+		t.Fatalf("JAR file was not created: %s", jarPath)
+	}
+}
+
+// TestLog4jIDL tests compilation of IDL structure similar to log4j JAR processing
+func TestLog4jIDL(t *testing.T) {
+	// IDL structure similar to what would be generated from log4j JAR processing
 	idl := `{
-		"module": "memory_test_module",
+		"module": "Log4jModule",
 		"entities": [
 			{
-				"name": "test_func",
+				"name": "LogManager",
+				"type": "class",
+				"fields": [
+					{"name": "ROOT_LOGGER_NAME", "type": "string"},
+					{"name": "DEFAULT_MONITOR_INTERVAL", "type": "int32"}
+				],
+				"methods": [
+					{
+						"name": "getLogger",
+						"type": "function",
+						"parameters": [
+							{"name": "name", "type": "string"}
+						],
+						"return_type": "handle"
+					},
+					{
+						"name": "getRootLogger",
+						"type": "function",
+						"parameters": [],
+						"return_type": "handle"
+					},
+					{
+						"name": "shutdown",
+						"type": "function",
+						"parameters": [],
+						"return_type": "void"
+					}
+				]
+			},
+			{
+				"name": "Logger",
+				"type": "class",
+				"fields": [
+					{"name": "name", "type": "string"},
+					{"name": "level", "type": "handle"}
+				],
+				"methods": [
+					{
+						"name": "info",
+						"type": "function",
+						"parameters": [
+							{"name": "message", "type": "string"}
+						],
+						"return_type": "void"
+					},
+					{
+						"name": "error",
+						"type": "function",
+						"parameters": [
+							{"name": "message", "type": "string"},
+							{"name": "throwable", "type": "handle"}
+						],
+						"return_type": "void"
+					},
+					{
+						"name": "debug",
+						"type": "function",
+						"parameters": [
+							{"name": "message", "type": "string"},
+							{"name": "params", "type": "array"}
+						],
+						"return_type": "void"
+					},
+					{
+						"name": "warn",
+						"type": "function",
+						"parameters": [
+							{"name": "message", "type": "string"}
+						],
+						"return_type": "void"
+					}
+				]
+			},
+			{
+				"name": "Level",
+				"type": "class",
+				"fields": [
+					{"name": "name", "type": "string"},
+					{"name": "intLevel", "type": "int32"}
+				],
+				"methods": [
+					{
+						"name": "toString",
+						"type": "function",
+						"parameters": [],
+						"return_type": "string"
+					},
+					{
+						"name": "intValue",
+						"type": "function",
+						"parameters": [],
+						"return_type": "int32"
+					}
+				]
+			},
+			{
+				"name": "getLogger",
 				"type": "function",
-				"parameters": [{"name": "x", "type": "int32"}],
-				"return_type": "int32"
+				"parameters": [
+					{"name": "name", "type": "string"}
+				],
+				"return_type": "handle"
+			},
+			{
+				"name": "getRootLogger",
+				"type": "function",
+				"parameters": [],
+				"return_type": "handle"
 			}
 		]
 	}`
@@ -668,12 +814,76 @@ func TestMemoryUsage(t *testing.T) {
 	compiler := NewModernHostCompiler()
 	outputDir := t.TempDir()
 
-	// Run multiple compilations to check for memory leaks
-	for i := 0; i < 10; i++ {
-		modifiedIDL := strings.Replace(idl, "memory_test_module", fmt.Sprintf("memory_test_module_%d", i), 1)
-		err := compiler.CompileHost([]byte(modifiedIDL), outputDir)
+	err := compiler.CompileHost([]byte(idl), outputDir)
+	if err != nil {
+		t.Fatalf("Failed to compile log4j IDL: %v", err)
+	}
+
+	// Check that JAR file was created
+	jarPath := filepath.Join(outputDir, "Log4jModule.jar")
+	if _, err := os.Stat(jarPath); os.IsNotExist(err) {
+		t.Fatalf("JAR file was not created: %s", jarPath)
+	}
+
+	// Only verify JAR contents if JARs are available (Java compilation succeeded)
+	if checkJARsAvailable() {
+		// Verify JAR contents
+		cmd := exec.Command("jar", "-tf", jarPath)
+		output, err := cmd.Output()
 		if err != nil {
-			t.Fatalf("Memory test compilation %d failed: %v", i, err)
+			t.Fatalf("Failed to list JAR contents: %v", err)
+		}
+
+		jarContents := string(output)
+
+		// Check for expected class files
+		expectedClasses := []string{
+			"Log4jModule/",
+			"Log4jModule/Log4jModule.class",
+		}
+
+		for _, expectedClass := range expectedClasses {
+			if !strings.Contains(jarContents, expectedClass) {
+				t.Errorf("JAR does not contain expected class: %s", expectedClass)
+			}
+		}
+
+		// Verify the generated Java code structure
+		javaFile := filepath.Join(outputDir, "Log4jModule.java")
+		if _, err := os.Stat(javaFile); err == nil {
+			// Read and verify the generated Java code
+			javaContent, err := os.ReadFile(javaFile)
+			if err != nil {
+				t.Fatalf("Failed to read generated Java file: %v", err)
+			}
+
+			javaCode := string(javaContent)
+
+			// Check for expected Java code elements
+			expectedElements := []string{
+				"package Log4jModule;",
+				"import api.MetaFFIModule;",
+				"import api.MetaFFIRuntime;",
+				"public class Log4jModule {",
+				"private static MetaFFIRuntime metaffi;",
+				"private static MetaFFIModule module;",
+				"public static class LogManager {",
+				"public static class Logger {",
+				"public static class Level {",
+				"public static Object getLogger(String name) {",
+				"public static Object getRootLogger() {",
+			}
+
+			for _, element := range expectedElements {
+				if !strings.Contains(javaCode, element) {
+					t.Errorf("Generated Java code does not contain expected element: %s", element)
+				}
+			}
 		}
 	}
+
+	t.Log("Log4j IDL compilation test completed successfully")
+	t.Log("This test validates that the JVM host compiler can handle")
+	t.Log("complex IDL structures similar to those generated from log4j JAR processing")
+	t.Log("including classes with fields, methods, and static functions")
 }

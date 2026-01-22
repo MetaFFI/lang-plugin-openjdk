@@ -21,7 +21,7 @@ public class APITestPython3
 	@BeforeClass
 	public static void init()
 	{
-		runtime = new MetaFFIRuntime("python311");
+		runtime = new MetaFFIRuntime("python3");
 		runtime.loadRuntimePlugin();
 
 		File file = new File("./python3/runtime_test_target.py");
@@ -33,7 +33,7 @@ public class APITestPython3
 		module = runtime.loadModule("./python3/runtime_test_target.py");
 
 
-		javaRuntime = new MetaFFIRuntime("openjdk");
+		javaRuntime = new MetaFFIRuntime("jvm");
 		javaRuntime.loadRuntimePlugin();
 	}
 

@@ -81,7 +81,7 @@ public class BytecodeExtractorTest {
         // Basic JSON structure validation
         assertTrue("JSON should contain modules", json.contains("\"modules\""));
         assertTrue("JSON should contain target_language", json.contains("\"target_language\""));
-        assertTrue("JSON should contain openjdk", json.contains("\"openjdk\""));
+        assertTrue("JSON should contain jvm", json.contains("\"jvm\""));
     }
     
     private void compileTestClasses() throws Exception {
