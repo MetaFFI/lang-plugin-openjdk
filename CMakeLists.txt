@@ -16,11 +16,8 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/runtime")
 # bridge
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/xllr-jvm-bridge")
 
-# api
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/api")
-
 add_custom_target(jvm
-	DEPENDS xllr.jvm xllr.jvm.jni.bridge xllr.jvm.bridge metaffi.api jvm_api_test cdts_java_test metaffi.idl.jvm metaffi.compiler.jvm
+	DEPENDS xllr.jvm xllr.jvm.jni.bridge xllr.jvm.bridge cdts_java_test metaffi.idl.jvm metaffi.compiler.jvm
 )
 
 set(jvm ${jvm} PARENT_SCOPE)

@@ -10,6 +10,4 @@ require (
 	golang.org/x/text v0.24.0
 )
 
-replace github.com/MetaFFI/sdk/compiler/go => ../../sdk/compiler/go
 
-replace github.com/MetaFFI/sdk/idl_entities/go => ../../sdk/idl_entities/go

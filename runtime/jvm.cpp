@@ -4,9 +4,11 @@
 #include <utils/scope_guard.hpp>
 #include <utils/entity_path_parser.h>
 #include <utils/foreign_function.h>
+#include <utils/logger.hpp>
 #include "exception_macro.h"
 
 using namespace metaffi::utils;
+static auto LOG = metaffi::get_logger("jvm.runtime");
 
 //--------------------------------------------------------------------
 jvm::jvm()
@@ -48,7 +50,7 @@ jvm::jvm()
 	    ss << SEPARATOR << classpath;
 	}
 
-	printf("JVM classpath: %s\n", ss.str().c_str());
+	METAFFI_DEBUG(LOG, "JVM classpath: {}", ss.str());
 	
 	std::string cp_option = ss.str();
 
@@ -81,7 +83,7 @@ void jvm::fini()
 	{
 		jint res = this->pjvm->DestroyJavaVM(); // TODO: Check why it gets stuck !
 		if(res != JNI_OK){
-			printf("Failed to destroy JVM: %ld\n", res);
+			METAFFI_ERROR(LOG, "Failed to destroy JVM: {}", res);
 		}
 		
 		this->pjvm = nullptr;

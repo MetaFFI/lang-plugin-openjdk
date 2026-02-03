@@ -12,7 +12,9 @@ c_cpp_shared_lib(xllr.jvm.jni.bridge
 		"Boost::filesystem;${JNI_LIBRARIES};xllr.jvm"
 		"./jvm")
 
-add_dependencies(xllr.jvm.jni.bridge xllr.jvm)
+if(TARGET xllr.jvm)
+	add_dependencies(xllr.jvm.jni.bridge xllr.jvm)
+endif()
 set(xllr.jvm.jni.bridge xllr.jvm.jni.bridge PARENT_SCOPE)
 
 # build xllr.jvm.bridge.jar from *.java
@@ -20,7 +22,7 @@ build_jar(xllr.jvm.bridge
 	SOURCES
 		${CMAKE_CURRENT_LIST_DIR}/*.java
 	OUTPUT_DIR
-		"./jvm/"
+		"jvm"
 	OUTPUT_NAME
 		xllr.jvm.bridge
 )

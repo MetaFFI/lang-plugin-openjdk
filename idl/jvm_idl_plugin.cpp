@@ -1,11 +1,13 @@
 #include <compiler/idl_plugin_interface.h>
-#include <iostream>
+#include <utils/logger.hpp>
 #include <jni.h>
 #include <memory>
 #include <string>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+
+static auto LOG = metaffi::get_logger("jvm.idl");
 
 class JVMIDLPlugin : public idl_plugin_interface
 {
@@ -23,11 +25,11 @@ private:
 
 	bool initializeJNI()
 	{
-		std::cerr << "initializeJNI: Starting initialization" << std::endl;
+		METAFFI_DEBUG(LOG, "initializeJNI: Starting initialization");
 		
 		if(g_jvm != nullptr)
 		{
-			std::cerr << "initializeJNI: JVM already initialized" << std::endl;
+			METAFFI_DEBUG(LOG, "initializeJNI: JVM already initialized");
 			return true;// Already initialized
 		}
 
@@ -35,17 +37,17 @@ private:
 		const char* metaffi_home = std::getenv("METAFFI_HOME");
 		if(metaffi_home == nullptr)
 		{
-			std::cerr << "METAFFI_HOME environment variable not set" << std::endl;
+			METAFFI_ERROR(LOG, "METAFFI_HOME environment variable not set");
 			return false;
 		}
 		
-		std::cerr << "initializeJNI: METAFFI_HOME = " << metaffi_home << std::endl;
+		METAFFI_DEBUG(LOG, "initializeJNI: METAFFI_HOME = {}", metaffi_home);
 
 		// Build classpath with JAR file
 		// The JAR includes all dependencies (ASM, Gson) via INCLUDE_JARS
 		std::string classpath = std::string(metaffi_home) + "/sdk/idl_compiler/jvm/jvm_idl_compiler.jar";
 
-		std::cerr << "initializeJNI: Classpath = " << classpath << std::endl;
+		METAFFI_DEBUG(LOG, "initializeJNI: Classpath = {}", classpath);
 
 		// JVM options - include all necessary JAR files and class directories
 		JavaVMOption options[3];
@@ -60,20 +62,20 @@ private:
 		vm_args.ignoreUnrecognized = JNI_FALSE;
 
 		// Create JVM
-		std::cerr << "initializeJNI: Creating JVM..." << std::endl;
+		METAFFI_DEBUG(LOG, "initializeJNI: Creating JVM...");
 		jint result = JNI_CreateJavaVM(&g_jvm, (void**) &g_env, &vm_args);
 		if(result != JNI_OK)
 		{
-			std::cerr << "Failed to create JVM with result: " << result << std::endl;
+			METAFFI_ERROR(LOG, "Failed to create JVM with result: {}", result);
 			return false;
 		}
-		std::cerr << "initializeJNI: JVM created successfully" << std::endl;
+		METAFFI_DEBUG(LOG, "initializeJNI: JVM created successfully");
 
 		// Get class references - use new JvmExtractor class
 		g_javaExtractorClass = g_env->FindClass("com/metaffi/idl/JvmExtractor");
 		if(g_javaExtractorClass == nullptr)
 		{
-			std::cerr << "Failed to find JvmExtractor class" << std::endl;
+			METAFFI_ERROR(LOG, "Failed to find JvmExtractor class");
 			// Check for JNI exception
 			jthrowable exception = g_env->ExceptionOccurred();
 			if(exception != nullptr)
@@ -88,7 +90,7 @@ private:
 		g_stringClass = g_env->FindClass("java/lang/String");
 		if(g_stringClass == nullptr)
 		{
-			std::cerr << "Failed to find String class" << std::endl;
+			METAFFI_ERROR(LOG, "Failed to find String class");
 			return false;
 		}
 		g_stringClass = (jclass) g_env->NewGlobalRef(g_stringClass);
@@ -98,7 +100,7 @@ private:
 			"([Ljava/lang/String;)Ljava/lang/String;");
 		if(g_extractMethod == nullptr)
 		{
-			std::cerr << "Failed to get extract static method" << std::endl;
+			METAFFI_ERROR(LOG, "Failed to get extract static method");
 			jthrowable exception = g_env->ExceptionOccurred();
 			if(exception != nullptr)
 			{
@@ -108,7 +110,7 @@ private:
 			return false;
 		}
 
-		std::cerr << "initializeJNI: Initialization completed successfully" << std::endl;
+		METAFFI_DEBUG(LOG, "initializeJNI: Initialization completed successfully");
 		return true;
 	}
 
@@ -145,7 +147,7 @@ private:
 public:
 	void init() override
 	{
-		std::cout << "JVM IDL Plugin initialized" << std::endl;
+		METAFFI_INFO(LOG, "initialized");
 	}
 
 	void parse_idl(const char* source_code, uint32_t source_length,
@@ -316,7 +318,7 @@ public:
 	~JVMIDLPlugin()
 	{
 		cleanupJNI();
-		std::cout << "JVM IDL Plugin cleaned up" << std::endl;
+		METAFFI_INFO(LOG, "cleaned up");
 	}
 };
 

@@ -7,9 +7,11 @@
 #include <filesystem>
 #include <runtime/runtime_plugin_api.h>
 #include <utils/scope_guard.hpp>
+#include <utils/logger.hpp>
 
 std::filesystem::path g_module_path;
 char* err = nullptr;
+static auto LOG = metaffi::get_logger("jvm.runtime");
 
 // make sure you include utils/scope_guard.hpp
 // if_fail_code need to assume "char* err" is defined
@@ -42,7 +44,7 @@ struct GlobalSetup
 		load_runtime(&err);
 		if(err)
 		{
-			std::cerr << err << std::endl;
+			METAFFI_ERROR(LOG, "{}", err);
 			exit(1);
 		}
 	}
@@ -54,7 +56,7 @@ struct GlobalSetup
 		free_runtime(&err);
 		if(err)
 		{
-			std::cerr << err << std::endl;
+			METAFFI_ERROR(LOG, "{}", err);
 			exit(2);
 		}
 	}
