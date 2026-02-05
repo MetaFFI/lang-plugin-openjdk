@@ -13,11 +13,30 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/compiler")
 # runtime
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/runtime")
 
-# bridge
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/xllr-jvm-bridge")
-
 add_custom_target(jvm
-	DEPENDS xllr.jvm xllr.jvm.jni.bridge xllr.jvm.bridge cdts_java_test metaffi.idl.jvm metaffi.compiler.jvm
+	DEPENDS xllr.jvm metaffi.idl.jvm metaffi.compiler.jvm
 )
+
+set(METAFFI_HOME_PATH $ENV{METAFFI_HOME})
+if(NOT METAFFI_HOME_PATH)
+	message(FATAL_ERROR "METAFFI_HOME environment variable not set. JVM API jar will not be copied.")
+endif()
+
+set(JVM_API_SRC_JAR "${METAFFI_HOME_PATH}/sdk/api/jvm/metaffi.api.jar")
+set(JVM_API_DEST_DIR "${METAFFI_HOME_PATH}/jvm/api")
+
+add_custom_command(
+	OUTPUT "${JVM_API_DEST_DIR}/metaffi.api.jar"
+	COMMAND ${CMAKE_COMMAND} -E make_directory "${JVM_API_DEST_DIR}"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${JVM_API_SRC_JAR}" "${JVM_API_DEST_DIR}"
+	DEPENDS metaffi.api
+	COMMENT "Copying JVM API jar to ${JVM_API_DEST_DIR}"
+)
+
+add_custom_target(jvm_api_jar_copy
+	DEPENDS "${JVM_API_DEST_DIR}/metaffi.api.jar"
+)
+
+add_dependencies(jvm jvm_api_jar_copy)
 
 set(jvm ${jvm} PARENT_SCOPE)

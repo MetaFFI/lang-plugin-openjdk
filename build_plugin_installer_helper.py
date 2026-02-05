@@ -17,9 +17,7 @@ def get_files(win_metaffi_home: str, ubuntu_metaffi_home: str) -> Tuple[Dict[str
 
 	win_files = {
 		'xllr.jvm.dll': win_metaffi_home + 'xllr.jvm.dll',
-		'xllr.jvm.jni.bridge.dll': win_metaffi_home + 'xllr.jvm.jni.bridge.dll',
 		'metaffi.api.jar': win_metaffi_home + 'metaffi.api.jar',
-		'xllr.jvm.bridge.jar': win_metaffi_home + 'xllr.jvm.bridge.jar',
 		'boost_filesystem-vc143-mt-gd-x64-1_87.dll': win_metaffi_home + 'boost_filesystem-vc143-mt-gd-x64-1_87.dll'
 	}
 	
@@ -30,9 +28,7 @@ def get_files(win_metaffi_home: str, ubuntu_metaffi_home: str) -> Tuple[Dict[str
 	
 	ubuntu_files = {
 		'xllr.jvm.so': ubuntu_metaffi_home + 'xllr.jvm.so',
-		'xllr.jvm.jni.bridge.so': ubuntu_metaffi_home + 'xllr.jvm.jni.bridge.so',
 		'metaffi.api.jar': ubuntu_metaffi_home + 'metaffi.api.jar',
-		'xllr.jvm.bridge.jar': ubuntu_metaffi_home + 'xllr.jvm.bridge.jar',
 		'libboost_filesystem.so.1.87.0': ubuntu_metaffi_home + 'libboost_filesystem.so.1.87.0'
 	}
 	

@@ -1,336 +1,391 @@
-#include <compiler/idl_plugin_interface.h>
+#include <idl_compiler/idl_plugin_interface.h>
+#include <runtime/xllr_capi_loader.h>
+#include <runtime_manager/jvm/runtime_manager.h>
+#include <runtime_manager/jvm/module.h>
+#include <runtime_manager/jvm/jni_helpers.h>
+#include <utils/env_utils.h>
 #include <utils/logger.hpp>
-#include <jni.h>
-#include <memory>
+#include <utils/scope_guard.hpp>
+#include <utils/safe_func.h>
+
+#include <filesystem>
+#include <mutex>
 #include <string>
-#include <cstdlib>
-#include <cstring>
 #include <vector>
 
 static auto LOG = metaffi::get_logger("jvm.idl");
 
+namespace
+{
+#ifdef _WIN32
+    constexpr char classpath_separator = ';';
+#else
+    constexpr char classpath_separator = ':';
+#endif
+
+    std::string get_env_string(const char* name)
+    {
+        char* value = metaffi_getenv_alloc(name);
+        if(!value)
+        {
+            return "";
+        }
+        std::string result = value;
+        metaffi_free_env(value);
+        return result;
+    }
+
+    std::vector<std::string> split_idl_paths(const std::string& value)
+    {
+        std::vector<std::string> paths;
+        char separator = ';';
+        if(value.find(':') != std::string::npos && value.find(';') == std::string::npos)
+        {
+            separator = ':';
+        }
+
+        size_t start = 0;
+        while(start < value.size())
+        {
+            size_t sep = value.find(separator, start);
+            if(sep == std::string::npos)
+            {
+                sep = value.size();
+            }
+
+            if(sep > start)
+            {
+                paths.push_back(value.substr(start, sep - start));
+            }
+
+            start = sep + 1;
+        }
+
+        if(paths.empty() && !value.empty())
+        {
+            paths.push_back(value);
+        }
+
+        return paths;
+    }
+
+    std::string join_classpath(const std::vector<std::string>& entries)
+    {
+        std::string result;
+        for(size_t i = 0; i < entries.size(); ++i)
+        {
+            if(entries[i].empty())
+            {
+                continue;
+            }
+            if(!result.empty())
+            {
+                result += classpath_separator;
+            }
+            result += entries[i];
+        }
+        return result;
+    }
+
+    void set_error(char** out_err, uint32_t* out_err_len, const std::string& msg)
+    {
+        if(!out_err || !out_err_len)
+        {
+            return;
+        }
+        *out_err = xllr_alloc_string(msg.c_str(), msg.size());
+        *out_err_len = static_cast<uint32_t>(msg.size());
+    }
+
+    void clear_error(char** out_err, uint32_t* out_err_len)
+    {
+        if(!out_err || !out_err_len)
+        {
+            return;
+        }
+        *out_err = nullptr;
+        *out_err_len = 0;
+    }
+}
+
 class JVMIDLPlugin : public idl_plugin_interface
 {
 private:
-	// JVM pointer
-	JavaVM* g_jvm = nullptr;
-	JNIEnv* g_env = nullptr;
+    std::shared_ptr<jvm_runtime_manager> m_runtime;
+    std::shared_ptr<Module> m_module;
+    jclass m_extractor_class = nullptr;
+    jclass m_string_class = nullptr;
+    jmethodID m_extract_method = nullptr;
+    std::mutex m_init_mutex;
+    bool m_initialized = false;
 
-	// Global class references
-	jclass g_javaExtractorClass = nullptr;
-	jclass g_stringClass = nullptr;
+    void initialize_jvm()
+    {
+        std::lock_guard<std::mutex> lock(m_init_mutex);
+        if(m_initialized)
+        {
+            return;
+        }
 
-	// JNI method IDs
-	jmethodID g_extractMethod = nullptr;
+        auto info = jvm_runtime_manager::select_highest_installed_jvm();
+        m_runtime = jvm_runtime_manager::create(info);
+        m_runtime->load_runtime();
 
-	bool initializeJNI()
-	{
-		METAFFI_DEBUG(LOG, "initializeJNI: Starting initialization");
-		
-		if(g_jvm != nullptr)
-		{
-			METAFFI_DEBUG(LOG, "initializeJNI: JVM already initialized");
-			return true;// Already initialized
-		}
+        std::string metaffi_home = get_env_string("METAFFI_HOME");
+        if(metaffi_home.empty())
+        {
+            throw std::runtime_error("METAFFI_HOME environment variable is not set");
+        }
 
-		// Get METAFFI_HOME environment variable
-		const char* metaffi_home = std::getenv("METAFFI_HOME");
-		if(metaffi_home == nullptr)
-		{
-			METAFFI_ERROR(LOG, "METAFFI_HOME environment variable not set");
-			return false;
-		}
-		
-		METAFFI_DEBUG(LOG, "initializeJNI: METAFFI_HOME = {}", metaffi_home);
+        std::filesystem::path idl_dir = std::filesystem::path(metaffi_home) / "jvm" / "idl";
+        std::filesystem::path compiler_jar = idl_dir / "jvm_idl_compiler.jar";
+        std::filesystem::path asm_jar = idl_dir / "asm-9.6.jar";
+        std::filesystem::path gson_jar = idl_dir / "gson-2.10.1.jar";
 
-		// Build classpath with JAR file
-		// The JAR includes all dependencies (ASM, Gson) via INCLUDE_JARS
-		std::string classpath = std::string(metaffi_home) + "/sdk/idl_compiler/jvm/jvm_idl_compiler.jar";
+        if(!std::filesystem::exists(compiler_jar))
+        {
+            throw std::runtime_error("Missing JVM IDL compiler jar: " + compiler_jar.string());
+        }
+        if(!std::filesystem::exists(asm_jar))
+        {
+            throw std::runtime_error("Missing ASM dependency jar: " + asm_jar.string());
+        }
+        if(!std::filesystem::exists(gson_jar))
+        {
+            throw std::runtime_error("Missing Gson dependency jar: " + gson_jar.string());
+        }
 
-		METAFFI_DEBUG(LOG, "initializeJNI: Classpath = {}", classpath);
+        std::vector<std::string> classpath_entries;
+        classpath_entries.push_back(asm_jar.string());
+        classpath_entries.push_back(gson_jar.string());
 
-		// JVM options - include all necessary JAR files and class directories
-		JavaVMOption options[3];
-		options[0].optionString = const_cast<char*>(("-Djava.class.path=" + classpath).c_str());
-		options[1].optionString = const_cast<char*>("-Dfile.encoding=UTF-8");
-		options[2].optionString = const_cast<char*>("-Xmx512m");
+        std::string extra_classpath = get_env_string("CLASSPATH");
+        if(!extra_classpath.empty())
+        {
+            classpath_entries.push_back(extra_classpath);
+        }
 
-		JavaVMInitArgs vm_args;
-		vm_args.version = JNI_VERSION_1_8;
-		vm_args.nOptions = 3;
-		vm_args.options = options;
-		vm_args.ignoreUnrecognized = JNI_FALSE;
+        std::string classpath = join_classpath(classpath_entries);
+        m_module = m_runtime->load_module(compiler_jar.string(), classpath);
+        if(!m_module)
+        {
+            throw std::runtime_error("Failed to load JVM IDL compiler module");
+        }
 
-		// Create JVM
-		METAFFI_DEBUG(LOG, "initializeJNI: Creating JVM...");
-		jint result = JNI_CreateJavaVM(&g_jvm, (void**) &g_env, &vm_args);
-		if(result != JNI_OK)
-		{
-			METAFFI_ERROR(LOG, "Failed to create JVM with result: {}", result);
-			return false;
-		}
-		METAFFI_DEBUG(LOG, "initializeJNI: JVM created successfully");
+        m_extractor_class = m_module->load_class("com.metaffi.idl.JvmExtractor");
+        if(!m_extractor_class)
+        {
+            throw std::runtime_error("Failed to load com.metaffi.idl.JvmExtractor");
+        }
 
-		// Get class references - use new JvmExtractor class
-		g_javaExtractorClass = g_env->FindClass("com/metaffi/idl/JvmExtractor");
-		if(g_javaExtractorClass == nullptr)
-		{
-			METAFFI_ERROR(LOG, "Failed to find JvmExtractor class");
-			// Check for JNI exception
-			jthrowable exception = g_env->ExceptionOccurred();
-			if(exception != nullptr)
-			{
-				g_env->ExceptionDescribe();
-				g_env->ExceptionClear();
-			}
-			return false;
-		}
-		g_javaExtractorClass = (jclass) g_env->NewGlobalRef(g_javaExtractorClass);
+        JNIEnv* env = nullptr;
+        auto release_env = m_runtime->get_env(&env);
+        metaffi::utils::scope_guard env_guard([&](){ release_env(); });
 
-		g_stringClass = g_env->FindClass("java/lang/String");
-		if(g_stringClass == nullptr)
-		{
-			METAFFI_ERROR(LOG, "Failed to find String class");
-			return false;
-		}
-		g_stringClass = (jclass) g_env->NewGlobalRef(g_stringClass);
+        jclass string_class = env->FindClass("java/lang/String");
+        if(env->ExceptionCheck() || !string_class)
+        {
+            std::string error = get_exception_description(env);
+            throw std::runtime_error(error.empty() ? "Failed to find java/lang/String" : error);
+        }
+        m_string_class = (jclass)env->NewGlobalRef(string_class);
+        env->DeleteLocalRef(string_class);
+        if(!m_string_class)
+        {
+            throw std::runtime_error("Failed to create global reference for java/lang/String");
+        }
 
-		// Get static extract method
-		g_extractMethod = g_env->GetStaticMethodID(g_javaExtractorClass, "extract", 
-			"([Ljava/lang/String;)Ljava/lang/String;");
-		if(g_extractMethod == nullptr)
-		{
-			METAFFI_ERROR(LOG, "Failed to get extract static method");
-			jthrowable exception = g_env->ExceptionOccurred();
-			if(exception != nullptr)
-			{
-				g_env->ExceptionDescribe();
-				g_env->ExceptionClear();
-			}
-			return false;
-		}
+        m_extract_method = env->GetStaticMethodID(m_extractor_class, "extract", "([Ljava/lang/String;)Ljava/lang/String;");
+        if(env->ExceptionCheck() || !m_extract_method)
+        {
+            std::string error = get_exception_description(env);
+            throw std::runtime_error(error.empty() ? "Failed to resolve JvmExtractor.extract" : error);
+        }
+        m_initialized = true;
+    }
 
-		METAFFI_DEBUG(LOG, "initializeJNI: Initialization completed successfully");
-		return true;
-	}
+    void cleanup_java_refs()
+    {
+        if(!m_runtime)
+        {
+            return;
+        }
 
-	void cleanupJNI()
-	{
-		if(g_jvm != nullptr)
-		{
-			g_jvm->DestroyJavaVM();
-			g_jvm = nullptr;
-			g_env = nullptr;
-		}
-	}
+        try
+        {
+            JNIEnv* env = nullptr;
+            auto release_env = m_runtime->get_env(&env);
+            metaffi::utils::scope_guard env_guard([&](){ release_env(); });
 
-	jstring cStringToJavaString(const char* cStr)
-	{
-		return g_env->NewStringUTF(cStr);
-	}
+            if(m_extractor_class)
+            {
+                env->DeleteGlobalRef(m_extractor_class);
+                m_extractor_class = nullptr;
+            }
+            if(m_string_class)
+            {
+                env->DeleteGlobalRef(m_string_class);
+                m_string_class = nullptr;
+            }
 
-	char* javaStringToCString(jstring javaStr)
-	{
-		const char* cStr = g_env->GetStringUTFChars(javaStr, nullptr);
-		if(cStr == nullptr)
-		{
-			return nullptr;
-		}
-		
-		size_t len = strlen(cStr);
-		char* result = new char[len + 1];
-		strcpy(result, cStr);
-		g_env->ReleaseStringUTFChars(javaStr, cStr);
-		return result;
-	}
+            release_env();
+        }
+        catch(...)
+        {
+        }
+    }
 
 public:
-	void init() override
-	{
-		METAFFI_INFO(LOG, "initialized");
-	}
+    void init() override
+    {
+        initialize_jvm();
+        METAFFI_INFO(LOG, "initialized");
+    }
 
-	void parse_idl(const char* source_code, uint32_t source_length,
-				   const char* file_or_path, uint32_t file_or_path_length,
-				   char** out_idl_def_json, uint32_t* out_idl_def_json_length,
-				   char** out_err, uint32_t* out_err_len) override
-	{
-		// Initialize output parameters
-		*out_idl_def_json = nullptr;
-		*out_idl_def_json_length = 0;
-		*out_err = nullptr;
-		*out_err_len = 0;
+    void parse_idl(const char* source_code, uint32_t source_length,
+                   const char* file_or_path, uint32_t file_or_path_length,
+                   char** out_idl_def_json, uint32_t* out_idl_def_json_length,
+                   char** out_err, uint32_t* out_err_len) override
+    {
+        (void)source_code;
+        (void)source_length;
 
-		try
-		{
-			// Validate input parameters
-			if(file_or_path == nullptr)
-			{
-				std::string error = "file_or_path is null";
-				*out_err = (char*) malloc(error.length() + 1);
-				if(*out_err != nullptr)
-				{
-					memcpy(*out_err, error.c_str(), error.length());
-					(*out_err)[error.length()] = '\0';
-					*out_err_len = error.length();
-				}
-				return;
-			}
-			
-			if(out_idl_def_json == nullptr || out_err == nullptr)
-			{
-				return; // Invalid output parameters
-			}
-			
-			// Initialize JVM if not already done
-			if(!initializeJNI())
-			{
-				std::string error = "Failed to initialize JVM";
-				*out_err = (char*) malloc(error.length() + 1);
-				if(*out_err != nullptr)
-				{
-					memcpy(*out_err, error.c_str(), error.length());
-					(*out_err)[error.length()] = '\0';
-					*out_err_len = error.length();
-				}
-				return;
-			}
+        if(out_idl_def_json)
+        {
+            *out_idl_def_json = nullptr;
+        }
+        if(out_idl_def_json_length)
+        {
+            *out_idl_def_json_length = 0;
+        }
+        clear_error(out_err, out_err_len);
 
-			// Parse idl_path (may contain multiple paths separated by ;)
-			std::string paths_str(file_or_path, file_or_path_length);
-			std::vector<std::string> paths;
-			
-			// Handle both ; and : separators (Windows uses ;, Unix uses :)
-			char separator = ';';
-			if(paths_str.find(':') != std::string::npos && paths_str.find(';') == std::string::npos)
-			{
-				separator = ':';
-			}
-			
-			size_t pos = 0;
-			while((pos = paths_str.find(separator)) != std::string::npos)
-			{
-				paths.push_back(paths_str.substr(0, pos));
-				paths_str.erase(0, pos + 1);
-			}
-			if(!paths_str.empty())
-			{
-				paths.push_back(paths_str);
-			}
+        if(!file_or_path)
+        {
+            set_error(out_err, out_err_len, "file_or_path is null");
+            return;
+        }
 
-			// Create Java String array
-			jobjectArray pathsArray = g_env->NewObjectArray(paths.size(), g_stringClass, nullptr);
-			if(pathsArray == nullptr)
-			{
-				std::string error = "Failed to create String array";
-				*out_err = (char*) malloc(error.length() + 1);
-				if(*out_err != nullptr)
-				{
-					memcpy(*out_err, error.c_str(), error.length());
-					(*out_err)[error.length()] = '\0';
-					*out_err_len = error.length();
-				}
-				return;
-			}
+        try
+        {
+            initialize_jvm();
 
-			for(size_t i = 0; i < paths.size(); i++)
-			{
-				jstring path = g_env->NewStringUTF(paths[i].c_str());
-				g_env->SetObjectArrayElement(pathsArray, i, path);
-				g_env->DeleteLocalRef(path);
-			}
+            std::string paths_value(file_or_path, file_or_path_length);
+            auto paths = split_idl_paths(paths_value);
+            if(paths.empty())
+            {
+                set_error(out_err, out_err_len, "No IDL paths provided");
+                return;
+            }
 
-			// Call static extract method
-			jstring result = (jstring) g_env->CallStaticObjectMethod(
-				g_javaExtractorClass, g_extractMethod, pathsArray);
+            JNIEnv* env = nullptr;
+            auto release_env = m_runtime->get_env(&env);
 
-			// Check for exceptions
-			if(g_env->ExceptionCheck())
-			{
-				g_env->ExceptionDescribe();
-				g_env->ExceptionClear();
-				std::string error = "Exception in JvmExtractor.extract()";
-				*out_err = (char*) malloc(error.length() + 1);
-				if(*out_err != nullptr)
-				{
-					memcpy(*out_err, error.c_str(), error.length());
-					(*out_err)[error.length()] = '\0';
-					*out_err_len = error.length();
-				}
-				g_env->DeleteLocalRef(pathsArray);
-				return;
-			}
+            jobjectArray paths_array = env->NewObjectArray(static_cast<jsize>(paths.size()), m_string_class, nullptr);
+            if(env->ExceptionCheck() || !paths_array)
+            {
+                std::string error = get_exception_description(env);
+                set_error(out_err, out_err_len, error.empty() ? "Failed to create Java String array" : error);
+                return;
+            }
 
-			// Convert result to C string
-			if(result != nullptr)
-			{
-				const char* json_str = g_env->GetStringUTFChars(result, nullptr);
-				size_t json_len = strlen(json_str);
+            for(jsize i = 0; i < static_cast<jsize>(paths.size()); ++i)
+            {
+                jstring path = env->NewStringUTF(paths[i].c_str());
+                env->SetObjectArrayElement(paths_array, i, path);
+                env->DeleteLocalRef(path);
+                if(env->ExceptionCheck())
+                {
+                    std::string error = get_exception_description(env);
+                    env->DeleteLocalRef(paths_array);
+                    set_error(out_err, out_err_len, error.empty() ? "Failed to fill Java String array" : error);
+                    return;
+                }
+            }
 
-				*out_idl_def_json = (char*) malloc(json_len + 1);
-				if(*out_idl_def_json != nullptr)
-				{
-					memcpy(*out_idl_def_json, json_str, json_len);
-					(*out_idl_def_json)[json_len] = '\0';
-					*out_idl_def_json_length = json_len;
-				}
+            jstring result = (jstring)env->CallStaticObjectMethod(m_extractor_class, m_extract_method, paths_array);
+            env->DeleteLocalRef(paths_array);
 
-				g_env->ReleaseStringUTFChars(result, json_str);
-				g_env->DeleteLocalRef(result);
-			}
-			else
-			{
-				std::string error = "JvmExtractor.extract() returned null";
-				*out_err = (char*) malloc(error.length() + 1);
-				if(*out_err != nullptr)
-				{
-					memcpy(*out_err, error.c_str(), error.length());
-					(*out_err)[error.length()] = '\0';
-					*out_err_len = error.length();
-				}
-			}
+            if(env->ExceptionCheck() || !result)
+            {
+                std::string error = get_exception_description(env);
+                set_error(out_err, out_err_len, error.empty() ? "JvmExtractor.extract failed" : error);
+                return;
+            }
 
-			g_env->DeleteLocalRef(pathsArray);
+            const char* json_chars = env->GetStringUTFChars(result, nullptr);
+            std::string json = json_chars ? json_chars : "";
+            if(json_chars)
+            {
+                env->ReleaseStringUTFChars(result, json_chars);
+            }
+            env->DeleteLocalRef(result);
+            if(json.empty())
+            {
+                set_error(out_err, out_err_len, "JvmExtractor.extract returned empty result");
+                return;
+            }
 
-		} catch(const std::exception& e)
-		{
-			std::string error = e.what();
-			*out_err = (char*) malloc(error.length() + 1);
-			if(*out_err != nullptr)
-			{
-				memcpy(*out_err, error.c_str(), error.length());
-				(*out_err)[error.length()] = '\0';
-				*out_err_len = error.length();
-			}
-		} catch(...)
-		{
-			std::string error = "Unknown error occurred";
-			*out_err = (char*) malloc(error.length() + 1);
-			if(*out_err != nullptr)
-			{
-				memcpy(*out_err, error.c_str(), error.length());
-				(*out_err)[error.length()] = '\0';
-				*out_err_len = error.length();
-			}
-		}
-	}
+            if(json.find("\"error\"") != std::string::npos)
+            {
+                set_error(out_err, out_err_len, json);
+                return;
+            }
 
-	~JVMIDLPlugin()
-	{
-		cleanupJNI();
-		METAFFI_INFO(LOG, "cleaned up");
-	}
+            if(out_idl_def_json && out_idl_def_json_length)
+            {
+                *out_idl_def_json = xllr_alloc_string(json.c_str(), json.size());
+                *out_idl_def_json_length = static_cast<uint32_t>(json.size());
+            }
+        }
+        catch(const std::exception& e)
+        {
+            set_error(out_err, out_err_len, e.what());
+        }
+        catch(...)
+        {
+            set_error(out_err, out_err_len, "Unknown error in parse_idl");
+        }
+    }
+
+    ~JVMIDLPlugin()
+    {
+        cleanup_java_refs();
+        m_module.reset();
+        m_runtime.reset();
+    }
 };
 
-// Export the plugin instance
-extern "C" __declspec(dllexport) idl_plugin_interface* create_plugin()
+extern "C"
 {
-	return new JVMIDLPlugin();
-}
+    __declspec(dllexport) idl_plugin_interface* create_plugin()
+    {
+        return new JVMIDLPlugin();
+    }
 
-// Export init_plugin function for compatibility with the wrapper
-extern "C" __declspec(dllexport) void init_plugin()
-{
-	// This function is called by the wrapper to initialize the plugin
-	// The actual initialization is done in the create_plugin function
-} 
+    __declspec(dllexport) void init_plugin()
+    {
+        static JVMIDLPlugin plugin;
+        plugin.init();
+    }
+
+    __declspec(dllexport) void parse_idl(const char* source_code, uint32_t source_code_length,
+                                         const char* file_or_path, uint32_t file_or_path_length,
+                                         char** out_idl_def_json, uint32_t* out_idl_def_json_length,
+                                         char** out_err, uint32_t* out_err_len)
+    {
+        static JVMIDLPlugin plugin;
+        static bool initialized = false;
+
+        if(!initialized)
+        {
+            plugin.init();
+            initialized = true;
+        }
+
+        plugin.parse_idl(source_code, source_code_length,
+                         file_or_path, file_or_path_length,
+                         out_idl_def_json, out_idl_def_json_length,
+                         out_err, out_err_len);
+    }
+}

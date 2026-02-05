@@ -1,35 +1,33 @@
 # load conan packages
-find_or_install_package(Boost COMPONENTS filesystem)
-find_or_install_package(doctest)
-find_or_install_package(Java REQUIRED)
-find_or_install_package(JNI REQUIRED)
+find_or_install_package(Boost COMPONENTS filesystem system)
 
+# Collect plugin source files
 collect_c_cpp_files(${CMAKE_CURRENT_LIST_DIR} xllr.jvm)
 
-# get cpython from "deps" as vcpkg doesn't have python3.11 and python3.12
+# Collect SDK jvm runtime_manager sources
+collect_c_cpp_files("${metaffi_sdk_root}/runtime_manager/jvm" sdk_jvm_runtime_manager)
+
+# Collect SDK jvm cdts_serializer sources
+collect_c_cpp_files("${metaffi_sdk_root}/cdts_serializer/jvm" sdk_jvm_cdts_serializer)
+
+# Combined SDK sources for jvm
+set(sdk_jvm_src
+	${sdk_src}
+	${sdk_jvm_runtime_manager_src}
+	${sdk_jvm_cdts_serializer_src}
+)
+
+# SDK include directories (add metaffi_sdk_root for <runtime_manager/jvm/...> style includes)
+set(sdk_jvm_include
+	${sdk_include_dir}
+	${metaffi_sdk_root}
+)
+
+# Build shared library
 c_cpp_shared_lib(xllr.jvm
-		"${xllr.jvm_src};${sdk_src}"
-		"${sdk_include_dir};${Boost_INCLUDE_DIRS};${JNI_INCLUDE_DIRS};"
-		"Boost::filesystem;${JNI_LIBRARIES}"
+		"${xllr.jvm_src};${sdk_jvm_src}"
+		"${sdk_jvm_include};${Boost_INCLUDE_DIRS};${JNI_INCLUDE_DIRS}"
+		"Boost::filesystem;Boost::system;${JNI_LIBRARIES}"
 		"./jvm")
 
 set(xllr.jvm xllr.jvm PARENT_SCOPE)
-
-# run cdts_java_test.cpp doctest unit test
-c_cpp_exe(cdts_java_test
-		"${xllr.jvm_src};${sdk_src};cdts_java_test.cpp"
-		"${sdk_include_dir};${Boost_INCLUDE_DIRS};${doctest_INCLUDE_DIRS};${JNI_INCLUDE_DIRS}"
-		"doctest::doctest;Boost::filesystem;${JNI_LIBRARIES}"
-		".")
-add_dependencies(cdts_java_test xllr.jvm)
-add_test(NAME cdts_java_test COMMAND $ENV{METAFFI_HOME}/cdts_java_test)
-set(cdts_java_test cdts_java_test PARENT_SCOPE)
-
-c_cpp_exe(jvm_api_test
-		"${xllr.jvm_src};${sdk_src};cdts_java_test.cpp"
-		"${sdk_include_dir};${Boost_INCLUDE_DIRS};${doctest_INCLUDE_DIRS};${JNI_INCLUDE_DIRS}"
-		"doctest::doctest;Boost::filesystem;${JNI_LIBRARIES}"
-		".")
-add_dependencies(jvm_api_test xllr.jvm)
-add_test(NAME jvm_api_test COMMAND $ENV{METAFFI_HOME}/jvm_api_test)
-set(jvm_api_test jvm_api_test PARENT_SCOPE)
