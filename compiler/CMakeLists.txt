@@ -60,3 +60,6 @@ add_custom_command(TARGET metaffi.compiler.jvm POST_BUILD
 add_dependencies(metaffi.compiler.jvm jvm_host_compiler jvm_idl_entities)
 
 set(metaffi_compiler_jvm metaffi.compiler.jvm PARENT_SCOPE)
+
+# Add E2E tests subdirectory
+add_subdirectory(test)

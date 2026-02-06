@@ -106,6 +106,7 @@ namespace
         }
         return result;
     }
+
 }
 
 void JVMCompilerPlugin::initialize_jvm()

@@ -129,31 +129,40 @@ TEST_CASE("array functions")
 	auto get_classes = env.guest_module.load_entity_with_info(
 		"class=guest.ArrayFunctions,callable=getSomeClasses",
 		{},
-		{make_alias_type(metaffi_handle_type, "guest.SomeClass[]")});
+		{make_alias_type(metaffi_handle_array_type, "guest.SomeClass", 1)});
 	trace_step("array functions: call getSomeClasses");
-	auto [classes_ptr] = get_classes.call<cdt_metaffi_handle*>();
+	cdts classes_ret = get_classes.call_cdts();
 	trace_step("array functions: got getSomeClasses");
-	JvmHandle classes_handle(classes_ptr);
-	JavaArray classes_array(std::move(classes_handle));
-	REQUIRE(classes_array.length() == 3);
+	cdts& classes_array = static_cast<cdts&>(classes_ret[0]);
+	REQUIRE(classes_array.length == 3);
 
 	auto get_name = env.guest_module.load_entity(
 		"class=guest.SomeClass,callable=getName,instance_required",
 		{metaffi_handle_type},
 		{metaffi_string8_type});
-	for(metaffi_size i = 0; i < classes_array.length(); ++i)
+	for(metaffi_size i = 0; i < classes_array.length; ++i)
 	{
-		auto item = classes_array.get_handle(i);
-		auto [name] = get_name.call<std::string>(*item.get());
+		cdt& item = classes_array[i];
+		REQUIRE(item.type == metaffi_handle_type);
+		REQUIRE(item.cdt_val.handle_val != nullptr);
+		cdt_metaffi_handle handle = *item.cdt_val.handle_val;
+		auto [name] = get_name.call<std::string>(handle);
 		CHECK(name == "some");
 	}
 
 	auto expect_classes = env.guest_module.load_entity_with_info(
-		"class=guest.ArrayFunctions,callable=expectThreeSomeClassesFromFactory",
-		{},
+		"class=guest.ArrayFunctions,callable=expectThreeSomeClasses",
+		{make_alias_type(metaffi_handle_array_type, "guest.SomeClass", 1)},
 		{});
-	trace_step("array functions: call expectThreeSomeClassesFromFactory");
-	CHECK_NOTHROW(expect_classes.call<>());
+	trace_step("array functions: call expectThreeSomeClasses");
+	cdts params(1);
+	params[0].set_new_array(classes_array.length, 1, metaffi_handle_type);
+	cdts& params_array = static_cast<cdts&>(params[0]);
+	for(metaffi_size i = 0; i < classes_array.length; ++i)
+	{
+		params_array[i].set_handle(classes_array[i].cdt_val.handle_val);
+	}
+	CHECK_NOTHROW(expect_classes.call_raw(std::move(params)));
 	trace_step("array functions: done");
 }
 

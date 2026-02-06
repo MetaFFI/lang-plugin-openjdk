@@ -4,6 +4,7 @@
 
 #include "jvm_compiler_plugin.h"
 #include <runtime/xllr_capi_loader.h>
+#include <cstdlib>
 #include <cstring>
 
 namespace
@@ -13,9 +14,40 @@ namespace
 
     void set_error(char** out_err, uint32_t* out_err_len, const char* msg)
     {
+        if(!out_err || !out_err_len)
+        {
+            return;
+        }
+
+        if(!msg)
+        {
+            msg = "";
+        }
+
         size_t len = strlen(msg);
-        *out_err = xllr_alloc_string(msg, len);
         *out_err_len = static_cast<uint32_t>(len);
+
+        if(len == 0)
+        {
+            *out_err = nullptr;
+            return;
+        }
+
+        char* err_buf = xllr_alloc_string(msg, len);
+        if(!err_buf)
+        {
+            err_buf = static_cast<char*>(calloc(len + 1, 1));
+            if(err_buf)
+            {
+                memcpy(err_buf, msg, len);
+            }
+            else
+            {
+                *out_err_len = 0;
+            }
+        }
+
+        *out_err = err_buf;
     }
 
     void clear_error(char** out_err, uint32_t* out_err_len)

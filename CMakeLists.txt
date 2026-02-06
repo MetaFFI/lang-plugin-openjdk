@@ -32,7 +32,7 @@ add_custom_command(
 	OUTPUT "${JVM_API_DEST_DIR}/metaffi.api.jar"
 	COMMAND ${CMAKE_COMMAND} -E make_directory "${JVM_API_DEST_DIR}"
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${JVM_API_SRC_JAR}" "${JVM_API_DEST_DIR}"
-	DEPENDS metaffi.api
+	DEPENDS metaffi.api "${JVM_API_SRC_JAR}"
 	COMMENT "Copying JVM API jar to ${JVM_API_DEST_DIR}"
 )
 

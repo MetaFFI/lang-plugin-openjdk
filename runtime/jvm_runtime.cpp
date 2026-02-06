@@ -193,6 +193,24 @@ namespace
         return prim;
     }
 
+    struct alias_array_info
+    {
+        std::string base;
+        int dims = 0;
+    };
+
+    alias_array_info parse_alias_array(const std::string& alias)
+    {
+        alias_array_info info{alias, 0};
+        size_t pos = std::string::npos;
+        while((pos = info.base.find("[]")) != std::string::npos)
+        {
+            info.base.erase(pos, 2);
+            info.dims++;
+        }
+        return info;
+    }
+
     std::string resolve_handle_alias(const metaffi_type_info& type_info)
     {
         if(type_info.alias && *type_info.alias)
@@ -232,7 +250,8 @@ namespace
                 std::string alias = resolve_handle_alias(type_info);
                 if(!alias.empty())
                 {
-                    return "L" + to_internal_name(alias) + ";";
+                    auto parsed = parse_alias_array(alias);
+                    return "L" + to_internal_name(parsed.base) + ";";
                 }
                 return "Ljava/lang/Object;";
             }
@@ -307,7 +326,25 @@ namespace
                 std::string alias = resolve_handle_alias(type_info);
                 if(!alias.empty())
                 {
-                    std::string name = to_internal_name(alias);
+                    auto parsed = parse_alias_array(alias);
+                    if(parsed.dims > 0)
+                    {
+                        std::string desc(static_cast<size_t>(parsed.dims), '[');
+                        desc += "L" + to_internal_name(parsed.base) + ";";
+                        if(loader)
+                        {
+                            return load_array_class_with_fallback(*loader, desc);
+                        }
+
+                        jclass arr_cls = env->FindClass(desc.c_str());
+                        if(!arr_cls)
+                        {
+                            throw std::runtime_error("Failed to resolve handle alias array class: " + alias);
+                        }
+                        return arr_cls;
+                    }
+
+                    std::string name = to_internal_name(parsed.base);
                     jclass cls = nullptr;
                     if(loader)
                     {
@@ -822,7 +859,7 @@ namespace
         metaffi_type type = type_info.type;
         if(is_array_type(type))
         {
-            return ser.extract_array();
+            return ser.extract_array(type_info);
         }
 
         switch(type)
@@ -900,7 +937,7 @@ namespace
 
         if(is_array_type(type))
         {
-            out.value.l = ser.extract_array();
+            out.value.l = ser.extract_array(type_info);
             out.sig = 'L';
             return out;
         }
@@ -1740,13 +1777,14 @@ static void jvmxcall(entity_context* ctx, cdts* params, cdts* ret, char** out_er
         std::unique_ptr<cdts_jvm_serializer> params_ser;
         std::unique_ptr<cdts_jvm_serializer> ret_ser;
 
+        jobject class_loader = jni_class_loader::get_child_class_loader();
         if(params)
         {
-            params_ser = std::make_unique<cdts_jvm_serializer>(env, *params);
+            params_ser = std::make_unique<cdts_jvm_serializer>(env, *params, class_loader);
         }
         if(ret)
         {
-            ret_ser = std::make_unique<cdts_jvm_serializer>(env, *ret);
+            ret_ser = std::make_unique<cdts_jvm_serializer>(env, *ret, class_loader);
         }
 
         if(ctx->use_direct_call)
