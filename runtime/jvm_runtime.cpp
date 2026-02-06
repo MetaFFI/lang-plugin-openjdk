@@ -12,12 +12,14 @@
 #include <runtime_manager/jvm/contexts.h>
 #include <runtime_manager/jvm/runtime_id.h>
 #include <utils/entity_path_parser.h>
+#include <utils/env_utils.h>
 #include <utils/logger.hpp>
 #include <utils/scope_guard.hpp>
 
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <iostream>
 #include <mutex>
 #include <memory>
 #include <sstream>
@@ -31,6 +33,24 @@ static auto LOG = metaffi::get_logger("jvm.runtime");
 
 namespace
 {
+    bool trace_enabled()
+    {
+        static int enabled = -1;
+        if(enabled < 0)
+        {
+            enabled = get_env_var("METAFFI_JVM_TEST_TRACE").empty() ? 0 : 1;
+        }
+        return enabled == 1;
+    }
+
+    void trace(const std::string& msg)
+    {
+        if(trace_enabled())
+        {
+            std::cerr << msg << std::endl;
+        }
+    }
+
     void set_error(char** out_err, const std::string& msg)
     {
         if(!out_err)
@@ -1756,9 +1776,13 @@ void load_runtime(char** err)
 
     try
     {
+        trace("jvm_runtime: load_runtime start");
         auto info = choose_jvm();
+        trace("jvm_runtime: choose_jvm ok");
         g_runtime_manager = std::make_shared<jvm_runtime_manager>(info);
+        trace("jvm_runtime: manager created");
         g_runtime_manager->load_runtime();
+        trace("jvm_runtime: load_runtime done");
     }
     catch(const std::exception& e)
     {

@@ -13,6 +13,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/compiler")
 # runtime
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/runtime")
 
+# tests
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/test")
+
 add_custom_target(jvm
 	DEPENDS xllr.jvm metaffi.idl.jvm metaffi.compiler.jvm
 )
